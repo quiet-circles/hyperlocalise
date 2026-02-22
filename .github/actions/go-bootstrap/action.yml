@@ -1,0 +1,17 @@
+name: Go bootstrap
+description: Setup Go toolchain and bootstrap deps
+inputs:
+  go-version-file:
+    description: Path to the go.mod file
+    default: go.mod
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: ${{ inputs.go-version-file }}
+        cache: true
+    - name: Bootstrap dependencies
+      run: make bootstrap
+      shell: bash

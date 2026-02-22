@@ -5,68 +5,39 @@ on:
   push:
     branches:
       - main
-      - master
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  fmt:
-    name: Format check
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Bootstrap Go toolchain
+        uses: ./.github/actions/go-bootstrap
         with:
           go-version-file: go.mod
-          cache: true
 
-      - name: Bootstrap dependencies
-        run: make bootstrap
-
-      - name: Run formatter
+      - name: make fmt
         run: make fmt
 
-      - name: Ensure no formatting changes
+      - name: git diff
         run: git diff --exit-code
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Bootstrap dependencies
-        run: make bootstrap
-
-      - name: Run linter
+      - name: make lint
         run: make lint
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Bootstrap dependencies
-        run: make bootstrap
-
-      - name: Run tests
+      - name: make test
         run: make test
+
+      - name: make build
+        run: make build
