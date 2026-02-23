@@ -22,3 +22,22 @@ func TestRootCommandOutput(t *testing.T) {
 		t.Fatalf("expected help output, got %q", b.String())
 	}
 }
+
+func TestRootVersionDoesNotRequireConfigFile(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cmd := newRootCmd("v1.0.0")
+	b := bytes.NewBufferString("")
+
+	cmd.SetArgs([]string{"version"})
+	cmd.SetOut(b)
+
+	cmdErr := cmd.Execute()
+	if cmdErr != nil {
+		t.Fatalf("run version without config file: %v", cmdErr)
+	}
+
+	if got, want := b.String(), "hyperlocalise: v1.0.0\n"; got != want {
+		t.Fatalf("unexpected output: got %q want %q", got, want)
+	}
+}
