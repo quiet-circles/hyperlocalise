@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Bootstrap Go toolchain
+        uses: ./.github/actions/go-bootstrap
+        with:
+          go-version-file: go.mod
+
+      - name: make fmt
+        run: make fmt
+
+      - name: git diff
+        run: git diff --exit-code
+
+      - name: make lint
+        run: make lint
+
+      - name: make test
+        run: make test
+
+      - name: make build
+        run: make build
