@@ -1,5 +1,8 @@
 projectname?=hyperlocalise
 version?=$(shell git describe --abbrev=0 --tags 2>/dev/null || echo dev)
+golangci_lint_version?=v2.10.1
+gobin?=$(shell go env GOPATH)/bin
+golangci_lint_bin?=$(gobin)/golangci-lint
 
 default: help
 
@@ -22,6 +25,7 @@ run: ## run the app
 .PHONY: bootstrap
 bootstrap: ## download tool and module dependencies
 	go mod download
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(golangci_lint_version)
 
 
 .PHONY: test
@@ -49,7 +53,7 @@ fmt: ## format go files
 
 .PHONY: lint
 lint: ## lint go files
-	go tool golangci-lint run
+	$(golangci_lint_bin) run
 
 .PHONY: staticcheck
 staticcheck: ## run staticcheck directly
