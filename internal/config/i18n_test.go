@@ -382,7 +382,7 @@ func TestLoadUsesDefaultPathWhenEmpty(t *testing.T) {
 		t.Fatalf("change working directory: %v", err)
 	}
 
-	defaultPath := filepath.Join(tempDir, ".i18n.json")
+	defaultPath := filepath.Join(tempDir, "i18n.jsonc")
 	content := `{
 	  "locale": {
 	    "source": "en-US",
@@ -409,7 +409,7 @@ func TestLoadUsesDefaultPathWhenEmpty(t *testing.T) {
 	}
 }
 
-func TestLoadPrefersJSONCOverJSONWhenBothExist(t *testing.T) {
+func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 	tempDir := t.TempDir()
 
 	originalWD, err := os.Getwd()
@@ -427,31 +427,9 @@ func TestLoadPrefersJSONCOverJSONWhenBothExist(t *testing.T) {
 		t.Fatalf("change working directory: %v", err)
 	}
 
-	jsonPath := filepath.Join(tempDir, "i18n.json")
-	jsonContent := `{
-	  "locale": {
-	    "source": "en-US",
-	    "targets": ["fr-FR"]
-	  },
-	  "buckets": {
-	    "json": {"include": ["lang/[locale].json"]}
-	  },
-	  "llm": {
-	    "default": {
-	      "provider": "openai",
-	      "model": "json-model",
-	      "prompt": "Translate"
-	    }
-	  }
-	}`
-
-	if err := os.WriteFile(jsonPath, []byte(jsonContent), 0o600); err != nil {
-		t.Fatalf("write json config file: %v", err)
-	}
-
-	jsoncPath := filepath.Join(tempDir, "i18n.jsonc")
+	jsoncPath := filepath.Join(tempDir, ".i18n.jsonc")
 	jsoncContent := `{
-	  // preferred file
+	  // hidden default file
 	  "locale": {
 	    "source": "en-US",
 	    "targets": ["de-DE"],
@@ -474,7 +452,7 @@ func TestLoadPrefersJSONCOverJSONWhenBothExist(t *testing.T) {
 
 	cfg, err := Load("")
 	if err != nil {
-		t.Fatalf("load config from preferred jsonc path: %v", err)
+		t.Fatalf("load config from hidden jsonc path: %v", err)
 	}
 
 	if got, want := cfg.LLM.Default.Model, "jsonc-model"; got != want {
@@ -526,7 +504,7 @@ func writeConfigFile(t *testing.T, content string) string {
 	t.Helper()
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.json")
+	path := filepath.Join(dir, "config.jsonc")
 
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write config file: %v", err)

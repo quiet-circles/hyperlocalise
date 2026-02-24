@@ -12,11 +12,9 @@ import (
 )
 
 const (
-	defaultConfigPath  = ".i18n.json"
-	defaultConfigJSON  = "i18n.json"
-	defaultConfigJSONC = "i18n.jsonc"
-	hiddenConfigJSONC  = ".i18n.jsonc"
-	llmProviderOpenAI  = "openai"
+	defaultConfigPath = "i18n.jsonc"
+	hiddenConfigPath  = ".i18n.jsonc"
+	llmProviderOpenAI = "openai"
 )
 
 // I18NConfig defines the i18n configuration file structure.
@@ -72,7 +70,7 @@ type LLMMatchConfig struct {
 }
 
 // Load parses and validates i18n configuration from path.
-// When path is empty, it prefers i18n.jsonc, then i18n.json, then hidden variants.
+// When path is empty, it prefers i18n.jsonc
 func Load(path string) (*I18NConfig, error) {
 	if strings.TrimSpace(path) == "" {
 		path = resolveDefaultPath()
@@ -104,10 +102,8 @@ func Load(path string) (*I18NConfig, error) {
 
 func resolveDefaultPath() string {
 	candidates := []string{
-		defaultConfigJSONC,
-		defaultConfigJSON,
-		hiddenConfigJSONC,
 		defaultConfigPath,
+		hiddenConfigPath,
 	}
 
 	for _, candidate := range candidates {
