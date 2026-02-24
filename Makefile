@@ -10,9 +10,9 @@ default: help
 help: ## list makefile targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build
-build: ## build golang binary
-	@go build -ldflags "-X main.version=$(version)" -o $(projectname)
+.PHONY: check-build
+check-build: ## check golang build
+	@go build -ldflags "-X main.version=$(version)" -o /dev/null
 
 .PHONY: install
 install: ## install golang binary
@@ -62,7 +62,7 @@ precommit: ## run local CI validation flow
 	git diff --exit-code
 	make lint
 	make test
-	make build
+	make check-build
 
 .PHONY: staticcheck
 staticcheck: ## run staticcheck directly
