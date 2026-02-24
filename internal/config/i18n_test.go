@@ -409,6 +409,103 @@ func TestLoadUsesDefaultPathWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestLoadPrefersJSONCOverJSONWhenBothExist(t *testing.T) {
+	tempDir := t.TempDir()
+
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get working directory: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if chdirErr := os.Chdir(originalWD); chdirErr != nil {
+			t.Fatalf("restore working directory: %v", chdirErr)
+		}
+	})
+
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("change working directory: %v", err)
+	}
+
+	jsonPath := filepath.Join(tempDir, "i18n.json")
+	jsonContent := `{
+	  "locale": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "json": {"include": ["lang/[locale].json"]}
+	  },
+	  "llm": {
+	    "default": {
+	      "provider": "openai",
+	      "model": "json-model",
+	      "prompt": "Translate"
+	    }
+	  }
+	}`
+
+	if err := os.WriteFile(jsonPath, []byte(jsonContent), 0o600); err != nil {
+		t.Fatalf("write json config file: %v", err)
+	}
+
+	jsoncPath := filepath.Join(tempDir, "i18n.jsonc")
+	jsoncContent := `{
+	  // preferred file
+	  "locale": {
+	    "source": "en-US",
+	    "targets": ["de-DE"],
+	  },
+	  "buckets": {
+	    "json": {"include": ["lang/[locale].json"]},
+	  },
+	  "llm": {
+	    "default": {
+	      "provider": "openai",
+	      "model": "jsonc-model",
+	      "prompt": "Translate",
+	    },
+	  },
+	}`
+
+	if err := os.WriteFile(jsoncPath, []byte(jsoncContent), 0o600); err != nil {
+		t.Fatalf("write jsonc config file: %v", err)
+	}
+
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("load config from preferred jsonc path: %v", err)
+	}
+
+	if got, want := cfg.LLM.Default.Model, "jsonc-model"; got != want {
+		t.Fatalf("unexpected model: got %q want %q", got, want)
+	}
+}
+
+func TestLoadParsesJSONCFile(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  // comment
+	  "locale": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"],
+	  },
+	  "buckets": {
+	    "json": {"include": ["lang/[locale].json"]},
+	  },
+	  "llm": {
+	    "default": {
+	      "provider": "openai",
+	      "model": "gpt-4.1-mini",
+	      "prompt": "Translate from {source} to {target}.",
+	    },
+	  },
+	}`)
+
+	if _, err := Load(path); err != nil {
+		t.Fatalf("load jsonc config: %v", err)
+	}
+}
+
 func TestJSONSchema(t *testing.T) {
 	schemaBytes, err := JSONSchema()
 	if err != nil {

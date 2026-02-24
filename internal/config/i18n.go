@@ -1,16 +1,23 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/tidwall/jsonc"
 )
 
 const (
-	defaultConfigPath = ".i18n.json"
-	llmProviderOpenAI = "openai"
+	defaultConfigPath  = ".i18n.json"
+	defaultConfigJSON  = "i18n.json"
+	defaultConfigJSONC = "i18n.jsonc"
+	hiddenConfigJSONC  = ".i18n.jsonc"
+	llmProviderOpenAI  = "openai"
 )
 
 // I18NConfig defines the i18n configuration file structure.
@@ -66,22 +73,18 @@ type LLMMatchConfig struct {
 }
 
 // Load parses and validates i18n configuration from path.
-// When path is empty, it defaults to .i18n.json in the current working directory.
+// When path is empty, it prefers i18n.jsonc, then i18n.json, then hidden variants.
 func Load(path string) (*I18NConfig, error) {
 	if strings.TrimSpace(path) == "" {
-		path = defaultConfigPath
+		path = resolveDefaultPath()
 	}
 
-	file, err := os.Open(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("open i18n config: %w", err)
 	}
 
-	defer func() {
-		_ = file.Close()
-	}()
-
-	decoder := json.NewDecoder(file)
+	decoder := json.NewDecoder(bytes.NewReader(jsonc.ToJSON(content)))
 	decoder.DisallowUnknownFields()
 
 	var cfg I18NConfig
@@ -98,6 +101,32 @@ func Load(path string) (*I18NConfig, error) {
 	}
 
 	return &cfg, nil
+}
+
+func resolveDefaultPath() string {
+	candidates := []string{
+		defaultConfigJSONC,
+		defaultConfigJSON,
+		hiddenConfigJSONC,
+		defaultConfigPath,
+	}
+
+	for _, candidate := range candidates {
+		if fileExists(candidate) {
+			return candidate
+		}
+	}
+
+	return defaultConfigPath
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+
+	return !errors.Is(err, os.ErrNotExist)
 }
 
 // Validate validates all cross-field i18n configuration semantics.
