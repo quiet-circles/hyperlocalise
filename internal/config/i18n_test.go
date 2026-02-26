@@ -439,20 +439,32 @@ func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 	jsoncPath := filepath.Join(tempDir, ".i18n.jsonc")
 	jsoncContent := `{
 	  // hidden default file
-	  "locale": {
+	  "locales": {
 	    "source": "en-US",
-	    "targets": ["de-DE"],
+	    "targets": ["de-DE"]
 	  },
 	  "buckets": {
-	    "json": {"include": ["lang/[locale].json"]},
+	    "json": {
+	      "files": [
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
+	      ]
+	    }
+	  },
+	  "groups": {
+	    "all": {
+	      "targets": ["de-DE"],
+	      "buckets": ["json"]
+	    }
 	  },
 	  "llm": {
-	    "default": {
-	      "provider": "openai",
-	      "model": "jsonc-model",
-	      "prompt": "Translate",
-	    },
-	  },
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "jsonc-model",
+	        "prompt": "Translate"
+	      }
+	    }
+	  }
 	}`
 
 	if err := os.WriteFile(jsoncPath, []byte(jsoncContent), 0o600); err != nil {
@@ -464,7 +476,7 @@ func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 		t.Fatalf("load config from hidden jsonc path: %v", err)
 	}
 
-	if got, want := cfg.LLM.Default.Model, "jsonc-model"; got != want {
+	if got, want := cfg.LLM.Profiles["default"].Model, "jsonc-model"; got != want {
 		t.Fatalf("unexpected model: got %q want %q", got, want)
 	}
 }
@@ -472,20 +484,32 @@ func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 func TestLoadParsesJSONCFile(t *testing.T) {
 	path := writeConfigFile(t, `{
 	  // comment
-	  "locale": {
+	  "locales": {
 	    "source": "en-US",
-	    "targets": ["fr-FR"],
+	    "targets": ["fr-FR"]
 	  },
 	  "buckets": {
-	    "json": {"include": ["lang/[locale].json"]},
+	    "json": {
+	      "files": [
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
+	      ]
+	    }
+	  },
+	  "groups": {
+	    "all": {
+	      "targets": ["fr-FR"],
+	      "buckets": ["json"]
+	    }
 	  },
 	  "llm": {
-	    "default": {
-	      "provider": "openai",
-	      "model": "gpt-4.1-mini",
-	      "prompt": "Translate from {source} to {target}.",
-	    },
-	  },
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "gpt-4.1-mini",
+	        "prompt": "Translate from {source} to {target}."
+	      }
+	    }
+	  }
 	}`)
 
 	if _, err := Load(path); err != nil {
