@@ -37,7 +37,7 @@
     }
   },
   "groups": {
-    // both targets and buckets can be emptry array, but they cannot be empty at the same time
+    // both targets and buckets can be empty array, but they cannot be empty at the same time
     "modern": {
       "targets": [
         "es-ES",
