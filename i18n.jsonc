@@ -25,7 +25,7 @@
           "from": "content/ui/shared.json",
           "to": "dist/ui/shared.{{target}}.json"
         }
-      ],
+      ]
     },
     "docs": {
       "files": [
@@ -33,7 +33,7 @@
           "from": "content/docs/{{target}}/guide.md",
           "to": "dist/docs/{{target}}/guide.md"
         }
-      ],
+      ]
     }
   },
   "groups": {
