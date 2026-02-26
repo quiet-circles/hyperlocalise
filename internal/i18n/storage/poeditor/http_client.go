@@ -135,7 +135,9 @@ func (c *HTTPClient) postForm(ctx context.Context, endpoint string, values url.V
 	if err != nil {
 		return fmt.Errorf("poeditor request %s: %w", endpoint, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
