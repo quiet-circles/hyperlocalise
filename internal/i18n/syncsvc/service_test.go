@@ -3,6 +3,7 @@ package syncsvc
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage"
@@ -179,6 +180,136 @@ func TestPushSkipsDraftAgainstCuratedRemote(t *testing.T) {
 	}
 	if got := len(adapter.pushReq.Entries); got != 0 {
 		t.Fatalf("expected no pushed entries, got %d", got)
+	}
+}
+
+func TestPullBlocksPlaceholderRegression(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "greeting",
+				Locale: "fr",
+				Value:  "Bonjour {{name}}",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginLLM,
+					State:  storage.StateDraft,
+				},
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "greeting",
+					Locale: "fr",
+					Value:  "Bonjour",
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Pull(context.Background(), PullInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PullOptions{DryRun: true},
+	})
+	if err != nil {
+		t.Fatalf("pull sync dry-run: %v", err)
+	}
+	if got := len(report.Updates); got != 0 {
+		t.Fatalf("expected no updates, got %d", got)
+	}
+	if got := len(report.Conflicts); got != 1 {
+		t.Fatalf("expected 1 conflict, got %d", got)
+	}
+	if report.Conflicts[0].Reason != conflictReasonInvariantViolation {
+		t.Fatalf("unexpected conflict reason: %q", report.Conflicts[0].Reason)
+	}
+	if len(report.Warnings) == 0 || !strings.Contains(report.Warnings[0].Message, "placeholder parity mismatch") {
+		t.Fatalf("expected placeholder parity warning, got %+v", report.Warnings)
+	}
+}
+
+func TestPullBlocksICUParityRegression(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "cart.items",
+				Locale: "fr",
+				Value:  "{count, plural, one {# article} other {# articles}}",
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "cart.items",
+					Locale: "fr",
+					Value:  "{count, plural, one {# article}}",
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Pull(context.Background(), PullInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PullOptions{DryRun: true},
+	})
+	if err != nil {
+		t.Fatalf("pull sync dry-run: %v", err)
+	}
+	if got := len(report.Conflicts); got != 1 {
+		t.Fatalf("expected 1 conflict, got %d", got)
+	}
+	if len(report.Warnings) == 0 || !strings.Contains(report.Warnings[0].Message, "ICU parity mismatch") {
+		t.Fatalf("expected ICU parity warning, got %+v", report.Warnings)
+	}
+}
+
+func TestPushBlocksUnbalancedICURegression(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "cart.items",
+				Locale: "fr",
+				Value:  "{count, plural, one {# article} other {# articles}",
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "cart.items",
+					Locale: "fr",
+					Value:  "{count, plural, one {# article} other {# articles}}",
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Push(context.Background(), PushInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PushOptions{DryRun: true},
+	})
+	if err != nil {
+		t.Fatalf("push sync dry-run: %v", err)
+	}
+	if got := len(report.Conflicts); got != 1 {
+		t.Fatalf("expected 1 conflict, got %d", got)
+	}
+	if got := len(adapter.pushReq.Entries); got != 0 {
+		t.Fatalf("expected no pushed entries, got %d", got)
+	}
+	if len(report.Warnings) == 0 || !strings.Contains(report.Warnings[0].Message, "invalid ICU/braces structure") {
+		t.Fatalf("expected invalid ICU structure warning, got %+v", report.Warnings)
 	}
 }
 

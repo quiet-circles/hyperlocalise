@@ -171,6 +171,25 @@ func buildPullReport(local, remote storage.CatalogSnapshot, opts PullOptions) Re
 			report.Conflicts = append(report.Conflicts, *conflict)
 			continue
 		}
+		if diags := validateEntryInvariant(*update, localEntry); len(diags) > 0 {
+			report.Conflicts = append(report.Conflicts, storage.Conflict{
+				ID:          update.ID(),
+				Reason:      conflictReasonInvariantViolation,
+				LocalValue:  update.Value,
+				RemoteValue: localEntry.Value,
+				LocalState:  update.Provenance.State,
+				RemoteState: localEntry.Provenance.State,
+			})
+			report.Warnings = append(report.Warnings, storage.Warning{
+				Code: "invariant_violation",
+				Message: formatInvariantWarning(
+					"pull blocked by invariant validation",
+					update.ID(),
+					diags,
+				),
+			})
+			continue
+		}
 		report.Updates = append(report.Updates, *update)
 	}
 
@@ -194,6 +213,22 @@ func buildPushReport(local, remote storage.CatalogSnapshot) (Report, storage.Pus
 
 		if localEntry.Value == remoteEntry.Value {
 			report.Unchanged = append(report.Unchanged, id)
+			continue
+		}
+
+		if diags := validateEntryInvariant(localEntry, remoteEntry); len(diags) > 0 {
+			report.Conflicts = append(report.Conflicts, storage.Conflict{
+				ID:          id,
+				Reason:      conflictReasonInvariantViolation,
+				LocalValue:  localEntry.Value,
+				RemoteValue: remoteEntry.Value,
+				LocalState:  localEntry.Provenance.State,
+				RemoteState: remoteEntry.Provenance.State,
+			})
+			report.Warnings = append(report.Warnings, storage.Warning{
+				Code:    "invariant_violation",
+				Message: formatInvariantWarning("push blocked by invariant validation", id, diags),
+			})
 			continue
 		}
 
