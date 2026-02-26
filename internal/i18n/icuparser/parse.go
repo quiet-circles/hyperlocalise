@@ -268,8 +268,9 @@ func (p *astParser) parsePluralOptions() (int, []PluralOption, error) {
 			return 0, nil, fmt.Errorf("expected ICU selector at %d", p.pos)
 		}
 		p.skipSpaces()
-		if strings.HasPrefix(strings.ToLower(sel), "offset:") {
-			n, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(sel), "offset:")))
+		selLower := strings.ToLower(sel)
+		if strings.HasPrefix(selLower, "offset:") {
+			n, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(selLower, "offset:")))
 			if err != nil {
 				return 0, nil, fmt.Errorf("invalid plural offset %q", sel)
 			}
