@@ -22,6 +22,7 @@ type I18NConfig struct {
 	Buckets map[string]BucketConfig `json:"buckets" jsonschema:"required"`
 	Groups  map[string]GroupConfig  `json:"groups" jsonschema:"required"`
 	LLM     LLMConfig               `json:"llm" jsonschema:"required"`
+	Storage *StorageConfig `json:"storage,omitempty"`
 }
 
 // LocaleConfig configures source/target locales and fallback hierarchy.
@@ -66,6 +67,12 @@ type LLMRule struct {
 	Priority int    `json:"priority" jsonschema:"required"`
 	Group    string `json:"group" jsonschema:"required"`
 	Profile  string `json:"profile" jsonschema:"required"`
+}
+
+// StorageConfig configures remote storage adapter sync settings.
+type StorageConfig struct {
+	Adapter string          `json:"adapter" jsonschema:"required"`
+	Config  json.RawMessage `json:"config,omitempty"`
 }
 
 // Load parses and validates i18n configuration from path.
@@ -230,6 +237,10 @@ func (c I18NConfig) Validate() error {
 	}
 
 	if err := c.validateLLM(groupSet); err != nil {
+		return err
+	}
+
+	if err := c.validateStorage(); err != nil {
 		return err
 	}
 
@@ -554,6 +565,18 @@ func validateRule(index int, rule LLMRule, profiles map[string]LLMProfile, group
 
 	if _, exists := profiles[rule.Profile]; !exists {
 		return fmt.Errorf("llm.rules[%d].profile: unknown profile %q", index, rule.Profile)
+	}
+
+	return nil
+}
+
+func (c I18NConfig) validateStorage() error {
+	if c.Storage == nil {
+		return nil
+	}
+
+	if strings.TrimSpace(c.Storage.Adapter) == "" {
+		return fmt.Errorf("storage.adapter: must not be empty")
 	}
 
 	return nil

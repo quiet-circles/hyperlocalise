@@ -533,6 +533,65 @@ func TestJSONSchema(t *testing.T) {
 	}
 }
 
+func TestLoadAllowsOptionalStorageConfig(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locale": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "json": {"include": ["lang/[locale].json"]}
+	  },
+	  "llm": {
+	    "default": {
+	      "provider": "openai",
+	      "model": "gpt-4.1-mini",
+	      "prompt": "Translate from {source} to {target}."
+	    }
+	  },
+	  "storage": {
+	    "adapter": "poeditor",
+	    "config": {"projectID":"123"}
+	  }
+	}`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load config with storage: %v", err)
+	}
+	if cfg.Storage == nil || cfg.Storage.Adapter != "poeditor" {
+		t.Fatalf("unexpected storage config: %+v", cfg.Storage)
+	}
+}
+
+func TestLoadRejectsEmptyStorageAdapter(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locale": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "json": {"include": ["lang/[locale].json"]}
+	  },
+	  "llm": {
+	    "default": {
+	      "provider": "openai",
+	      "model": "gpt-4.1-mini",
+	      "prompt": "Translate from {source} to {target}."
+	    }
+	  },
+	  "storage": {
+	    "adapter": "  ",
+	    "config": {"projectID":"123"}
+	  }
+	}`)
+
+	_, err := Load(path)
+	if err == nil || !strings.Contains(err.Error(), "storage.adapter") {
+		t.Fatalf("expected storage adapter validation error, got %v", err)
+	}
+}
+
 func writeConfigFile(t *testing.T, content string) string {
 	t.Helper()
 

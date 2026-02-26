@@ -8,6 +8,7 @@ A high-performance localization CLI built in Go for modern development workflows
 <!--ts-->
    * [hyperlocalise](#hyperlocalise)
    * [Features](#features)
+   * [Translation Sync (POEditor)](#translation-sync-poeditor)
    * [Project Layout](#project-layout)
    * [How to use this template](#how-to-use-this-template)
    * [Demo Application](#demo-application)
@@ -24,7 +25,19 @@ A high-performance localization CLI built in Go for modern development workflows
 - [Gitlab CI](.gitlab-ci.yml) Configuration (Lint, Test, Build, Release)
 - [cobra](https://cobra.dev/) example setup including tests
 - [Makefile](Makefile) - with various useful targets and documentation (see Makefile Targets)
+- Storage adapter based translation sync (`sync pull` / `sync push`) with POEditor as the first adapter
+- Local provenance sidecar metadata for LLM-vs-curation workflows (`draft` vs `curated`)
 <!--- TODO: [pre-commit-hooks](https://pre-commit.com/) for formatting and validating code before committing-->
+
+# Translation Sync (POEditor)
+
+`hyperlocalise` now includes a `StorageAdapter` sync layer for remote translation storage.
+The first supported adapter is `poeditor`.
+
+Docs:
+
+- [`internal/i18n/storage/README.md`](internal/i18n/storage/README.md)
+- POEditor adapter details: [`internal/i18n/storage/poeditor/README.md`](internal/i18n/storage/poeditor/README.md)
 
 # Project Layout
 * [assets/](https://pkg.go.dev/github.com/quiet-circles/hyperlocalise/assets) => docs, images, etc
