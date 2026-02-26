@@ -99,4 +99,3 @@ func TestSaveDefaultPath(t *testing.T) {
 		t.Fatalf("stat default lockfile: %v", err)
 	}
 }
-

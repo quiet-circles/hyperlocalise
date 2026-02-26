@@ -21,4 +21,3 @@ func TestEntryIDUsesKeyContextLocale(t *testing.T) {
 		t.Fatalf("unexpected entry id: got %+v want %+v", got, want)
 	}
 }
-

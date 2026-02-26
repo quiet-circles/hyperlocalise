@@ -19,10 +19,10 @@ type LocalReadRequest struct {
 }
 
 type PullOptions struct {
-	DryRun                  bool
-	FailOnConflict          bool
-	ApplyCuratedOverDraft   bool
-	Policy                  string
+	DryRun                bool
+	FailOnConflict        bool
+	ApplyCuratedOverDraft bool
+	Policy                string
 }
 
 type PushOptions struct {
@@ -45,11 +45,11 @@ func New() *Service {
 }
 
 type PullInput struct {
-	Adapter   storage.StorageAdapter
-	Local     LocalStore
-	Request   storage.PullRequest
-	Read      LocalReadRequest
-	Options   PullOptions
+	Adapter storage.StorageAdapter
+	Local   LocalStore
+	Request storage.PullRequest
+	Read    LocalReadRequest
+	Options PullOptions
 }
 
 type PushInput struct {
@@ -60,14 +60,14 @@ type PushInput struct {
 }
 
 type Report struct {
-	Action    string              `json:"action"`
-	Creates   []storage.Entry     `json:"creates,omitempty"`
-	Updates   []storage.Entry     `json:"updates,omitempty"`
-	Unchanged []storage.EntryID   `json:"unchanged,omitempty"`
-	Conflicts []storage.Conflict  `json:"conflicts,omitempty"`
-	Warnings  []storage.Warning   `json:"warnings,omitempty"`
-	Applied   []storage.EntryID   `json:"applied,omitempty"`
-	Skipped   []storage.EntryID   `json:"skipped,omitempty"`
+	Action    string             `json:"action"`
+	Creates   []storage.Entry    `json:"creates,omitempty"`
+	Updates   []storage.Entry    `json:"updates,omitempty"`
+	Unchanged []storage.EntryID  `json:"unchanged,omitempty"`
+	Conflicts []storage.Conflict `json:"conflicts,omitempty"`
+	Warnings  []storage.Warning  `json:"warnings,omitempty"`
+	Applied   []storage.EntryID  `json:"applied,omitempty"`
+	Skipped   []storage.EntryID  `json:"skipped,omitempty"`
 }
 
 type ApplyPullPlan struct {
@@ -200,22 +200,22 @@ func buildPushReport(local, remote storage.CatalogSnapshot) (Report, storage.Pus
 		if strings.EqualFold(localEntry.Provenance.State, storage.StateDraft) &&
 			strings.EqualFold(remoteEntry.Provenance.State, storage.StateCurated) {
 			report.Conflicts = append(report.Conflicts, storage.Conflict{
-				ID:         id,
-				Reason:     "draft_vs_curated_remote",
-				LocalValue: localEntry.Value,
+				ID:          id,
+				Reason:      "draft_vs_curated_remote",
+				LocalValue:  localEntry.Value,
 				RemoteValue: remoteEntry.Value,
-				LocalState: localEntry.Provenance.State,
+				LocalState:  localEntry.Provenance.State,
 				RemoteState: remoteEntry.Provenance.State,
 			})
 			continue
 		}
 
 		report.Conflicts = append(report.Conflicts, storage.Conflict{
-			ID:         id,
-			Reason:     "value_mismatch",
-			LocalValue: localEntry.Value,
+			ID:          id,
+			Reason:      "value_mismatch",
+			LocalValue:  localEntry.Value,
 			RemoteValue: remoteEntry.Value,
-			LocalState: localEntry.Provenance.State,
+			LocalState:  localEntry.Provenance.State,
 			RemoteState: remoteEntry.Provenance.State,
 		})
 	}
@@ -303,4 +303,3 @@ func compareEntryID(a, b storage.EntryID) int {
 	}
 	return strings.Compare(a.Context, b.Context)
 }
-

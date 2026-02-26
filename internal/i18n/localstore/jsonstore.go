@@ -201,4 +201,3 @@ func writeJSONAtomic(path string, v any) error {
 
 	return os.Rename(tmp, path)
 }
-

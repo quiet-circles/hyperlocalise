@@ -17,12 +17,12 @@ const (
 )
 
 type Config struct {
-	ProjectID      string   `json:"projectID"`
-	APIToken       string   `json:"apiToken,omitempty"`
-	APITokenEnv    string   `json:"apiTokenEnv,omitempty"`
-	SourceLanguage string   `json:"sourceLanguage,omitempty"`
+	ProjectID       string   `json:"projectID"`
+	APIToken        string   `json:"apiToken,omitempty"`
+	APITokenEnv     string   `json:"apiTokenEnv,omitempty"`
+	SourceLanguage  string   `json:"sourceLanguage,omitempty"`
 	TargetLanguages []string `json:"targetLanguages,omitempty"`
-	TimeoutSeconds int      `json:"timeoutSeconds,omitempty"`
+	TimeoutSeconds  int      `json:"timeoutSeconds,omitempty"`
 }
 
 type Client interface {
@@ -211,4 +211,3 @@ type UpsertTranslationsInput struct {
 	APIToken  string
 	Entries   []TermTranslation
 }
-

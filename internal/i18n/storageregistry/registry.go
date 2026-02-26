@@ -80,4 +80,3 @@ func (r *Registry) List() []string {
 	sort.Strings(names)
 	return names
 }
-

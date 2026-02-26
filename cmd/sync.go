@@ -16,12 +16,12 @@ import (
 )
 
 type syncCommonOptions struct {
-	configPath             string
-	locales                []string
-	dryRun                 bool
-	output                 string
-	failOnConflict         bool
-	applyCuratedOverDraft  bool
+	configPath            string
+	locales               []string
+	dryRun                bool
+	output                string
+	failOnConflict        bool
+	applyCuratedOverDraft bool
 }
 
 func defaultSyncCommonOptions() syncCommonOptions {

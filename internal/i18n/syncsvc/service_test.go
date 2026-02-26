@@ -39,11 +39,12 @@ type fakeAdapter struct {
 	pushResult storage.PushResult
 }
 
-func (f *fakeAdapter) Name() string { return "fake" }
+func (f *fakeAdapter) Name() string                       { return "fake" }
 func (f *fakeAdapter) Capabilities() storage.Capabilities { return storage.Capabilities{} }
 func (f *fakeAdapter) Pull(_ context.Context, _ storage.PullRequest) (storage.PullResult, error) {
 	return f.pullResult, nil
 }
+
 func (f *fakeAdapter) Push(_ context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	f.pushReq = req
 	return f.pushResult, nil

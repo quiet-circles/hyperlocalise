@@ -91,11 +91,11 @@ type PushRequest struct {
 
 // PushResult returns provider apply summary and warnings.
 type PushResult struct {
-	Applied   []EntryID   `json:"applied,omitempty"`
-	Skipped   []EntryID   `json:"skipped,omitempty"`
-	Conflicts []Conflict  `json:"conflicts,omitempty"`
-	Warnings  []Warning   `json:"warnings,omitempty"`
-	Revision  string      `json:"revision,omitempty"`
+	Applied   []EntryID  `json:"applied,omitempty"`
+	Skipped   []EntryID  `json:"skipped,omitempty"`
+	Conflicts []Conflict `json:"conflicts,omitempty"`
+	Warnings  []Warning  `json:"warnings,omitempty"`
+	Revision  string     `json:"revision,omitempty"`
 }
 
 type Warning struct {
@@ -106,10 +106,10 @@ type Warning struct {
 type Conflict struct {
 	ID          EntryID `json:"id"`
 	Reason      string  `json:"reason"`
-	LocalValue   string  `json:"local_value,omitempty"`
-	RemoteValue  string  `json:"remote_value,omitempty"`
-	LocalState   string  `json:"local_state,omitempty"`
-	RemoteState  string  `json:"remote_state,omitempty"`
+	LocalValue  string  `json:"local_value,omitempty"`
+	RemoteValue string  `json:"remote_value,omitempty"`
+	LocalState  string  `json:"local_state,omitempty"`
+	RemoteState string  `json:"remote_state,omitempty"`
 }
 
 // Capabilities describe remote adapter features.
@@ -127,4 +127,3 @@ type StorageAdapter interface {
 	Pull(ctx context.Context, req PullRequest) (PullResult, error)
 	Push(ctx context.Context, req PushRequest) (PushResult, error)
 }
-

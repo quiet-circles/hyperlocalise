@@ -40,8 +40,8 @@ func (c *HTTPClient) ListTerms(ctx context.Context, in ListTermsInput) ([]TermTr
 			Message string `json:"message"`
 		} `json:"result"`
 		Terms []struct {
-			Term    string `json:"term"`
-			Context string `json:"context"`
+			Term         string `json:"term"`
+			Context      string `json:"context"`
 			Translations []struct {
 				Language string `json:"language"`
 				Content  string `json:"content"`
@@ -89,7 +89,7 @@ func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslatio
 			continue
 		}
 		item := map[string]string{
-			"term":       entry.Term,
+			"term":        entry.Term,
 			"translation": entry.Value,
 		}
 		if strings.TrimSpace(entry.Context) != "" {
@@ -148,4 +148,3 @@ func (c *HTTPClient) postForm(ctx context.Context, endpoint string, values url.V
 
 	return nil
 }
-

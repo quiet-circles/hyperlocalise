@@ -10,14 +10,14 @@ import (
 const DefaultPath = ".hyperlocalise.lock.json"
 
 type File struct {
-	Adapter      string                     `json:"adapter,omitempty"`
-	ProjectID    string                     `json:"project_id,omitempty"`
-	LastPullAt   *time.Time                 `json:"last_pull_at,omitempty"`
+	Adapter      string                      `json:"adapter,omitempty"`
+	ProjectID    string                      `json:"project_id,omitempty"`
+	LastPullAt   *time.Time                  `json:"last_pull_at,omitempty"`
 	LocaleStates map[string]LocaleCheckpoint `json:"locale_states,omitempty"`
 }
 
 type LocaleCheckpoint struct {
-	Revision string     `json:"revision,omitempty"`
+	Revision  string     `json:"revision,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
@@ -64,4 +64,3 @@ func Save(path string, f File) error {
 	}
 	return nil
 }
-

@@ -13,11 +13,12 @@ import (
 
 type stubAdapter struct{}
 
-func (stubAdapter) Name() string { return "stub" }
+func (stubAdapter) Name() string                       { return "stub" }
 func (stubAdapter) Capabilities() storage.Capabilities { return storage.Capabilities{} }
 func (stubAdapter) Pull(_ context.Context, _ storage.PullRequest) (storage.PullResult, error) {
 	return storage.PullResult{}, nil
 }
+
 func (stubAdapter) Push(_ context.Context, _ storage.PushRequest) (storage.PushResult, error) {
 	return storage.PushResult{}, nil
 }

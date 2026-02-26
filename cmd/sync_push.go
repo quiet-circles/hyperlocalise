@@ -45,4 +45,3 @@ func newSyncPushCmd() *cobra.Command {
 	addSyncCommonFlags(cmd, &o)
 	return cmd
 }
-
