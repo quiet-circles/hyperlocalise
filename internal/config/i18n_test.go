@@ -15,297 +15,271 @@ func TestLoad(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "valid minimal config",
+			name: "valid full config with jsonc comments",
 			content: `{
-			  "locale": {
+			  "locales": {
 			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate from {source} to {target}."
-			    }
-			  }
-			}`,
-		},
-		{
-			name: "valid layered config",
-			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR", "fr-CA", "es-ES", "es-MX"],
-			    "fallback": {
-			      "fr-CA": ["fr-FR", "en-US"],
-			      "es-MX": ["es-ES", "en-US"]
+			    "targets": ["es-ES", "fr-FR", "de-DE"],
+			    "fallbacks": {
+			      // source is implicit fallback base
+			      "fr-FR": ["es-ES"]
 			    }
 			  },
 			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]},
-			    "markdown": {"include": ["_posts/[locale]/*.md"]}
+			    "ui": {
+			      "files": [
+			        {
+			          "from": "content/ui/{{source}}/strings.json",
+			          "to": "dist/ui/{{target}}/strings.json"
+			        },
+			        {
+			          "from": "content/ui/shared.json",
+			          "to": "dist/ui/shared.{{target}}.json"
+			        }
+			      ]
+			    },
+			    "docs": {
+			      "files": [
+			        {
+			          "from": "content/docs/{{target}}/guide.md",
+			          "to": "dist/docs/{{target}}/guide.md"
+			        }
+			      ]
+			    }
+			  },
+			  "groups": {
+			    "modern": {
+			      "targets": ["es-ES", "fr-FR"],
+			      "buckets": ["ui"]
+			    },
+			    "docs-team": {
+			      "targets": ["de-DE"],
+			      "buckets": ["docs"]
+			    }
 			  },
 			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate from {source} to {target}."
-			    },
-			    "groups": {
-			      "fr": ["fr-FR", "fr-CA"]
-			    },
-			    "overrides": [
-			      {
-			        "match": {"group": "fr"},
-			        "model": "gpt-4.1"
+			    "profiles": {
+			      "default": {
+			        "provider": "openai",
+			        "model": "xmt-std",
+			        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
 			      },
-			      {
-			        "match": {"targets": ["es-MX"]},
-			        "prompt": "Use neutral Mexican Spanish."
+			      "verbose": {
+			        "provider": "openai",
+			        "model": "xmt-std",
+			        "prompt": "Translate from {{source}} to {{target}} with richer context:\n\n{{input}}"
+			      },
+			      "precise": {
+			        "provider": "openai",
+			        "model": "xmt-std",
+			        "prompt": "Translate from {{source}} to {{target}} precisely:\n\n{{input}}"
 			      }
+			    },
+			    "rules": [
+			      {"priority": 100, "group": "modern", "profile": "precise"},
+			      {"priority": 50, "group": "docs-team", "profile": "verbose"}
 			    ]
 			  }
 			}`,
 		},
 		{
-			name: "invalid source inside targets",
+			name: "valid group with empty targets",
 			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["en-US", "fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": [], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+		},
+		{
+			name: "valid group with empty buckets",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": []}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+		},
+		{
+			name: "invalid unknown field rejected",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}], "unknown": true}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "unknown field",
+		},
+		{
+			name: "invalid source in targets",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["en-US", "es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 			}`,
 			errContains: "source locale",
 		},
 		{
 			name: "invalid fallback key not in targets",
 			content: `{
-			  "locale": {
+			  "locales": {
 			    "source": "en-US",
-			    "targets": ["fr-FR"],
-			    "fallback": {
-			      "es-MX": ["en-US"]
-			    }
+			    "targets": ["es-ES"],
+			    "fallbacks": {"fr-FR": ["en-US"]}
 			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 			}`,
 			errContains: "fallback key",
 		},
 		{
-			name: "invalid fallback self reference",
+			name: "invalid fallback candidate not in targets or source",
 			content: `{
-			  "locale": {
+			  "locales": {
 			    "source": "en-US",
-			    "targets": ["fr-FR", "fr-CA"],
-			    "fallback": {
-			      "fr-CA": ["fr-CA", "en-US"]
-			    }
+			    "targets": ["es-ES", "fr-FR"],
+			    "fallbacks": {"fr-FR": ["it-IT"]}
 			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 			}`,
-			errContains: "self-reference",
+			errContains: "must be in locales.targets or locales.source",
 		},
 		{
 			name: "invalid fallback cycle",
 			content: `{
-			  "locale": {
+			  "locales": {
 			    "source": "en-US",
-			    "targets": ["fr-FR", "fr-CA", "es-ES"],
-			    "fallback": {
-			      "fr-FR": ["fr-CA"],
-			      "fr-CA": ["fr-FR"],
-			      "es-ES": ["en-US"]
-			    }
+			    "targets": ["es-ES", "fr-FR"],
+			    "fallbacks": {"es-ES": ["fr-FR"], "fr-FR": ["es-ES"]}
 			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 			}`,
-			errContains: "cycle",
+			errContains: "cycle detected",
 		},
 		{
-			name: "invalid override unknown group",
+			name: "invalid empty buckets",
 			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "buckets: must not be empty",
+		},
+		{
+			name: "invalid bucket files empty",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": []}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "files: must not be empty",
+		},
+		{
+			name: "invalid bucket file mapping missing from",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: ".from: must not be empty",
+		},
+		{
+			name: "invalid group targets and buckets both empty",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": [], "buckets": []}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "cannot both be empty",
+		},
+		{
+			name: "invalid group unknown bucket",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["docs"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "must exist in buckets",
+		},
+		{
+			name: "invalid group unknown locale target",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["de-DE"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "must exist in locales.targets",
+		},
+		{
+			name: "invalid llm missing default profile",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"verbose": {"provider": "openai", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "llm.profiles.default: is required",
+		},
+		{
+			name: "invalid llm unsupported provider",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "anthropic", "model": "x", "prompt": "p"}}}
+			}`,
+			errContains: "unsupported provider",
+		},
+		{
+			name: "invalid llm rule unknown group",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
 			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    },
-			    "overrides": [
-			      {
-			        "match": {"group": "fr"},
-			        "model": "gpt-4.1"
-			      }
-			    ]
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "rules": [{"priority": 1, "group": "missing", "profile": "default"}]
 			  }
 			}`,
 			errContains: "unknown group",
 		},
 		{
-			name: "invalid override unknown target locale",
+			name: "invalid llm rule unknown profile",
 			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
 			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    },
-			    "overrides": [
-			      {
-			        "match": {"targets": ["es-MX"]},
-			        "prompt": "Use neutral Mexican Spanish."
-			      }
-			    ]
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "rules": [{"priority": 1, "group": "g", "profile": "missing"}]
 			  }
 			}`,
-			errContains: "must exist in locale.targets",
+			errContains: "unknown profile",
 		},
 		{
-			name: "invalid override with neither group nor targets",
+			name: "invalid llm rule negative priority",
 			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
 			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    },
-			    "overrides": [
-			      {
-			        "match": {},
-			        "prompt": "Use neutral phrasing."
-			      }
-			    ]
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "rules": [{"priority": -1, "group": "g", "profile": "default"}]
 			  }
 			}`,
-			errContains: "exactly one of group or targets",
-		},
-		{
-			name: "invalid override with both group and targets",
-			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    },
-			    "groups": {
-			      "fr": ["fr-FR"]
-			    },
-			    "overrides": [
-			      {
-			        "match": {"group": "fr", "targets": ["fr-FR"]},
-			        "model": "gpt-4.1"
-			      }
-			    ]
-			  }
-			}`,
-			errContains: "exactly one of group or targets",
-		},
-		{
-			name: "invalid no buckets",
-			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"]
-			  },
-			  "buckets": {},
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
-			}`,
-			errContains: "at least one of buckets.json or buckets.markdown",
-		},
-		{
-			name: "invalid unknown json field rejected",
-			content: `{
-			  "locale": {
-			    "source": "en-US",
-			    "targets": ["fr-FR"],
-			    "unknown": true
-			  },
-			  "buckets": {
-			    "json": {"include": ["lang/[locale].json"]}
-			  },
-			  "llm": {
-			    "default": {
-			      "provider": "openai",
-			      "model": "gpt-4.1-mini",
-			      "prompt": "Translate"
-			    }
-			  }
-			}`,
-			errContains: "unknown field",
+			errContains: "must be >= 0",
 		},
 	}
 
@@ -337,20 +311,10 @@ func TestLoad(t *testing.T) {
 
 func TestLoadRejectsTrailingJSON(t *testing.T) {
 	path := writeConfigFile(t, `{
-	  "locale": {
-	    "source": "en-US",
-	    "targets": ["fr-FR"]
-	  },
-	  "buckets": {
-	    "json": {"include": ["lang/[locale].json"]}
-	  },
-	  "llm": {
-	    "default": {
-	      "provider": "openai",
-	      "model": "gpt-4.1-mini",
-	      "prompt": "Translate from {source} to {target}."
-	    }
-	  }
+	  "locales": {"source": "en-US", "targets": ["fr-FR"]},
+	  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+	  "groups": {"g": {"targets": ["fr-FR"], "buckets": ["ui"]}},
+	  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 	}
 	{}`)
 
@@ -360,6 +324,61 @@ func TestLoadRejectsTrailingJSON(t *testing.T) {
 	}
 
 	if !strings.Contains(err.Error(), "unexpected trailing JSON value") {
+		t.Fatalf("unexpected error: got %q", err.Error())
+	}
+}
+
+func TestLoadAcceptsBlockComments(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locales": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "ui": {
+	      "files": [
+	        {"from": "a", "to": "b"}
+	      ]
+	    }
+	  },
+	  /* this block comment should be stripped */
+	  "groups": {
+	    "g": {
+	      "targets": ["fr-FR"],
+	      "buckets": ["ui"]
+	    }
+	  },
+	  "llm": {
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "x",
+	        "prompt": "p"
+	      }
+	    }
+	  }
+	}`)
+
+	if _, err := Load(path); err != nil {
+		t.Fatalf("load config with block comments: %v", err)
+	}
+}
+
+func TestLoadRejectsUnterminatedBlockComment(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locales": {"source": "en-US", "targets": ["fr-FR"]},
+	  /* broken
+	  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+	  "groups": {"g": {"targets": ["fr-FR"], "buckets": ["ui"]}},
+	  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
+	}`)
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected comment parsing error")
+	}
+
+	if !strings.Contains(err.Error(), "unterminated block comment") {
 		t.Fatalf("unexpected error: got %q", err.Error())
 	}
 }
@@ -384,20 +403,10 @@ func TestLoadUsesDefaultPathWhenEmpty(t *testing.T) {
 
 	defaultPath := filepath.Join(tempDir, "i18n.jsonc")
 	content := `{
-	  "locale": {
-	    "source": "en-US",
-	    "targets": ["fr-FR"]
-	  },
-	  "buckets": {
-	    "json": {"include": ["lang/[locale].json"]}
-	  },
-	  "llm": {
-	    "default": {
-	      "provider": "openai",
-	      "model": "gpt-4.1-mini",
-	      "prompt": "Translate from {source} to {target}."
-	    }
-	  }
+	  "locales": {"source": "en-US", "targets": ["fr-FR"]},
+	  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+	  "groups": {"g": {"targets": ["fr-FR"], "buckets": ["ui"]}},
+	  "llm": {"profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}}}
 	}`
 
 	if err := os.WriteFile(defaultPath, []byte(content), 0o600); err != nil {

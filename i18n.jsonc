@@ -26,8 +26,6 @@
           "to": "dist/ui/shared.{{target}}.json"
         }
       ],
-      // simply keep it an empty array for now
-      "adaptors": []
     },
     "docs": {
       "files": [
@@ -36,11 +34,10 @@
           "to": "dist/docs/{{target}}/guide.md"
         }
       ],
-      // simply keep it an empty array for now
-      "adaptors": []
     }
   },
   "groups": {
+    // both targets and buckets can be emptry array, but they cannot be empty at the same time
     "modern": {
       "targets": [
         "es-ES",

@@ -7,70 +7,69 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	"github.com/tidwall/jsonc"
 )
 
 const (
 	defaultConfigPath = "i18n.jsonc"
 	hiddenConfigPath  = ".i18n.jsonc"
 	llmProviderOpenAI = "openai"
+	llmDefaultProfile = "default"
 )
 
 // I18NConfig defines the i18n configuration file structure.
 type I18NConfig struct {
-	Locale  LocaleConfig  `json:"locale" jsonschema:"required"`
-	Buckets BucketsConfig `json:"buckets" jsonschema:"required"`
-	LLM     LLMConfig     `json:"llm" jsonschema:"required"`
+	Locales LocaleConfig            `json:"locales" jsonschema:"required"`
+	Buckets map[string]BucketConfig `json:"buckets" jsonschema:"required"`
+	Groups  map[string]GroupConfig  `json:"groups" jsonschema:"required"`
+	LLM     LLMConfig               `json:"llm" jsonschema:"required"`
 }
 
 // LocaleConfig configures source/target locales and fallback hierarchy.
 type LocaleConfig struct {
-	Source   string              `json:"source" jsonschema:"required"`
-	Targets  []string            `json:"targets" jsonschema:"required"`
-	Fallback map[string][]string `json:"fallback,omitempty"`
+	Source    string              `json:"source" jsonschema:"required"`
+	Targets   []string            `json:"targets" jsonschema:"required"`
+	Fallbacks map[string][]string `json:"fallbacks,omitempty"`
 }
 
-// BucketsConfig configures input translation buckets by content type.
-type BucketsConfig struct {
-	JSON     *BucketConfig `json:"json,omitempty"`
-	Markdown *BucketConfig `json:"markdown,omitempty"`
-}
-
-// BucketConfig defines glob include patterns for a bucket.
+// BucketConfig defines file mappings for a bucket.
 type BucketConfig struct {
-	Include []string `json:"include" jsonschema:"required"`
+	Files []BucketFileMapping `json:"files" jsonschema:"required"`
+}
+
+// BucketFileMapping defines source/target file paths for a bucket.
+type BucketFileMapping struct {
+	From string `json:"from" jsonschema:"required"`
+	To   string `json:"to" jsonschema:"required"`
+}
+
+// GroupConfig selects locales and buckets.
+type GroupConfig struct {
+	Targets []string `json:"targets,omitempty"`
+	Buckets []string `json:"buckets,omitempty"`
 }
 
 // LLMConfig defines model defaults, locale groups, and override rules.
 type LLMConfig struct {
-	Default   LLMDefaultConfig    `json:"default" jsonschema:"required"`
-	Groups    map[string][]string `json:"groups,omitempty"`
-	Overrides []LLMOverrideConfig `json:"overrides,omitempty"`
+	Profiles map[string]LLMProfile `json:"profiles" jsonschema:"required"`
+	Rules    []LLMRule             `json:"rules,omitempty"`
 }
 
-// LLMDefaultConfig contains mandatory baseline provider/model/prompt.
-type LLMDefaultConfig struct {
+// LLMProfile contains provider/model/prompt.
+type LLMProfile struct {
 	Provider string `json:"provider" jsonschema:"required"`
 	Model    string `json:"model" jsonschema:"required"`
 	Prompt   string `json:"prompt" jsonschema:"required"`
 }
 
-// LLMOverrideConfig applies partial model/prompt overrides by match.
-type LLMOverrideConfig struct {
-	Match  LLMMatchConfig `json:"match" jsonschema:"required"`
-	Model  string         `json:"model,omitempty"`
-	Prompt string         `json:"prompt,omitempty"`
-}
-
-// LLMMatchConfig selects override targets by group or explicit locales.
-type LLMMatchConfig struct {
-	Group   string   `json:"group,omitempty"`
-	Targets []string `json:"targets,omitempty"`
+// LLMRule applies a profile for a specific group.
+type LLMRule struct {
+	Priority int    `json:"priority" jsonschema:"required"`
+	Group    string `json:"group" jsonschema:"required"`
+	Profile  string `json:"profile" jsonschema:"required"`
 }
 
 // Load parses and validates i18n configuration from path.
-// When path is empty, it prefers i18n.jsonc
+// When path is empty, it defaults to i18n.jsonc in the current working directory.
 func Load(path string) (*I18NConfig, error) {
 	if strings.TrimSpace(path) == "" {
 		path = resolveDefaultPath()
@@ -81,7 +80,12 @@ func Load(path string) (*I18NConfig, error) {
 		return nil, fmt.Errorf("open i18n config: %w", err)
 	}
 
-	decoder := json.NewDecoder(bytes.NewReader(jsonc.ToJSON(content)))
+	stripped, err := stripJSONCComments(content)
+	if err != nil {
+		return nil, fmt.Errorf("decode i18n config: %w", err)
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(stripped))
 	decoder.DisallowUnknownFields()
 
 	var cfg I18NConfig
@@ -123,18 +127,109 @@ func fileExists(path string) bool {
 	return !info.IsDir()
 }
 
+func stripJSONCComments(input []byte) ([]byte, error) {
+	var output strings.Builder
+	output.Grow(len(input))
+
+	inString := false
+	escaped := false
+	inLineComment := false
+	inBlockComment := false
+
+	for i := 0; i < len(input); i++ {
+		current := input[i]
+
+		if inLineComment {
+			if current == '\n' {
+				inLineComment = false
+				output.WriteByte(current)
+			}
+
+			continue
+		}
+
+		if inBlockComment {
+			if current == '\n' {
+				output.WriteByte(current)
+			}
+
+			if current == '*' && i+1 < len(input) && input[i+1] == '/' {
+				inBlockComment = false
+				i++
+			}
+
+			continue
+		}
+
+		if inString {
+			output.WriteByte(current)
+
+			if escaped {
+				escaped = false
+				continue
+			}
+
+			if current == '\\' {
+				escaped = true
+				continue
+			}
+
+			if current == '"' {
+				inString = false
+			}
+
+			continue
+		}
+
+		if current == '"' {
+			inString = true
+			output.WriteByte(current)
+			continue
+		}
+
+		if current == '/' && i+1 < len(input) {
+			next := input[i+1]
+			if next == '/' {
+				inLineComment = true
+				i++
+				continue
+			}
+
+			if next == '*' {
+				inBlockComment = true
+				i++
+				continue
+			}
+		}
+
+		output.WriteByte(current)
+	}
+
+	if inBlockComment {
+		return nil, fmt.Errorf("unterminated block comment")
+	}
+
+	return []byte(output.String()), nil
+}
+
 // Validate validates all cross-field i18n configuration semantics.
 func (c I18NConfig) Validate() error {
-	targetSet, err := c.validateLocale()
+	targetSet, err := c.validateLocales()
 	if err != nil {
 		return err
 	}
 
-	if err := c.validateBuckets(); err != nil {
+	bucketSet, err := c.validateBuckets()
+	if err != nil {
 		return err
 	}
 
-	if err := c.validateLLM(targetSet); err != nil {
+	groupSet, err := c.validateGroups(targetSet, bucketSet)
+	if err != nil {
+		return err
+	}
+
+	if err := c.validateLLM(groupSet); err != nil {
 		return err
 	}
 
@@ -154,68 +249,68 @@ func expectEOF(decoder *json.Decoder) error {
 	return fmt.Errorf("decode trailing i18n config content: unexpected trailing JSON value")
 }
 
-func (c I18NConfig) validateLocale() (map[string]struct{}, error) {
-	if strings.TrimSpace(c.Locale.Source) == "" {
-		return nil, fmt.Errorf("locale.source: must not be empty")
+func (c I18NConfig) validateLocales() (map[string]struct{}, error) {
+	if strings.TrimSpace(c.Locales.Source) == "" {
+		return nil, fmt.Errorf("locales.source: must not be empty")
 	}
 
-	if len(c.Locale.Targets) == 0 {
-		return nil, fmt.Errorf("locale.targets: must not be empty")
+	if len(c.Locales.Targets) == 0 {
+		return nil, fmt.Errorf("locales.targets: must not be empty")
 	}
 
-	targetSet := make(map[string]struct{}, len(c.Locale.Targets))
+	targetSet := make(map[string]struct{}, len(c.Locales.Targets))
 
-	for i, target := range c.Locale.Targets {
+	for i, target := range c.Locales.Targets {
 		if strings.TrimSpace(target) == "" {
-			return nil, fmt.Errorf("locale.targets[%d]: must not be empty", i)
+			return nil, fmt.Errorf("locales.targets[%d]: must not be empty", i)
 		}
 
-		if target == c.Locale.Source {
-			return nil, fmt.Errorf("locale.targets[%d]: source locale %q is not allowed in targets", i, c.Locale.Source)
+		if target == c.Locales.Source {
+			return nil, fmt.Errorf("locales.targets[%d]: source locale %q is not allowed in targets", i, c.Locales.Source)
 		}
 
 		if _, exists := targetSet[target]; exists {
-			return nil, fmt.Errorf("locale.targets[%d]: duplicate locale %q", i, target)
+			return nil, fmt.Errorf("locales.targets[%d]: duplicate locale %q", i, target)
 		}
 
 		targetSet[target] = struct{}{}
 	}
 
-	if err := c.validateFallback(targetSet); err != nil {
+	if err := c.validateFallbacks(targetSet); err != nil {
 		return nil, err
 	}
 
 	return targetSet, nil
 }
 
-func (c I18NConfig) validateFallback(targetSet map[string]struct{}) error {
-	for locale, chain := range c.Locale.Fallback {
+func (c I18NConfig) validateFallbacks(targetSet map[string]struct{}) error {
+	for locale, chain := range c.Locales.Fallbacks {
 		if _, exists := targetSet[locale]; !exists {
-			return fmt.Errorf("locale.fallback.%s: fallback key must exist in locale.targets", locale)
+			return fmt.Errorf("locales.fallbacks.%s: fallback key must exist in locales.targets", locale)
 		}
 
 		if len(chain) == 0 {
-			return fmt.Errorf("locale.fallback.%s: fallback chain must not be empty", locale)
+			return fmt.Errorf("locales.fallbacks.%s: fallback chain must not be empty", locale)
 		}
 
 		seen := make(map[string]struct{}, len(chain))
 
 		for i, candidate := range chain {
 			if strings.TrimSpace(candidate) == "" {
-				return fmt.Errorf("locale.fallback.%s[%d]: must not be empty", locale, i)
+				return fmt.Errorf("locales.fallbacks.%s[%d]: must not be empty", locale, i)
 			}
 
 			if candidate == locale {
-				return fmt.Errorf("locale.fallback.%s[%d]: self-reference is not allowed", locale, i)
+				return fmt.Errorf("locales.fallbacks.%s[%d]: self-reference is not allowed", locale, i)
 			}
 
 			if _, exists := seen[candidate]; exists {
-				return fmt.Errorf("locale.fallback.%s[%d]: duplicate locale %q", locale, i, candidate)
+				return fmt.Errorf("locales.fallbacks.%s[%d]: duplicate locale %q", locale, i, candidate)
 			}
 
-			if candidate != c.Locale.Source {
+			if candidate != c.Locales.Source {
 				if _, exists := targetSet[candidate]; !exists {
-					return fmt.Errorf("locale.fallback.%s[%d]: locale %q must be in locale.targets or locale.source", locale, i, candidate)
+					return fmt.Errorf("locales.fallbacks.%s[%d]: locale %q must be in locales.targets or locales.source", locale, i, candidate)
 				}
 			}
 
@@ -231,21 +326,21 @@ func (c I18NConfig) validateFallback(targetSet map[string]struct{}) error {
 }
 
 func (c I18NConfig) validateFallbackCycles() error {
-	state := make(map[string]int, len(c.Locale.Fallback))
+	state := make(map[string]int, len(c.Locales.Fallbacks))
 
 	var visit func(locale string) error
 	visit = func(locale string) error {
 		state[locale] = 1
 
-		for _, candidate := range c.Locale.Fallback[locale] {
-			_, hasFallback := c.Locale.Fallback[candidate]
+		for _, candidate := range c.Locales.Fallbacks[locale] {
+			_, hasFallback := c.Locales.Fallbacks[candidate]
 			if !hasFallback {
 				continue
 			}
 
 			switch state[candidate] {
 			case 1:
-				return fmt.Errorf("locale.fallback.%s: cycle detected through %q", locale, candidate)
+				return fmt.Errorf("locales.fallbacks.%s: cycle detected through %q", locale, candidate)
 			case 0:
 				if err := visit(candidate); err != nil {
 					return err
@@ -258,7 +353,7 @@ func (c I18NConfig) validateFallbackCycles() error {
 		return nil
 	}
 
-	for locale := range c.Locale.Fallback {
+	for locale := range c.Locales.Fallbacks {
 		if state[locale] == 0 {
 			if err := visit(locale); err != nil {
 				return err
@@ -269,150 +364,196 @@ func (c I18NConfig) validateFallbackCycles() error {
 	return nil
 }
 
-func (c I18NConfig) validateBuckets() error {
-	if c.Buckets.JSON == nil && c.Buckets.Markdown == nil {
-		return fmt.Errorf("buckets: at least one of buckets.json or buckets.markdown must be configured")
+func (c I18NConfig) validateBuckets() (map[string]struct{}, error) {
+	if len(c.Buckets) == 0 {
+		return nil, fmt.Errorf("buckets: must not be empty")
 	}
 
-	if err := validateBucket("buckets.json", c.Buckets.JSON); err != nil {
-		return err
-	}
+	bucketSet := make(map[string]struct{}, len(c.Buckets))
 
-	if err := validateBucket("buckets.markdown", c.Buckets.Markdown); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func validateBucket(field string, bucket *BucketConfig) error {
-	if bucket == nil {
-		return nil
-	}
-
-	if len(bucket.Include) == 0 {
-		return fmt.Errorf("%s.include: must not be empty", field)
-	}
-
-	for i, pattern := range bucket.Include {
-		if strings.TrimSpace(pattern) == "" {
-			return fmt.Errorf("%s.include[%d]: must not be empty", field, i)
-		}
-	}
-
-	return nil
-}
-
-func (c I18NConfig) validateLLM(targetSet map[string]struct{}) error {
-	if strings.TrimSpace(c.LLM.Default.Provider) == "" {
-		return fmt.Errorf("llm.default.provider: must not be empty")
-	}
-
-	if c.LLM.Default.Provider != llmProviderOpenAI {
-		return fmt.Errorf("llm.default.provider: unsupported provider %q", c.LLM.Default.Provider)
-	}
-
-	if strings.TrimSpace(c.LLM.Default.Model) == "" {
-		return fmt.Errorf("llm.default.model: must not be empty")
-	}
-
-	if strings.TrimSpace(c.LLM.Default.Prompt) == "" {
-		return fmt.Errorf("llm.default.prompt: must not be empty")
-	}
-
-	if err := validateGroups(c.LLM.Groups, targetSet); err != nil {
-		return err
-	}
-
-	if err := validateOverrides(c.LLM.Overrides, c.LLM.Groups, targetSet); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func validateGroups(groups map[string][]string, targetSet map[string]struct{}) error {
-	for group, locales := range groups {
-		if strings.TrimSpace(group) == "" {
-			return fmt.Errorf("llm.groups: group name must not be empty")
+	for name, bucket := range c.Buckets {
+		if strings.TrimSpace(name) == "" {
+			return nil, fmt.Errorf("buckets: bucket name must not be empty")
 		}
 
-		if len(locales) == 0 {
-			return fmt.Errorf("llm.groups.%s: must not be empty", group)
+		if _, exists := bucketSet[name]; exists {
+			return nil, fmt.Errorf("buckets.%s: duplicate bucket name", name)
 		}
 
-		seen := make(map[string]struct{}, len(locales))
+		if err := validateBucket(name, bucket); err != nil {
+			return nil, err
+		}
 
-		for i, locale := range locales {
-			if strings.TrimSpace(locale) == "" {
-				return fmt.Errorf("llm.groups.%s[%d]: must not be empty", group, i)
-			}
+		bucketSet[name] = struct{}{}
+	}
 
-			if _, exists := targetSet[locale]; !exists {
-				return fmt.Errorf("llm.groups.%s[%d]: locale %q must exist in locale.targets", group, i, locale)
-			}
+	return bucketSet, nil
+}
 
-			if _, exists := seen[locale]; exists {
-				return fmt.Errorf("llm.groups.%s[%d]: duplicate locale %q", group, i, locale)
-			}
+func validateBucket(name string, bucket BucketConfig) error {
+	if len(bucket.Files) == 0 {
+		return fmt.Errorf("buckets.%s.files: must not be empty", name)
+	}
 
-			seen[locale] = struct{}{}
+	for i, file := range bucket.Files {
+		if strings.TrimSpace(file.From) == "" {
+			return fmt.Errorf("buckets.%s.files[%d].from: must not be empty", name, i)
+		}
+
+		if strings.TrimSpace(file.To) == "" {
+			return fmt.Errorf("buckets.%s.files[%d].to: must not be empty", name, i)
 		}
 	}
 
 	return nil
 }
 
-func validateOverrides(overrides []LLMOverrideConfig, groups map[string][]string, targetSet map[string]struct{}) error {
-	for i, override := range overrides {
-		hasGroup := strings.TrimSpace(override.Match.Group) != ""
-		hasTargets := len(override.Match.Targets) > 0
+func (c I18NConfig) validateGroups(targetSet map[string]struct{}, bucketSet map[string]struct{}) (map[string]struct{}, error) {
+	groupSet := make(map[string]struct{}, len(c.Groups))
 
-		if hasGroup == hasTargets {
-			return fmt.Errorf("llm.overrides[%d].match: exactly one of group or targets must be set", i)
+	for groupName, group := range c.Groups {
+		if strings.TrimSpace(groupName) == "" {
+			return nil, fmt.Errorf("groups: group name must not be empty")
 		}
 
-		if strings.TrimSpace(override.Model) == "" && strings.TrimSpace(override.Prompt) == "" {
-			return fmt.Errorf("llm.overrides[%d]: at least one of model or prompt must be set", i)
+		if len(group.Targets) == 0 && len(group.Buckets) == 0 {
+			return nil, fmt.Errorf("groups.%s: targets and buckets cannot both be empty", groupName)
 		}
 
-		if hasGroup {
-			if _, exists := groups[override.Match.Group]; !exists {
-				return fmt.Errorf("llm.overrides[%d].match.group: unknown group %q", i, override.Match.Group)
-			}
+		if err := validateGroupTargets(groupName, group.Targets, targetSet); err != nil {
+			return nil, err
 		}
 
-		if hasTargets {
-			if err := validateOverrideTargets(i, override.Match.Targets, targetSet); err != nil {
-				return err
-			}
+		if err := validateGroupBuckets(groupName, group.Buckets, bucketSet); err != nil {
+			return nil, err
 		}
+
+		groupSet[groupName] = struct{}{}
 	}
 
-	return nil
+	return groupSet, nil
 }
 
-func validateOverrideTargets(index int, targets []string, targetSet map[string]struct{}) error {
-	if len(targets) == 0 {
-		return fmt.Errorf("llm.overrides[%d].match.targets: must not be empty", index)
-	}
-
+func validateGroupTargets(groupName string, targets []string, targetSet map[string]struct{}) error {
 	seen := make(map[string]struct{}, len(targets))
 
 	for i, locale := range targets {
 		if strings.TrimSpace(locale) == "" {
-			return fmt.Errorf("llm.overrides[%d].match.targets[%d]: must not be empty", index, i)
+			return fmt.Errorf("groups.%s.targets[%d]: must not be empty", groupName, i)
 		}
 
 		if _, exists := targetSet[locale]; !exists {
-			return fmt.Errorf("llm.overrides[%d].match.targets[%d]: locale %q must exist in locale.targets", index, i, locale)
+			return fmt.Errorf("groups.%s.targets[%d]: locale %q must exist in locales.targets", groupName, i, locale)
 		}
 
 		if _, exists := seen[locale]; exists {
-			return fmt.Errorf("llm.overrides[%d].match.targets[%d]: duplicate locale %q", index, i, locale)
+			return fmt.Errorf("groups.%s.targets[%d]: duplicate locale %q", groupName, i, locale)
 		}
 
 		seen[locale] = struct{}{}
+	}
+
+	return nil
+}
+
+func validateGroupBuckets(groupName string, buckets []string, bucketSet map[string]struct{}) error {
+	seen := make(map[string]struct{}, len(buckets))
+
+	for i, bucketName := range buckets {
+		if strings.TrimSpace(bucketName) == "" {
+			return fmt.Errorf("groups.%s.buckets[%d]: must not be empty", groupName, i)
+		}
+
+		if _, exists := bucketSet[bucketName]; !exists {
+			return fmt.Errorf("groups.%s.buckets[%d]: bucket %q must exist in buckets", groupName, i, bucketName)
+		}
+
+		if _, exists := seen[bucketName]; exists {
+			return fmt.Errorf("groups.%s.buckets[%d]: duplicate bucket %q", groupName, i, bucketName)
+		}
+
+		seen[bucketName] = struct{}{}
+	}
+
+	return nil
+}
+
+func (c I18NConfig) validateLLM(groupSet map[string]struct{}) error {
+	if len(c.LLM.Profiles) == 0 {
+		return fmt.Errorf("llm.profiles: must not be empty")
+	}
+
+	defaultProfile, exists := c.LLM.Profiles[llmDefaultProfile]
+	if !exists {
+		return fmt.Errorf("llm.profiles.%s: is required", llmDefaultProfile)
+	}
+
+	if err := validateProfile("llm.profiles.default", defaultProfile); err != nil {
+		return err
+	}
+
+	for profileName, profile := range c.LLM.Profiles {
+		if strings.TrimSpace(profileName) == "" {
+			return fmt.Errorf("llm.profiles: profile name must not be empty")
+		}
+
+		if profileName == llmDefaultProfile {
+			continue
+		}
+
+		if err := validateProfile("llm.profiles."+profileName, profile); err != nil {
+			return err
+		}
+	}
+
+	for i, rule := range c.LLM.Rules {
+		if err := validateRule(i, rule, c.LLM.Profiles, groupSet); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateProfile(fieldPrefix string, profile LLMProfile) error {
+	if strings.TrimSpace(profile.Provider) == "" {
+		return fmt.Errorf("%s.provider: must not be empty", fieldPrefix)
+	}
+
+	if profile.Provider != llmProviderOpenAI {
+		return fmt.Errorf("%s.provider: unsupported provider %q", fieldPrefix, profile.Provider)
+	}
+
+	if strings.TrimSpace(profile.Model) == "" {
+		return fmt.Errorf("%s.model: must not be empty", fieldPrefix)
+	}
+
+	if strings.TrimSpace(profile.Prompt) == "" {
+		return fmt.Errorf("%s.prompt: must not be empty", fieldPrefix)
+	}
+
+	return nil
+}
+
+func validateRule(index int, rule LLMRule, profiles map[string]LLMProfile, groupSet map[string]struct{}) error {
+	if rule.Priority < 0 {
+		return fmt.Errorf("llm.rules[%d].priority: must be >= 0", index)
+	}
+
+	if strings.TrimSpace(rule.Group) == "" {
+		return fmt.Errorf("llm.rules[%d].group: must not be empty", index)
+	}
+
+	if strings.TrimSpace(rule.Profile) == "" {
+		return fmt.Errorf("llm.rules[%d].profile: must not be empty", index)
+	}
+
+	if _, exists := groupSet[rule.Group]; !exists {
+		return fmt.Errorf("llm.rules[%d].group: unknown group %q", index, rule.Group)
+	}
+
+	if _, exists := profiles[rule.Profile]; !exists {
+		return fmt.Errorf("llm.rules[%d].profile: unknown profile %q", index, rule.Profile)
 	}
 
 	return nil
