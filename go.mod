@@ -4,6 +4,7 @@ go 1.26
 
 require (
 	github.com/invopop/jsonschema v0.13.0
+	github.com/lokalise/go-lokalise-api/v5 v5.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/tidwall/jsonc v0.3.2
 )

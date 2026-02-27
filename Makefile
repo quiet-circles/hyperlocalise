@@ -58,6 +58,7 @@ lint: ## lint go files
 
 .PHONY: precommit
 precommit: ## run local CI validation flow
+	make clean
 	make fmt
 	git diff --exit-code
 	make lint
