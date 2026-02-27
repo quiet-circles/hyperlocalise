@@ -55,11 +55,11 @@ Available Commands:
 Pull translations from a remote storage adapter:
 
 ```
-hyperlocalise sync pull --config <path> [flags]
+hyperlocalise sync pull [--config <path>] [flags]
 ```
 
 Flags:
-- `--config` - path to i18n config
+- `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
 - `--locale` - target locale(s) to sync (can be repeated)
 - `--dry-run` - preview changes without applying (default: true)
 - `--output` - output format: text or json
@@ -71,11 +71,11 @@ Flags:
 Push translations to a remote storage adapter:
 
 ```
-hyperlocalise sync push --config <path> [flags]
+hyperlocalise sync push [--config <path>] [flags]
 ```
 
 Flags:
-- `--config` - path to i18n config
+- `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
 - `--locale` - target locale(s) to sync (can be repeated)
 - `--dry-run` - preview changes without applying (default: true)
 - `--output` - output format: text or json
@@ -86,7 +86,7 @@ Flags:
 Show translation status by locale:
 
 ```
-hyperlocalise status --config <path> [flags]
+hyperlocalise status [--config <path>] [flags]
 ```
 
 Output shows translation status for each locale:
@@ -95,7 +95,7 @@ Output shows translation status for each locale:
 - `untranslated` - empty translation value
 
 Flags:
-- `--config` - path to i18n config
+- `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
 - `--locale` - target locale(s) to report (can be repeated)
 - `--output` - output format: csv
 - `--group` - filter by group name
