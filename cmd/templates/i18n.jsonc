@@ -1,102 +1,71 @@
 {
+  // Minimal starter config.
+  // Read this file top-to-bottom: locales -> buckets -> groups -> llm.
   "locales": {
-    // Base language your content is authored in.
+    // Source locale: the language your original content is written in.
     "source": "en-US",
-    // Languages to generate translations for.
+    // Target locales: one output is generated per locale listed here.
+    // Add more locales as your project grows.
     "targets": [
-      "es-ES",
-      "fr-FR",
-      "de-DE"
-    ],
-    "fallbacks": {
-      // `{{source}}` is always the implicit base for fallbacks.
-      // Example: if `fr-FR` is missing a key, try `es-ES` before `en-US`.
-      "fr-FR": [
-        "es-ES"
-      ]
-    }
+      "es-ES"
+    ]
   },
-  // Buckets group reusable file mappings.
-  // Use `{{source}}` and `{{target}}` placeholders in paths.
+  // One bucket defines how files map from source to target.
+  // Use {{source}} and {{target}} placeholders in paths.
+  // Buckets are reusable: multiple groups can reference the same bucket.
   "buckets": {
+    // Bucket name is arbitrary; choose a name that matches your domain.
     "ui": {
       "files": [
         {
-          // Translate from source locale file to each target locale file.
+          // Input path template.
+          // Example with source=en-US:
+          // content/ui/en-US/strings.json
           "from": "content/ui/{{source}}/strings.json",
+          // Output path template.
+          // Example with target=es-ES:
+          // dist/ui/es-ES/strings.json
           "to": "dist/ui/{{target}}/strings.json"
-        },
-        {
-          // Shared source file copied/rendered per target output.
-          "from": "content/ui/shared.json",
-          "to": "dist/ui/shared.{{target}}.json"
-        }
-      ]
-    },
-    "docs": {
-      "files": [
-        {
-          "from": "content/docs/{{target}}/guide.md",
-          "to": "dist/docs/{{target}}/guide.md"
         }
       ]
     }
   },
+  // One group links the target(s) with the bucket(s).
+  // Think of a group as "what to run" for a subset of locales/files.
   "groups": {
-    // A group selects which targets + buckets a rule applies to.
-    // `targets` or `buckets` can be empty, but not both.
-    "modern": {
+    "default": {
+      // Targets in this group.
+      // Must be a subset of locales.targets.
       "targets": [
-        "es-ES",
-        "fr-FR"
+        "es-ES"
       ],
+      // Buckets in this group.
+      // Names must match keys under the top-level "buckets" object.
       "buckets": [
         "ui"
-      ]
-    },
-    "docs-team": {
-      "targets": [
-        "de-DE"
-      ],
-      "buckets": [
-        "docs"
       ]
     }
   },
   "llm": {
-    // Default profile is mandatory and sets the core provider/model/prompt.
+    // Profiles define provider/model/prompt behavior.
+    // A default profile is required.
+    // Available vars: {{source}}, {{target}}, {{input}}.
     "profiles": {
       "default": {
-        // Any provider supported by your CLI/runtime.
+        // Any provider/model supported by your runtime.
         "provider": "openai",
-        // Model id for this profile.
-        "model": "xmt-std",
-        // Available vars: {{source}}, {{target}}, {{input}}.
+        "model": "gpt-5.2",
+        // Prompt template used for each translation task.
         "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
-      },
-      "verbose": {
-        "provider": "openai",
-        "model": "xmt-std",
-        "prompt": "Translate from {{source}} to {{target}} with richer context:\n\n{{input}}"
-      },
-      "precise": {
-        "provider": "openai",
-        "model": "xmt-std",
-        "prompt": "Translate from {{source}} to {{target}} precisely:\n\n{{input}}"
       }
     },
+    // Rules connect groups to profiles.
+    // If multiple rules match, the highest priority wins.
     "rules": [
       {
-        // Match group -> pick profile. Higher priority wins conflicts.
         "priority": 100,
-        "group": "modern",
-        "profile": "precise"
-      },
-      {
-        // Keep priorities simple (e.g. 100, 50, 10).
-        "priority": 50,
-        "group": "docs-team",
-        "profile": "verbose"
+        "group": "default",
+        "profile": "default"
       }
     ]
   }
