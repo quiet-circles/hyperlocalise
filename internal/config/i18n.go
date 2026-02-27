@@ -7,11 +7,12 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/tidwall/jsonc"
 )
 
 const (
 	defaultConfigPath = "i18n.jsonc"
-	hiddenConfigPath  = ".i18n.jsonc"
 	llmProviderOpenAI = "openai"
 	llmDefaultProfile = "default"
 )
@@ -87,12 +88,7 @@ func Load(path string) (*I18NConfig, error) {
 		return nil, fmt.Errorf("open i18n config: %w", err)
 	}
 
-	stripped, err := stripJSONCComments(content)
-	if err != nil {
-		return nil, fmt.Errorf("decode i18n config: %w", err)
-	}
-
-	decoder := json.NewDecoder(bytes.NewReader(stripped))
+	decoder := json.NewDecoder(bytes.NewReader(jsonc.ToJSON(content)))
 	decoder.DisallowUnknownFields()
 
 	var cfg I18NConfig
@@ -112,111 +108,7 @@ func Load(path string) (*I18NConfig, error) {
 }
 
 func resolveDefaultPath() string {
-	candidates := []string{
-		defaultConfigPath,
-		hiddenConfigPath,
-	}
-
-	for _, candidate := range candidates {
-		if fileExists(candidate) {
-			return candidate
-		}
-	}
-
 	return defaultConfigPath
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
-}
-
-func stripJSONCComments(input []byte) ([]byte, error) {
-	var output strings.Builder
-	output.Grow(len(input))
-
-	inString := false
-	escaped := false
-	inLineComment := false
-	inBlockComment := false
-
-	for i := 0; i < len(input); i++ {
-		current := input[i]
-
-		if inLineComment {
-			if current == '\n' {
-				inLineComment = false
-				output.WriteByte(current)
-			}
-
-			continue
-		}
-
-		if inBlockComment {
-			if current == '\n' {
-				output.WriteByte(current)
-			}
-
-			if current == '*' && i+1 < len(input) && input[i+1] == '/' {
-				inBlockComment = false
-				i++
-			}
-
-			continue
-		}
-
-		if inString {
-			output.WriteByte(current)
-
-			if escaped {
-				escaped = false
-				continue
-			}
-
-			if current == '\\' {
-				escaped = true
-				continue
-			}
-
-			if current == '"' {
-				inString = false
-			}
-
-			continue
-		}
-
-		if current == '"' {
-			inString = true
-			output.WriteByte(current)
-			continue
-		}
-
-		if current == '/' && i+1 < len(input) {
-			next := input[i+1]
-			if next == '/' {
-				inLineComment = true
-				i++
-				continue
-			}
-
-			if next == '*' {
-				inBlockComment = true
-				i++
-				continue
-			}
-		}
-
-		output.WriteByte(current)
-	}
-
-	if inBlockComment {
-		return nil, fmt.Errorf("unterminated block comment")
-	}
-
-	return []byte(output.String()), nil
 }
 
 // Validate validates all cross-field i18n configuration semantics.

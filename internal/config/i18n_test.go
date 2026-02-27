@@ -378,7 +378,7 @@ func TestLoadRejectsUnterminatedBlockComment(t *testing.T) {
 		t.Fatal("expected comment parsing error")
 	}
 
-	if !strings.Contains(err.Error(), "unterminated block comment") {
+	if !strings.Contains(err.Error(), "unexpected EOF") {
 		t.Fatalf("unexpected error: got %q", err.Error())
 	}
 }
@@ -418,7 +418,7 @@ func TestLoadUsesDefaultPathWhenEmpty(t *testing.T) {
 	}
 }
 
-func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
+func TestLoadIgnoresHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 	tempDir := t.TempDir()
 
 	originalWD, err := os.Getwd()
@@ -471,13 +471,13 @@ func TestLoadUsesHiddenJSONCPathWhenDefaultMissing(t *testing.T) {
 		t.Fatalf("write jsonc config file: %v", err)
 	}
 
-	cfg, err := Load("")
-	if err != nil {
-		t.Fatalf("load config from hidden jsonc path: %v", err)
+	_, err = Load("")
+	if err == nil {
+		t.Fatal("expected load to fail when only .i18n.jsonc exists")
 	}
 
-	if got, want := cfg.LLM.Profiles["default"].Model, "jsonc-model"; got != want {
-		t.Fatalf("unexpected model: got %q want %q", got, want)
+	if !strings.Contains(err.Error(), "open i18n config") {
+		t.Fatalf("unexpected error: got %q", err.Error())
 	}
 }
 
