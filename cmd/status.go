@@ -47,19 +47,17 @@ Status values:
 				return fmt.Errorf("load config: %w", err)
 			}
 
-			locales := o.locales
+			locales, err := resolveStatusLocales(cfg, o.locales, o.group)
+			if err != nil {
+				return err
+			}
 			if len(locales) == 0 {
-				locales = cfg.Locales.Targets
+				return fmt.Errorf("no locales selected")
 			}
 
-			if o.group != "" {
-				g, ok := cfg.Groups[o.group]
-				if !ok {
-					return fmt.Errorf("unknown group %q", o.group)
-				}
-				if len(locales) == 0 || o.group != "" {
-					locales = g.Targets
-				}
+			bucketFiles, err := statusBucketFiles(cfg, o.bucket)
+			if err != nil {
+				return err
 			}
 
 			store, err := localstore.NewJSONStore(cfg)
@@ -75,7 +73,7 @@ Status values:
 			}
 
 			slices.Sort(locales)
-			snapshot.Entries = filterByLocaleAndBucket(snapshot.Entries, locales, o.bucket, cfg)
+			snapshot.Entries = filterByLocaleAndBucket(snapshot.Entries, locales, o.bucket, bucketFiles)
 
 			switch strings.ToLower(o.output) {
 			case "csv":
@@ -95,24 +93,72 @@ Status values:
 	return cmd
 }
 
-func filterByLocaleAndBucket(entries []storage.Entry, locales []string, bucket string, cfg *config.I18NConfig) []storage.Entry {
-	var filtered []storage.Entry
+func resolveStatusLocales(cfg *config.I18NConfig, requestedLocales []string, group string) ([]string, error) {
+	locales := append([]string(nil), requestedLocales...)
+	if len(locales) == 0 {
+		locales = append([]string(nil), cfg.Locales.Targets...)
+	}
+	if group == "" {
+		return locales, nil
+	}
 
-	bucketFiles := make(map[string]bool)
-	if bucket != "" {
-		if b, ok := cfg.Buckets[bucket]; ok {
-			for _, f := range b.Files {
-				bucketFiles[f.From] = true
-			}
+	g, ok := cfg.Groups[group]
+	if !ok {
+		return nil, fmt.Errorf("unknown group %q", group)
+	}
+	if len(g.Targets) == 0 {
+		return locales, nil
+	}
+	if len(requestedLocales) == 0 {
+		return append([]string(nil), g.Targets...), nil
+	}
+
+	targetSet := make(map[string]struct{}, len(g.Targets))
+	for _, target := range g.Targets {
+		targetSet[target] = struct{}{}
+	}
+
+	var intersection []string
+	for _, locale := range requestedLocales {
+		if _, ok := targetSet[locale]; ok {
+			intersection = append(intersection, locale)
 		}
 	}
+	if len(intersection) == 0 {
+		return nil, fmt.Errorf("no locales matched group %q", group)
+	}
+
+	return intersection, nil
+}
+
+func statusBucketFiles(cfg *config.I18NConfig, bucket string) (map[string]struct{}, error) {
+	if bucket == "" {
+		return nil, nil
+	}
+	b, ok := cfg.Buckets[bucket]
+	if !ok {
+		return nil, fmt.Errorf("unknown bucket %q", bucket)
+	}
+
+	files := make(map[string]struct{}, len(b.Files))
+	for _, f := range b.Files {
+		files[f.From] = struct{}{}
+	}
+
+	return files, nil
+}
+
+func filterByLocaleAndBucket(entries []storage.Entry, locales []string, bucket string, bucketFiles map[string]struct{}) []storage.Entry {
+	var filtered []storage.Entry
 
 	for _, e := range entries {
 		if !slices.Contains(locales, e.Locale) {
 			continue
 		}
-		if bucket != "" && e.Namespace != "" && !bucketFiles[e.Namespace] {
-			continue
+		if bucket != "" {
+			if _, ok := bucketFiles[e.Namespace]; !ok {
+				continue
+			}
 		}
 		filtered = append(filtered, e)
 	}
@@ -130,7 +176,16 @@ func computeStatus(entry storage.Entry) string {
 	return "translated"
 }
 
-func writeStatusCSV(w io.Writer, entries []storage.Entry, sourceLocale string) error {
+func sortedLocales(entries map[string]storage.Entry) []string {
+	locales := make([]string, 0, len(entries))
+	for locale := range entries {
+		locales = append(locales, locale)
+	}
+	slices.Sort(locales)
+	return locales
+}
+
+func writeStatusCSV(w io.Writer, entries []storage.Entry, _ string) error {
 	records := [][]string{
 		{"key", "namespace", "locale", "status", "origin", "state"},
 	}
@@ -151,7 +206,8 @@ func writeStatusCSV(w io.Writer, entries []storage.Entry, sourceLocale string) e
 
 	for _, key := range keys {
 		byLocale := byKeyLocale[key]
-		for _, entry := range byLocale {
+		for _, locale := range sortedLocales(byLocale) {
+			entry := byLocale[locale]
 			records = append(records, []string{
 				entry.Key,
 				entry.Namespace,
