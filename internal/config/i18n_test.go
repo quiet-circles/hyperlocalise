@@ -542,7 +542,7 @@ func TestLoadAllowsOptionalStorageConfig(t *testing.T) {
 	  "buckets": {
 	    "json": {
 	      "files": [
-	        {"from": "lang/en.json", "to": "lang/[locale].json"}
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
 	      ]
 	    }
 	  },
@@ -585,7 +585,7 @@ func TestLoadRejectsEmptyStorageAdapter(t *testing.T) {
 	  "buckets": {
 	    "json": {
 	      "files": [
-	        {"from": "lang/en.json", "to": "lang/[locale].json"}
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
 	      ]
 	    }
 	  },

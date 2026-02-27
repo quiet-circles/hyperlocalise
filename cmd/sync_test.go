@@ -13,7 +13,7 @@ func TestSyncPullRequiresStorageConfig(t *testing.T) {
 	configPath := filepath.Join(dir, "i18n.jsonc")
 	content := `{
 	  "locales": {"source":"en","targets":["fr"]},
-	  "buckets": {"json":{"files":[{"from":"lang/en.json","to":"lang/[locale].json"}]}},
+	  "buckets": {"json":{"files":[{"from":"lang/{{source}}.json","to":"lang/{{target}}.json"}]}},
 	  "groups": {"default":{"targets":["fr"],"buckets":["json"]}},
 	  "llm": {"profiles":{"default":{"provider":"openai","model":"gpt-4.1-mini","prompt":"Translate"}}}
 	}`
