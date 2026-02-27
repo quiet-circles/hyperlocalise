@@ -18,7 +18,7 @@ const (
 
 type Config struct {
 	ProjectID       string   `json:"projectID"`
-	APIToken        string   `json:"apiToken,omitempty"`
+	APIToken        string   `json:"-"`
 	APITokenEnv     string   `json:"apiTokenEnv,omitempty"`
 	SourceLanguage  string   `json:"sourceLanguage,omitempty"`
 	TargetLanguages []string `json:"targetLanguages,omitempty"`
@@ -83,6 +83,13 @@ func ParseConfig(raw json.RawMessage) (Config, error) {
 	if len(raw) == 0 {
 		return cfg, fmt.Errorf("lokalise config: must not be empty")
 	}
+	var rawMap map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &rawMap); err != nil {
+		return cfg, fmt.Errorf("lokalise config: decode: %w", err)
+	}
+	if _, exists := rawMap["apiToken"]; exists {
+		return cfg, fmt.Errorf("lokalise config: apiToken is not supported; use %s", defaultTokenEnvName)
+	}
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		return cfg, fmt.Errorf("lokalise config: decode: %w", err)
 	}
@@ -111,7 +118,7 @@ func validateConfig(cfg Config) error {
 		return fmt.Errorf("lokalise config: projectID is required")
 	}
 	if strings.TrimSpace(cfg.APIToken) == "" {
-		return fmt.Errorf("lokalise config: API token is required (apiToken or %s)", defaultTokenEnvName)
+		return fmt.Errorf("lokalise config: API token is required (%s)", defaultTokenEnvName)
 	}
 	return nil
 }

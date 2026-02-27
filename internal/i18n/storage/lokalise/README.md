@@ -45,7 +45,6 @@ This package implements a `StorageAdapter` for `hyperlocalise`, backed by Lokali
     "adapter": "lokalise",
     "config": {
       "projectID": "your-project-id",
-      "apiToken": "lok_xxx",
       "apiTokenEnv": "LOKALISE_API_TOKEN",
       "targetLanguages": ["fr", "de"],
       "timeoutSeconds": 30
@@ -54,4 +53,4 @@ This package implements a `StorageAdapter` for `hyperlocalise`, backed by Lokali
 }
 ```
 
-Token can come from `apiToken` or `LOKALISE_API_TOKEN`.
+Token must come from `LOKALISE_API_TOKEN` (or `apiTokenEnv` if customized).

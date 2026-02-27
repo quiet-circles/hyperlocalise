@@ -23,9 +23,8 @@ POEditor auth is API token only.
 
 Token resolution order:
 
-1. `storage.config.apiToken`
-2. env var from `storage.config.apiTokenEnv`
-3. `POEDITOR_API_TOKEN`
+1. env var from `storage.config.apiTokenEnv`
+2. `POEDITOR_API_TOKEN`
 
 ## Adapter config (used in `i18n.jsonc`)
 
@@ -44,7 +43,6 @@ Token resolution order:
 Supported config fields:
 
 - `projectID` (required)
-- `apiToken` (optional, prefer env)
 - `apiTokenEnv` (optional, defaults to `POEDITOR_API_TOKEN`)
 - `sourceLanguage` (optional)
 - `targetLanguages` (optional)

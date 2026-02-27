@@ -45,6 +45,14 @@ func TestParseConfigMissingToken(t *testing.T) {
 	}
 }
 
+func TestParseConfigRejectsInlineToken(t *testing.T) {
+	t.Setenv("LOKALISE_API_TOKEN", "env-token")
+	_, err := ParseConfig(json.RawMessage(`{"projectID":"123","apiToken":"inline"}`))
+	if err == nil || !strings.Contains(err.Error(), "apiToken is not supported") {
+		t.Fatalf("expected inline token rejection, got %v", err)
+	}
+}
+
 func TestAdapterPullMapsKeyContextLanguage(t *testing.T) {
 	client := &fakeClient{
 		keys: []KeyTranslation{
