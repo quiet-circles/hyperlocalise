@@ -195,10 +195,11 @@ Conflict decisions (current, summarized):
   - local curated mismatch -> conflict
   - missing provenance + mismatch -> conflict
 - Push:
-  - local draft vs remote curated mismatch -> conflict (skip)
+  - local draft vs remote curated mismatch -> conflict by default (`--force-conflicts` can override)
   - remote missing key -> create candidate
   - same value -> unchanged
-  - other mismatches -> conflict (v1 conservative)
+  - safe mismatches -> update candidate
+  - invariant violations -> conflict (always blocked)
 
 ## How the flow works with the current implementation
 
@@ -353,12 +354,18 @@ Current rules:
    - result: `unchanged`
 
 3. Local is `draft` and remote is `curated`, values differ
-   - result: `conflict`
-   - action: skip push (draft should not overwrite curated remote)
+   - default: `conflict`
+   - with `--force-conflicts`: `update` candidate
 
-4. Any other value mismatch
-   - result: `conflict` (v1 conservative)
-   - action: skip push
+4. Local provenance is missing/unknown, values differ
+   - default: `conflict`
+   - with `--force-conflicts`: `update` candidate
+
+5. Other mismatches
+   - result: `update` candidate
+
+6. Any invariant violation
+   - result: `conflict` (always blocked)
 
 ### Operational flags affecting behavior
 
@@ -367,8 +374,10 @@ Current rules:
 - `--fail-on-conflict` (default `true`)
   - return error when conflicts are found
 - `--apply-curated-over-draft` (default `true` for pull command)
-  - intended to control whether remote curated values can replace local drafts during pull
-  - current implementation also defaults to this behavior via the conservative curation policy
+  - controls whether remote curated values can replace local drafts during pull
+- `--force-conflicts` (default `false` for push command)
+  - allows overwrite for mismatch conflicts in push
+  - does not bypass invariant validation safeguards
 
 ## Conflict examples (decision table)
 
@@ -385,10 +394,10 @@ Current rules:
 
 | Local provenance | Local value | Remote provenance | Remote value | Result |
 | --- | --- | --- | --- | --- |
-| `llm/draft` | `Salut` | `human/curated` | `Bonjour` | `conflict` (skip) |
+| `llm/draft` | `Salut` | `human/curated` | `Bonjour` | `conflict` (or `update` with `--force-conflicts`) |
 | any | `Bonjour` | any | missing | `create` candidate |
 | any | `Bonjour` | any | `Bonjour` | `unchanged` |
-| non-draft mismatch | `Salut` | non-curated or unknown | `Bonjour` | `conflict` (v1 conservative) |
+| non-draft mismatch | `Salut` | non-curated or unknown | `Bonjour` | `update` candidate |
 
 ## Package layout (related)
 

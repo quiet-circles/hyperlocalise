@@ -9,6 +9,7 @@ import (
 
 func newSyncPushCmd() *cobra.Command {
 	o := defaultSyncCommonOptions()
+	var forceConflicts bool
 
 	cmd := &cobra.Command{
 		Use:          "push",
@@ -29,6 +30,7 @@ func newSyncPushCmd() *cobra.Command {
 				Options: syncsvc.PushOptions{
 					DryRun:         o.dryRun,
 					FailOnConflict: o.failOnConflict,
+					ForceConflicts: forceConflicts,
 				},
 			})
 			if writeErr := writeSyncReport(cmd, report, o.output); writeErr != nil {
@@ -43,5 +45,7 @@ func newSyncPushCmd() *cobra.Command {
 	}
 
 	addSyncCommonFlags(cmd, &o)
+	cmd.Flags().BoolVar(&forceConflicts, "force-conflicts", forceConflicts, "allow overwrite when values mismatch despite conflict policies")
+
 	return cmd
 }

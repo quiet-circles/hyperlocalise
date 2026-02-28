@@ -254,6 +254,41 @@ func TestStatusCommandUnknownBucket(t *testing.T) {
 	}
 }
 
+func TestStatusCommandBucketFilterUsesLocalstoreNamespace(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "i18n.jsonc")
+	langDir := filepath.Join(dir, "lang")
+	if err := os.MkdirAll(langDir, 0o755); err != nil {
+		t.Fatalf("mkdir lang dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(langDir, "fr.json"), []byte("{\"hello\":\"bonjour\"}\n"), 0o600); err != nil {
+		t.Fatalf("write locale file: %v", err)
+	}
+
+	content := `{
+  "locales": {"source":"en","targets":["fr"]},
+  "buckets": {"ui":{"files":[{"from":"ui/messages.json","to":"` + filepath.ToSlash(filepath.Join(dir, "lang", "[locale].json")) + `"}]}},
+  "groups": {"default":{"targets":["fr"],"buckets":["ui"]}},
+  "llm": {"profiles":{"default":{"provider":"openai","model":"gpt-4.1-mini","prompt":"Translate"}}}
+}`
+	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"status", "--config", configPath, "--bucket", "ui"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute status command: %v", err)
+	}
+	if got := out.String(); !strings.Contains(got, "ui/messages.json") {
+		t.Fatalf("expected namespace in status output, got: %s", got)
+	}
+}
+
 func testStatusConfig() *config.I18NConfig {
 	return &config.I18NConfig{
 		Locales: config.LocaleConfig{

@@ -34,7 +34,6 @@ func newSyncPullCmd() *cobra.Command {
 					DryRun:                o.dryRun,
 					FailOnConflict:        o.failOnConflict,
 					ApplyCuratedOverDraft: o.applyCuratedOverDraft,
-					Policy:                syncsvc.PolicyConservativeCurationPull,
 				},
 			})
 			if writeErr := writeSyncReport(cmd, report, o.output); writeErr != nil {

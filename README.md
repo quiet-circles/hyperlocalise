@@ -33,6 +33,7 @@ hyperlocalise [command]
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
+  init        write the latest i18n.jsonc template
   status      show translation status by locale
   sync        synchronize translations with remote storage adapters
   version     hyperlocalise version
@@ -80,6 +81,7 @@ Flags:
 - `--dry-run` - preview changes without applying (default: true)
 - `--output` - output format: text or json
 - `--fail-on-conflict` - return error if conflicts are detected (default: true)
+- `--force-conflicts` - allow overwriting remote mismatches despite conflict policies (default: false)
 
 ## status
 
@@ -104,6 +106,9 @@ Flags:
 # Storage Adapters
 
 `hyperlocalise` supports multiple translation management system (TMS) adapters through a pluggable storage adapter interface.
+
+Launch readiness details, known limitations, and integration test matrix:
+- [`docs/launch-readiness.md`](docs/launch-readiness.md)
 
 ## Supported Adapters
 
@@ -158,14 +163,14 @@ For more details on the storage system and sync model, see [`internal/i18n/stora
 ```sh
 $> make
 bootstrap                      download tool and module dependencies
-build                          build golang binary
+check-build                    check golang build
 clean                          clean up environment
 cover                          display test coverage
 fmt                            format go files
 help                           list makefile targets
 install                        install golang binary
 lint                           lint go files
-# pre-commit                     run pre-commit hooks
+precommit                      run local CI validation flow
 run                            run the app
 staticcheck                    run staticcheck directly
 test                           run tests with JSON output and coverage

@@ -20,6 +20,7 @@ const localeToken = "[locale]"
 type JSONStore struct {
 	cfg           *config.I18NConfig
 	localePattern string
+	namespace     string
 }
 
 func NewJSONStore(cfg *config.I18NConfig) (*JSONStore, error) {
@@ -27,12 +28,12 @@ func NewJSONStore(cfg *config.I18NConfig) (*JSONStore, error) {
 		return nil, fmt.Errorf("new json store: config is nil")
 	}
 
-	localePattern, err := resolveLocalePattern(cfg.Buckets)
+	localePattern, namespace, err := resolveLocalePattern(cfg.Buckets)
 	if err != nil {
 		return nil, err
 	}
 
-	return &JSONStore{cfg: cfg, localePattern: localePattern}, nil
+	return &JSONStore{cfg: cfg, localePattern: localePattern, namespace: namespace}, nil
 }
 
 func (s *JSONStore) ReadSnapshot(ctx context.Context, req syncsvc.LocalReadRequest) (storage.CatalogSnapshot, error) {
@@ -64,9 +65,10 @@ func (s *JSONStore) readSnapshot(_ context.Context, req syncsvc.LocalReadRequest
 
 		for key, value := range valueMap {
 			entry := storage.Entry{
-				Key:    key,
-				Locale: locale,
-				Value:  value,
+				Key:       key,
+				Locale:    locale,
+				Value:     value,
+				Namespace: s.namespace,
 			}
 			if meta, ok := metaMap[entryMetaID(key, "")]; ok {
 				entry.Provenance = meta.Provenance
@@ -129,9 +131,9 @@ func (s *JSONStore) localePath(locale string) string {
 	return strings.ReplaceAll(s.localePattern, localeToken, locale)
 }
 
-func resolveLocalePattern(buckets map[string]config.BucketConfig) (string, error) {
+func resolveLocalePattern(buckets map[string]config.BucketConfig) (string, string, error) {
 	if len(buckets) == 0 {
-		return "", fmt.Errorf("new json store: buckets is required")
+		return "", "", fmt.Errorf("new json store: buckets is required")
 	}
 
 	names := make([]string, 0, len(buckets))
@@ -144,12 +146,12 @@ func resolveLocalePattern(buckets map[string]config.BucketConfig) (string, error
 		bucket := buckets[name]
 		for _, file := range bucket.Files {
 			if strings.TrimSpace(file.To) != "" {
-				return file.To, nil
+				return file.To, file.From, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("new json store: buckets.*.files[].to is required")
+	return "", "", fmt.Errorf("new json store: buckets.*.files[].to is required")
 }
 
 type entryMeta struct {
