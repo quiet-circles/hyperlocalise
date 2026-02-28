@@ -195,10 +195,11 @@ Conflict decisions (current, summarized):
   - local curated mismatch -> conflict
   - missing provenance + mismatch -> conflict
 - Push:
-  - local draft vs remote curated mismatch -> conflict (skip)
+  - local draft vs remote curated mismatch -> conflict by default (`--force-conflicts` can override)
   - remote missing key -> create candidate
   - same value -> unchanged
-  - other mismatches -> conflict (v1 conservative)
+  - safe mismatches -> update candidate
+  - invariant violations -> conflict (always blocked)
 
 ## How the flow works with the current implementation
 

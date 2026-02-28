@@ -28,6 +28,7 @@ type PullOptions struct {
 type PushOptions struct {
 	DryRun         bool
 	FailOnConflict bool
+	ForceConflicts bool
 }
 
 type LocalStore interface {
@@ -125,7 +126,7 @@ func (s *Service) Push(ctx context.Context, in PushInput) (Report, error) {
 		return Report{}, fmt.Errorf("pull remote baseline: %w", err)
 	}
 
-	report, pushReq := buildPushReport(localSnapshot, remoteResult.Snapshot)
+	report, pushReq := buildPushReport(localSnapshot, remoteResult.Snapshot, in.Options)
 	report.Action = "push"
 	report.Warnings = append(report.Warnings, remoteResult.Warnings...)
 
@@ -197,7 +198,7 @@ func buildPullReport(local, remote storage.CatalogSnapshot, opts PullOptions) Re
 	return report
 }
 
-func buildPushReport(local, remote storage.CatalogSnapshot) (Report, storage.PushRequest) {
+func buildPushReport(local, remote storage.CatalogSnapshot, opts PushOptions) (Report, storage.PushRequest) {
 	localIndex := indexEntries(local.Entries)
 	remoteIndex := indexEntries(remote.Entries)
 	report := Report{}
@@ -234,9 +235,24 @@ func buildPushReport(local, remote storage.CatalogSnapshot) (Report, storage.Pus
 
 		if strings.EqualFold(localEntry.Provenance.State, storage.StateDraft) &&
 			strings.EqualFold(remoteEntry.Provenance.State, storage.StateCurated) {
+			if !opts.ForceConflicts {
+				report.Conflicts = append(report.Conflicts, storage.Conflict{
+					ID:          id,
+					Reason:      "draft_vs_curated_remote",
+					LocalValue:  localEntry.Value,
+					RemoteValue: remoteEntry.Value,
+					LocalState:  localEntry.Provenance.State,
+					RemoteState: remoteEntry.Provenance.State,
+				})
+				continue
+			}
+		}
+
+		localOrigin := strings.ToLower(strings.TrimSpace(localEntry.Provenance.Origin))
+		if (localOrigin == "" || localOrigin == storage.OriginUnknown) && !opts.ForceConflicts {
 			report.Conflicts = append(report.Conflicts, storage.Conflict{
 				ID:          id,
-				Reason:      "draft_vs_curated_remote",
+				Reason:      "missing_provenance_value_mismatch",
 				LocalValue:  localEntry.Value,
 				RemoteValue: remoteEntry.Value,
 				LocalState:  localEntry.Provenance.State,
@@ -245,14 +261,8 @@ func buildPushReport(local, remote storage.CatalogSnapshot) (Report, storage.Pus
 			continue
 		}
 
-		report.Conflicts = append(report.Conflicts, storage.Conflict{
-			ID:          id,
-			Reason:      "value_mismatch",
-			LocalValue:  localEntry.Value,
-			RemoteValue: remoteEntry.Value,
-			LocalState:  localEntry.Provenance.State,
-			RemoteState: remoteEntry.Provenance.State,
-		})
+		report.Updates = append(report.Updates, localEntry)
+		pushReq.Entries = append(pushReq.Entries, localEntry)
 	}
 
 	sortReport(&report)
@@ -264,9 +274,6 @@ func decidePullDiff(localEntry, remoteEntry storage.Entry, opts PullOptions) (*s
 	localOrigin := strings.ToLower(strings.TrimSpace(localEntry.Provenance.Origin))
 
 	shouldApplyCuratedOverDraft := opts.ApplyCuratedOverDraft
-	if !shouldApplyCuratedOverDraft && strings.TrimSpace(opts.Policy) == "" {
-		shouldApplyCuratedOverDraft = true
-	}
 	if strings.EqualFold(opts.Policy, PolicyConservativeCurationPull) {
 		shouldApplyCuratedOverDraft = true
 	}

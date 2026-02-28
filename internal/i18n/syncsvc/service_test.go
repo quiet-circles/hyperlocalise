@@ -183,6 +183,195 @@ func TestPushSkipsDraftAgainstCuratedRemote(t *testing.T) {
 	}
 }
 
+func TestPushUpdatesRemoteWhenMismatchIsSafe(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "hello",
+				Locale: "fr",
+				Value:  "bonjour local curated",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginHuman,
+					State:  storage.StateCurated,
+				},
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "hello",
+					Locale: "fr",
+					Value:  "bonjour remote draft",
+					Provenance: storage.EntryProvenance{
+						Origin: storage.OriginLLM,
+						State:  storage.StateDraft,
+					},
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Push(context.Background(), PushInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PushOptions{DryRun: true},
+	})
+	if err != nil {
+		t.Fatalf("push sync dry-run: %v", err)
+	}
+	if got := len(report.Updates); got != 1 {
+		t.Fatalf("expected 1 update, got %d", got)
+	}
+	if got := len(report.Conflicts); got != 0 {
+		t.Fatalf("expected 0 conflicts, got %d", got)
+	}
+}
+
+func TestPushForceConflictsAllowsDraftOverwrite(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "hello",
+				Locale: "fr",
+				Value:  "bonjour local draft",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginLLM,
+					State:  storage.StateDraft,
+				},
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "hello",
+					Locale: "fr",
+					Value:  "bonjour curated",
+					Provenance: storage.EntryProvenance{
+						Origin: storage.OriginHuman,
+						State:  storage.StateCurated,
+					},
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Push(context.Background(), PushInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PushOptions{
+			DryRun:         true,
+			ForceConflicts: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("push sync dry-run: %v", err)
+	}
+	if got := len(report.Updates); got != 1 {
+		t.Fatalf("expected 1 update, got %d", got)
+	}
+	if got := len(report.Conflicts); got != 0 {
+		t.Fatalf("expected 0 conflicts, got %d", got)
+	}
+}
+
+func TestPushConflictsOnUnknownProvenanceMismatch(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "hello",
+				Locale: "fr",
+				Value:  "bonjour local",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginUnknown,
+				},
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "hello",
+					Locale: "fr",
+					Value:  "bonjour remote",
+					Provenance: storage.EntryProvenance{
+						Origin: storage.OriginHuman,
+						State:  storage.StateCurated,
+					},
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Push(context.Background(), PushInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PushOptions{DryRun: true},
+	})
+	if err != nil {
+		t.Fatalf("push sync dry-run: %v", err)
+	}
+	if got := len(report.Conflicts); got != 1 {
+		t.Fatalf("expected 1 conflict, got %d", got)
+	}
+	if got := report.Conflicts[0].Reason; got != "missing_provenance_value_mismatch" {
+		t.Fatalf("unexpected conflict reason: %q", got)
+	}
+}
+
+func TestPullDoesNotApplyCuratedOverDraftWhenDisabled(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "hello",
+				Locale: "fr",
+				Value:  "bonjour local draft",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginLLM,
+					State:  storage.StateDraft,
+				},
+			}},
+		},
+	}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{
+			Snapshot: storage.CatalogSnapshot{
+				Entries: []storage.Entry{{
+					Key:    "hello",
+					Locale: "fr",
+					Value:  "bonjour curated",
+				}},
+			},
+		},
+	}
+
+	report, err := svc.Pull(context.Background(), PullInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PullOptions{
+			DryRun:                true,
+			ApplyCuratedOverDraft: false,
+		},
+	})
+	if err != nil {
+		t.Fatalf("pull sync dry-run: %v", err)
+	}
+	if got := len(report.Updates); got != 0 {
+		t.Fatalf("expected 0 updates, got %d", got)
+	}
+	if got := len(report.Conflicts); got != 1 {
+		t.Fatalf("expected 1 conflict, got %d", got)
+	}
+}
+
 func TestPullBlocksPlaceholderRegression(t *testing.T) {
 	svc := New()
 	local := &fakeLocalStore{
@@ -327,6 +516,7 @@ func TestBuildPushSnapshotSortedReportUsesCompareEntryID(t *testing.T) {
 			},
 		},
 		storage.CatalogSnapshot{},
+		PushOptions{},
 	)
 
 	got := make([]storage.EntryID, 0, len(report.Creates))
