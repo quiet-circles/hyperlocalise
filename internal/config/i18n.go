@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	defaultConfigPath = "i18n.jsonc"
-	llmProviderOpenAI = "openai"
-	llmDefaultProfile = "default"
+	defaultConfigPath   = "i18n.jsonc"
+	llmProviderOpenAI   = "openai"
+	llmProviderLMStudio = "lmstudio"
+	llmDefaultProfile   = "default"
 )
 
 // I18NConfig defines the i18n configuration file structure.
@@ -419,11 +420,14 @@ func (c I18NConfig) validateLLM(groupSet map[string]struct{}) error {
 }
 
 func validateProfile(fieldPrefix string, profile LLMProfile) error {
-	if strings.TrimSpace(profile.Provider) == "" {
+	provider := strings.ToLower(strings.TrimSpace(profile.Provider))
+	if provider == "" {
 		return fmt.Errorf("%s.provider: must not be empty", fieldPrefix)
 	}
 
-	if profile.Provider != llmProviderOpenAI {
+	switch provider {
+	case llmProviderOpenAI, llmProviderLMStudio:
+	default:
 		return fmt.Errorf("%s.provider: unsupported provider %q", fieldPrefix, profile.Provider)
 	}
 

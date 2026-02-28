@@ -74,6 +74,20 @@ func TestTranslateUsesRegisteredProvider(t *testing.T) {
 	}
 }
 
+func TestNewRegistersDefaultProviders(t *testing.T) {
+	t.Parallel()
+
+	tool := New()
+
+	if _, ok := tool.providers[ProviderOpenAI]; !ok {
+		t.Fatalf("expected %q provider to be registered", ProviderOpenAI)
+	}
+
+	if _, ok := tool.providers[ProviderLMStudio]; !ok {
+		t.Fatalf("expected %q provider to be registered", ProviderLMStudio)
+	}
+}
+
 func TestResponseText(t *testing.T) {
 	t.Parallel()
 

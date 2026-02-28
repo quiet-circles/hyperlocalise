@@ -9,6 +9,7 @@ A high-performance localization CLI built in Go for modern development workflows
    * [hyperlocalise](#hyperlocalise)
    * [Features](#features)
    * [Commands](#commands)
+   * [LLM Providers](#llm-providers)
    * [Storage Adapters](#storage-adapters)
    * [Project Layout](#project-layout)
    * [Makefile Targets](#makefile-targets)
@@ -102,6 +103,74 @@ Flags:
 - `--output` - output format: csv
 - `--group` - filter by group name
 - `--bucket` - filter by bucket name
+
+# LLM Providers
+
+`hyperlocalise` supports these translation model providers in `llm.profiles.*.provider`:
+- `openai`
+- `lmstudio`
+
+`llm.profiles.default` is required, and each profile requires:
+- `provider`
+- `model`
+- `prompt`
+
+Prompt variables:
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`
+
+## OpenAI Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+## LM Studio Example (Local Model)
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "lmstudio",
+        "model": "qwen2.5-7b-instruct",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to http://127.0.0.1:1234/v1
+export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+
+# Optional, defaults to lm-studio
+export LM_STUDIO_API_KEY="lm-studio"
+```
+
+Notes:
+- LM Studio must be running locally and serving its OpenAI-compatible API.
+- `model` must match an identifier exposed by your local LM Studio server.
 
 # Storage Adapters
 
