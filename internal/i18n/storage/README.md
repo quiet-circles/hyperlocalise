@@ -406,4 +406,6 @@ Current rules:
 - `internal/i18n/syncsvc`: diff/conflict/merge orchestration
 - `internal/i18n/localstore`: local JSON + sidecar metadata store
 - `internal/i18n/storage/poeditor`: POEditor adapter
+- `internal/i18n/storage/lokalise`: Lokalise adapter
+- `internal/i18n/storage/smartling`: Smartling adapter
 - `internal/i18n/lockfile`: optional sync checkpoints (not source of truth)

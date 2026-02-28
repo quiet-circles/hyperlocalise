@@ -12,6 +12,7 @@ import (
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage/crowdin"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage/lokalise"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage/poeditor"
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage/smartling"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storageregistry"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/syncsvc"
 	"github.com/spf13/cobra"
@@ -80,6 +81,9 @@ func newSyncRuntime(configPath string) (*syncRuntime, error) {
 		return nil, err
 	}
 	if err := reg.Register(lokalise.AdapterName, lokalise.New); err != nil {
+		return nil, err
+	}
+	if err := reg.Register(smartling.AdapterName, smartling.New); err != nil {
 		return nil, err
 	}
 

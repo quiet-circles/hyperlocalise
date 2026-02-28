@@ -1,0 +1,228 @@
+package smartling
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+const (
+	authAPIBaseURL    = "https://api.smartling.com/auth-api/v2"
+	stringsAPIBaseURL = "https://api.smartling.com/strings-api/v2"
+)
+
+type HTTPClient struct {
+	authBaseURL    string
+	stringsBaseURL string
+	http           *http.Client
+	userIdentifier string
+	userSecret     string
+}
+
+func NewHTTPClient(cfg Config) (*HTTPClient, error) {
+	timeout := time.Duration(cfg.TimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+
+	return &HTTPClient{
+		authBaseURL:    authAPIBaseURL,
+		stringsBaseURL: stringsAPIBaseURL,
+		http:           &http.Client{Timeout: timeout},
+		userIdentifier: cfg.UserIdentifier,
+		userSecret:     cfg.UserSecret,
+	}, nil
+}
+
+func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsInput) ([]StringTranslation, string, error) {
+	token, err := c.authenticate(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	revision := time.Now().UTC().Format(time.RFC3339Nano)
+	allowed := make(map[string]struct{}, len(in.Locales))
+	for _, locale := range in.Locales {
+		trimmed := strings.TrimSpace(locale)
+		if trimmed == "" {
+			continue
+		}
+		allowed[trimmed] = struct{}{}
+	}
+
+	locales := in.Locales
+	if len(locales) == 0 {
+		return nil, revision, nil
+	}
+
+	entries := make([]StringTranslation, 0)
+	for _, locale := range locales {
+		trimmedLocale := strings.TrimSpace(locale)
+		if trimmedLocale == "" {
+			continue
+		}
+		batch, err := c.listLocaleTranslations(ctx, token, in.ProjectID, trimmedLocale)
+		if err != nil {
+			return nil, "", err
+		}
+		for _, item := range batch {
+			if len(allowed) > 0 {
+				if _, ok := allowed[item.Locale]; !ok {
+					continue
+				}
+			}
+			entries = append(entries, item)
+		}
+	}
+
+	return entries, revision, nil
+}
+
+func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslationsInput) (string, error) {
+	if len(in.Entries) == 0 {
+		return time.Now().UTC().Format(time.RFC3339Nano), nil
+	}
+	token, err := c.authenticate(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	grouped := make(map[string][]StringTranslation)
+	for _, entry := range in.Entries {
+		if strings.TrimSpace(entry.Key) == "" || strings.TrimSpace(entry.Locale) == "" || strings.TrimSpace(entry.Value) == "" {
+			continue
+		}
+		grouped[entry.Locale] = append(grouped[entry.Locale], entry)
+	}
+
+	for locale, items := range grouped {
+		if err := c.upsertLocaleTranslations(ctx, token, in.ProjectID, locale, items); err != nil {
+			return "", err
+		}
+	}
+
+	return time.Now().UTC().Format(time.RFC3339Nano), nil
+}
+
+func (c *HTTPClient) authenticate(ctx context.Context) (string, error) {
+	payload := map[string]string{
+		"userIdentifier": c.userIdentifier,
+		"userSecret":     c.userSecret,
+	}
+
+	var resp struct {
+		Response struct {
+			Code string `json:"code"`
+		} `json:"response"`
+		Data struct {
+			AccessToken string `json:"accessToken"`
+		} `json:"data"`
+	}
+
+	if err := c.postJSON(ctx, c.authBaseURL+"/authenticate", "", payload, &resp); err != nil {
+		return "", fmt.Errorf("authenticate: %w", err)
+	}
+	if strings.TrimSpace(resp.Data.AccessToken) == "" {
+		return "", fmt.Errorf("authenticate: empty access token")
+	}
+	return resp.Data.AccessToken, nil
+}
+
+func (c *HTTPClient) listLocaleTranslations(ctx context.Context, token string, projectID string, locale string) ([]StringTranslation, error) {
+	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/translations", c.stringsBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
+	var resp struct {
+		Response struct {
+			Code string `json:"code"`
+		} `json:"response"`
+		Data struct {
+			Items []struct {
+				StringText  string `json:"stringText"`
+				Translation string `json:"translation"`
+				Instruction string `json:"instruction"`
+			} `json:"items"`
+		} `json:"data"`
+	}
+
+	if err := c.getJSON(ctx, endpoint, token, &resp); err != nil {
+		return nil, fmt.Errorf("list translations %s: %w", locale, err)
+	}
+
+	out := make([]StringTranslation, 0, len(resp.Data.Items))
+	for _, item := range resp.Data.Items {
+		if strings.TrimSpace(item.StringText) == "" {
+			continue
+		}
+		out = append(out, StringTranslation{Key: item.StringText, Context: item.Instruction, Locale: locale, Value: item.Translation})
+	}
+
+	return out, nil
+}
+
+func (c *HTTPClient) upsertLocaleTranslations(ctx context.Context, token string, projectID string, locale string, entries []StringTranslation) error {
+	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/translations", c.stringsBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
+	payload := map[string]any{"items": entries}
+	if err := c.putJSON(ctx, endpoint, token, payload, &struct{}{}); err != nil {
+		return fmt.Errorf("upsert translations %s: %w", locale, err)
+	}
+	return nil
+}
+
+func (c *HTTPClient) getJSON(ctx context.Context, endpoint string, token string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	return c.do(req, out)
+}
+
+func (c *HTTPClient) postJSON(ctx context.Context, endpoint string, token string, payload any, out any) error {
+	return c.sendJSON(ctx, http.MethodPost, endpoint, token, payload, out)
+}
+
+func (c *HTTPClient) putJSON(ctx context.Context, endpoint string, token string, payload any, out any) error {
+	return c.sendJSON(ctx, http.MethodPut, endpoint, token, payload, out)
+}
+
+func (c *HTTPClient) sendJSON(ctx context.Context, method string, endpoint string, token string, payload any, out any) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal request body: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	return c.do(req, out)
+}
+
+func (c *HTTPClient) do(req *http.Request, out any) error {
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("do request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	if out == nil {
+		return nil
+	}
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+	return nil
+}
