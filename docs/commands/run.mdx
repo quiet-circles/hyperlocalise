@@ -24,13 +24,16 @@ hyperlocalise run [--config <path>] [--dry-run]
 - `.json`
 - `.xlf` and `.xliff`
 - `.po`
-- `.md`
+- `.md` and `.mdx`
 
-For Markdown (`.md`), `run` translates extracted text segments and preserves non-translatable structure:
+For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 
 - frontmatter blocks (`---`)
 - fenced code blocks (```` ``` ```` and `~~~`)
+- inline code spans
 - Markdown anchors such as link destinations
+- MDX `import` and `export` lines
+- JSX/MDX component tags and attribute values
 
 ## Flags
 
