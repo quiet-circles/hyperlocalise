@@ -28,6 +28,7 @@ func New() *Tool {
 	t := &Tool{providers: map[string]Provider{}}
 	t.MustRegister(NewOpenAIProvider())
 	t.MustRegister(NewLMStudioProvider())
+	t.MustRegister(NewGroqProvider())
 	return t
 }
 

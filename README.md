@@ -130,6 +130,7 @@ Flags:
 `hyperlocalise` supports these translation model providers in `llm.profiles.*.provider`:
 - `openai`
 - `lmstudio`
+- `groq`
 
 `llm.profiles.default` is required, and each profile requires:
 - `provider`
@@ -192,6 +193,32 @@ export LM_STUDIO_API_KEY="lm-studio"
 Notes:
 - LM Studio must be running locally and serving its OpenAI-compatible API.
 - `model` must match an identifier exposed by your local LM Studio server.
+
+## Groq Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to https://api.groq.com/openai/v1
+export GROQ_BASE_URL="https://api.groq.com/openai/v1"
+
+export GROQ_API_KEY="your-groq-api-key"
+```
+
 
 # Storage Adapters
 

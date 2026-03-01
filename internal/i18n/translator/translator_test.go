@@ -86,6 +86,10 @@ func TestNewRegistersDefaultProviders(t *testing.T) {
 	if _, ok := tool.providers[ProviderLMStudio]; !ok {
 		t.Fatalf("expected %q provider to be registered", ProviderLMStudio)
 	}
+
+	if _, ok := tool.providers[ProviderGroq]; !ok {
+		t.Fatalf("expected %q provider to be registered", ProviderGroq)
+	}
 }
 
 func TestResponseText(t *testing.T) {

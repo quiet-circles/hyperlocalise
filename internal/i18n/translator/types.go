@@ -9,6 +9,7 @@ import (
 const (
 	ProviderOpenAI   = "openai"
 	ProviderLMStudio = "lmstudio"
+	ProviderGroq     = "groq"
 )
 
 type Request struct {

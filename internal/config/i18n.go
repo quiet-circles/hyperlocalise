@@ -15,6 +15,7 @@ const (
 	defaultConfigPath   = "i18n.jsonc"
 	llmProviderOpenAI   = "openai"
 	llmProviderLMStudio = "lmstudio"
+	llmProviderGroq     = "groq"
 	llmDefaultProfile   = "default"
 )
 
@@ -426,7 +427,7 @@ func validateProfile(fieldPrefix string, profile LLMProfile) error {
 	}
 
 	switch provider {
-	case llmProviderOpenAI, llmProviderLMStudio:
+	case llmProviderOpenAI, llmProviderLMStudio, llmProviderGroq:
 	default:
 		return fmt.Errorf("%s.provider: unsupported provider %q", fieldPrefix, profile.Provider)
 	}
