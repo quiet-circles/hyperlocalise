@@ -138,14 +138,13 @@ func (s *Service) Push(ctx context.Context, in PushInput) (Report, error) {
 	}
 
 	pushResult, err := in.Adapter.Push(ctx, pushReq)
-	if err != nil {
-		return report, fmt.Errorf("push remote changes: %w", err)
-	}
-
 	report.Applied = append(report.Applied, pushResult.Applied...)
 	report.Skipped = append(report.Skipped, pushResult.Skipped...)
 	report.Conflicts = append(report.Conflicts, pushResult.Conflicts...)
 	report.Warnings = append(report.Warnings, pushResult.Warnings...)
+	if err != nil {
+		return report, fmt.Errorf("push remote changes: %w", err)
+	}
 
 	return report, nil
 }

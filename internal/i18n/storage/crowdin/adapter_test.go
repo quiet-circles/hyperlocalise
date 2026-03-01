@@ -3,6 +3,7 @@ package crowdin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ type fakeClient struct {
 	strings      []StringTranslation
 	listRevision string
 	upsertIn     UpsertTranslationsInput
+	upsertErr    error
 }
 
 func (f *fakeClient) ListStrings(_ context.Context, _ ListStringsInput) ([]StringTranslation, string, error) {
@@ -22,6 +24,9 @@ func (f *fakeClient) ListStrings(_ context.Context, _ ListStringsInput) ([]Strin
 
 func (f *fakeClient) UpsertTranslations(_ context.Context, in UpsertTranslationsInput) (string, error) {
 	f.upsertIn = in
+	if f.upsertErr != nil {
+		return "", f.upsertErr
+	}
 	return "rev2", nil
 }
 
@@ -117,11 +122,42 @@ func TestAdapterPushAppliedOnlyIncludesSentEntries(t *testing.T) {
 	if got := len(client.upsertIn.Entries); got != 1 {
 		t.Fatalf("expected 1 sent upsert entry, got %d", got)
 	}
+	if got := client.upsertIn.Entries[0].Value; got != "bonjour-again" {
+		t.Fatalf("expected last duplicate value to win, got %q", got)
+	}
 	if got := len(result.Applied); got != 1 {
 		t.Fatalf("expected 1 applied entry id, got %d", got)
 	}
 	if expected := req.Entries[0].ID(); result.Applied[0] != expected {
 		t.Fatalf("unexpected applied id: got %q, want %q", result.Applied[0], expected)
+	}
+}
+
+func TestAdapterPushReturnsPartialAppliedOnUpsertFailure(t *testing.T) {
+	client := &fakeClient{
+		upsertErr: &partialUpsertError{appliedCount: 1, cause: errors.New("boom")},
+	}
+	adapter, err := NewWithClient(Config{ProjectID: "123", APIToken: "token"}, client)
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	req := storage.PushRequest{
+		Entries: []storage.Entry{
+			{Key: "hello", Context: "home", Locale: "fr", Value: "bonjour"},
+			{Key: "bye", Context: "home", Locale: "fr", Value: "au revoir"},
+		},
+	}
+
+	result, err := adapter.Push(context.Background(), req)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := len(result.Applied); got != 1 {
+		t.Fatalf("expected 1 partially applied entry id, got %d", got)
+	}
+	if expected := req.Entries[0].ID(); result.Applied[0] != expected {
+		t.Fatalf("unexpected partial applied id: got %q, want %q", result.Applied[0], expected)
 	}
 }
 

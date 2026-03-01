@@ -2,6 +2,7 @@ package crowdin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,6 +15,25 @@ import (
 
 type HTTPClient struct {
 	client *sdkcrowdin.Client
+}
+
+type partialUpsertError struct {
+	appliedCount int
+	cause        error
+}
+
+func (e *partialUpsertError) Error() string {
+	return fmt.Sprintf("partial upsert: applied %d entries before failure: %v", e.appliedCount, e.cause)
+}
+
+func (e *partialUpsertError) Unwrap() error { return e.cause }
+
+func appliedCountFromError(err error) int {
+	var partial *partialUpsertError
+	if errors.As(err, &partial) {
+		return partial.appliedCount
+	}
+	return 0
 }
 
 func NewHTTPClient(cfg Config) (*HTTPClient, error) {
@@ -102,6 +122,8 @@ func (c *HTTPClient) ListStrings(ctx context.Context, in ListStringsInput) ([]St
 }
 
 func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslationsInput) (string, error) {
+	applied := 0
+
 	for _, entry := range in.Entries {
 		if strings.TrimSpace(entry.Key) == "" || strings.TrimSpace(entry.Locale) == "" {
 			continue
@@ -113,8 +135,12 @@ func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslatio
 		}
 		endpoint := fmt.Sprintf("/api/v2/projects/%s/translations", url.PathEscape(in.ProjectID))
 		if _, err := c.client.Post(ctx, endpoint, payload, nil); err != nil {
-			return "", fmt.Errorf("crowdin request %s: %w", endpoint, err)
+			return "", &partialUpsertError{
+				appliedCount: applied,
+				cause:        fmt.Errorf("crowdin request %s: %w", endpoint, err),
+			}
 		}
+		applied++
 	}
 
 	return time.Now().UTC().Format(time.RFC3339Nano), nil

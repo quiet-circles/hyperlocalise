@@ -183,7 +183,7 @@ func (a *Adapter) Pull(ctx context.Context, req storage.PullRequest) (storage.Pu
 func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	payload := make([]StringTranslation, 0, len(req.Entries))
 	applied := make([]storage.EntryID, 0, len(req.Entries))
-	seen := make(map[storage.EntryID]struct{}, len(req.Entries))
+	indexByID := make(map[storage.EntryID]int, len(req.Entries))
 
 	for _, entry := range req.Entries {
 		key := strings.TrimSpace(entry.Key)
@@ -196,17 +196,20 @@ func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.Pu
 		}
 
 		id := entry.ID()
-		if _, exists := seen[id]; exists {
-			continue
-		}
-		seen[id] = struct{}{}
-
-		payload = append(payload, StringTranslation{
+		translation := StringTranslation{
 			Key:     key,
 			Context: entry.Context,
 			Locale:  locale,
 			Value:   entry.Value,
-		})
+		}
+		if idx, exists := indexByID[id]; exists {
+			// Keep one remote write per EntryID, but let the latest local value win.
+			payload[idx] = translation
+			continue
+		}
+
+		indexByID[id] = len(payload)
+		payload = append(payload, translation)
 		applied = append(applied, id)
 	}
 
@@ -219,7 +222,13 @@ func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.Pu
 
 	revision, err := a.client.UpsertTranslations(ctx, UpsertTranslationsInput{ProjectID: a.cfg.ProjectID, APIToken: a.cfg.APIToken, Entries: payload})
 	if err != nil {
-		return storage.PushResult{}, fmt.Errorf("crowdin push: %w", err)
+		partialApplied := appliedCountFromError(err)
+		if partialApplied > len(applied) {
+			partialApplied = len(applied)
+		}
+		return storage.PushResult{
+			Applied: applied[:partialApplied],
+		}, fmt.Errorf("crowdin push: %w", err)
 	}
 
 	return storage.PushResult{Applied: applied, Revision: revision}, nil

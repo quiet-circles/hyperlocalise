@@ -2,6 +2,7 @@ package syncsvc
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -38,6 +39,7 @@ type fakeAdapter struct {
 	pullResult storage.PullResult
 	pushReq    storage.PushRequest
 	pushResult storage.PushResult
+	pushErr    error
 }
 
 func (f *fakeAdapter) Name() string                       { return "fake" }
@@ -48,7 +50,7 @@ func (f *fakeAdapter) Pull(_ context.Context, _ storage.PullRequest) (storage.Pu
 
 func (f *fakeAdapter) Push(_ context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	f.pushReq = req
-	return f.pushResult, nil
+	return f.pushResult, f.pushErr
 }
 
 func TestPullUpdatesDraftFromCuratedRemote(t *testing.T) {
@@ -280,6 +282,44 @@ func TestPushForceConflictsAllowsDraftOverwrite(t *testing.T) {
 	}
 	if got := len(report.Conflicts); got != 0 {
 		t.Fatalf("expected 0 conflicts, got %d", got)
+	}
+}
+
+func TestPushKeepsPartialAppliedOnAdapterError(t *testing.T) {
+	svc := New()
+	local := &fakeLocalStore{
+		readSnapshot: storage.CatalogSnapshot{
+			Entries: []storage.Entry{{
+				Key:    "hello",
+				Locale: "fr",
+				Value:  "bonjour local curated",
+				Provenance: storage.EntryProvenance{
+					Origin: storage.OriginHuman,
+					State:  storage.StateCurated,
+				},
+			}},
+		},
+	}
+	partialID := storage.EntryID{Key: "hello", Locale: "fr"}
+	adapter := &fakeAdapter{
+		pullResult: storage.PullResult{Snapshot: storage.CatalogSnapshot{}},
+		pushResult: storage.PushResult{Applied: []storage.EntryID{partialID}},
+		pushErr:    errors.New("remote failure"),
+	}
+
+	report, err := svc.Push(context.Background(), PushInput{
+		Adapter: adapter,
+		Local:   local,
+		Options: PushOptions{DryRun: false},
+	})
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := len(report.Applied); got != 1 {
+		t.Fatalf("expected 1 partial applied entry, got %d", got)
+	}
+	if report.Applied[0] != partialID {
+		t.Fatalf("unexpected partial applied id: got %+v, want %+v", report.Applied[0], partialID)
 	}
 }
 
