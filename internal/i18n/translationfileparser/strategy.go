@@ -24,6 +24,7 @@ func NewDefaultStrategy() *Strategy {
 	s.Register(".xliff", XLIFFParser{})
 	s.Register(".po", POFileParser{})
 	s.Register(".md", MarkdownParser{})
+	s.Register(".mdx", MarkdownParser{})
 	return s
 }
 

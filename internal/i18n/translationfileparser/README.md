@@ -7,11 +7,11 @@
 - `.json` via `JSONParser`
 - `.xlf` / `.xliff` via `XLIFFParser` (XLIFF 1.2 and 2.x)
 - `.po` via `POFileParser` (GNU gettext)
-- `.md` via `MarkdownParser`
+- `.md` / `.mdx` via `MarkdownParser`
 
 ## Strategy API
 
-- `NewDefaultStrategy()` returns a strategy pre-registered with JSON, XLIFF, PO, and Markdown parsers.
+- `NewDefaultStrategy()` returns a strategy pre-registered with JSON, XLIFF, PO, and Markdown/MDX parsers.
 - `Register(ext, parser)` allows adding/replacing parser implementations by extension.
 - `Parse(path, content)` resolves parser by extension and returns `map[string]string`.
 

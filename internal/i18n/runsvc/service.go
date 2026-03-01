@@ -570,7 +570,7 @@ func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
 
 func (s *Service) marshalTargetFile(path, sourcePath string, values map[string]string) ([]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
-	if ext == ".md" {
+	if ext == ".md" || ext == ".mdx" {
 		template, err := s.loadMarkdownTemplate(path, sourcePath)
 		if err != nil {
 			return nil, err

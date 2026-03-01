@@ -72,45 +72,184 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 			continue
 		}
 
-		start := 0
-		for idx := 0; idx < len(line); {
-			if strings.HasPrefix(line[idx:], "`") {
-				if idx > start {
-					emitMarkdownTextParts(line[start:idx], &doc, appendKey)
-				}
-				end := idx + 1
-				for end < len(line) && line[end] != '`' {
-					end++
-				}
-				if end < len(line) {
-					end++
-				}
-				doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
-				idx = end
-				start = idx
-				continue
-			}
-
-			if strings.HasPrefix(line[idx:], "](") {
-				if idx > start {
-					emitMarkdownTextParts(line[start:idx], &doc, appendKey)
-				}
-				end := findMarkdownLinkDestinationEnd(line, idx+2)
-				doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
-				idx = end
-				start = idx
-				continue
-			}
-
-			idx++
+		if isImportExportLine(trimmed) {
+			doc.parts = append(doc.parts, markdownPart{literal: line})
+			continue
 		}
 
-		if start < len(line) {
-			emitMarkdownTextParts(line[start:], &doc, appendKey)
-		}
+		emitMarkdownLineParts(line, &doc, appendKey)
 	}
 
 	return doc, entries
+}
+
+func isImportExportLine(trimmed string) bool {
+	if strings.HasPrefix(trimmed, "import ") || strings.HasPrefix(trimmed, "export ") {
+		return true
+	}
+	return trimmed == "import" || trimmed == "export"
+}
+
+func emitMarkdownLineParts(line string, doc *markdownDocument, appendKey func(string)) {
+	start := 0
+
+	flushText := func(end int) {
+		if end <= start {
+			return
+		}
+		emitMarkdownTextParts(line[start:end], doc, appendKey)
+		start = end
+	}
+
+	for idx := 0; idx < len(line); {
+		if line[idx] == '`' {
+			flushText(idx)
+			end := idx + 1
+			for end < len(line) && line[end] != '`' {
+				end++
+			}
+			if end < len(line) {
+				end++
+			}
+			doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
+			idx = end
+			start = idx
+			continue
+		}
+
+		if strings.HasPrefix(line[idx:], "](") {
+			flushText(idx)
+			end := findMarkdownLinkDestinationEnd(line, idx+2)
+			doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
+			idx = end
+			start = idx
+			continue
+		}
+
+		if line[idx] == '{' {
+			flushText(idx)
+			end := findBraceExpressionEnd(line, idx)
+			doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
+			idx = end
+			start = idx
+			continue
+		}
+
+		if line[idx] == '<' && looksLikeJSXTagStart(line, idx) {
+			flushText(idx)
+			end := findJSXTagEnd(line, idx)
+			doc.parts = append(doc.parts, markdownPart{literal: line[idx:end]})
+			idx = end
+			start = idx
+			continue
+		}
+
+		idx++
+	}
+
+	flushText(len(line))
+}
+
+func findBraceExpressionEnd(line string, start int) int {
+	depth := 0
+	quote := byte(0)
+	escaped := false
+
+	for idx := start; idx < len(line); idx++ {
+		ch := line[idx]
+		if quote != 0 {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			continue
+		}
+
+		if ch == '\'' || ch == '"' {
+			quote = ch
+			continue
+		}
+
+		switch ch {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return idx + 1
+			}
+		}
+	}
+
+	return len(line)
+}
+
+func looksLikeJSXTagStart(line string, idx int) bool {
+	if idx+1 >= len(line) {
+		return false
+	}
+	next := line[idx+1]
+	if next == '/' || next == '!' || next == '?' {
+		return true
+	}
+	if (next >= 'A' && next <= 'Z') || (next >= 'a' && next <= 'z') {
+		if strings.HasPrefix(line[idx+1:], "http") {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func findJSXTagEnd(line string, start int) int {
+	quote := byte(0)
+	escaped := false
+	braceDepth := 0
+
+	for idx := start + 1; idx < len(line); idx++ {
+		ch := line[idx]
+		if quote != 0 {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			continue
+		}
+
+		if ch == '\'' || ch == '"' {
+			quote = ch
+			continue
+		}
+
+		switch ch {
+		case '{':
+			braceDepth++
+		case '}':
+			if braceDepth > 0 {
+				braceDepth--
+			}
+		case '>':
+			if braceDepth == 0 {
+				return idx + 1
+			}
+		}
+	}
+
+	return len(line)
 }
 
 func findMarkdownLinkDestinationEnd(line string, start int) int {

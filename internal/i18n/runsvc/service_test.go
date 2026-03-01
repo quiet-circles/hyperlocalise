@@ -317,6 +317,54 @@ func TestRunWritesMarkdownUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	}
 }
 
+func TestRunWritesMDXUsingSourceTemplateWhenTargetMissing(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.mdx"
+	targetPath := "/tmp/out.mdx"
+	source := "---\ntitle: Welcome\n---\n\nimport Tabs from '@theme/Tabs'\n\n<Tabs defaultValue=\"first\">\n  <Tab value=\"first\" label=\"First\">Run command.</Tab>\n</Tabs>\n"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "FR(" + req.Source + ")", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "import Tabs") {
+		t.Fatalf("expected import statement preserved, got %q", out)
+	}
+	if !strings.Contains(out, "defaultValue=\"first\"") || !strings.Contains(out, "label=\"First\"") {
+		t.Fatalf("expected component attributes preserved, got %q", out)
+	}
+	if !strings.Contains(out, "FR(Run command.)") {
+		t.Fatalf("expected prose translated, got %q", out)
+	}
+}
+
 func TestRunReturnsFatalErrorWhenLockWriteFails(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"
