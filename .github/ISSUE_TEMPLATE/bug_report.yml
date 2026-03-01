@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a reproducible problem in hyperlocalise.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue. Please include enough detail for us to reproduce and fix it quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect to happen?
+      placeholder: A clear and concise summary of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Share exact steps, commands, and files needed to reproduce the issue.
+      placeholder: |
+        1. Run `...`
+        2. Configure `...`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or output
+      description: Paste error messages, stack traces, or command output.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: hyperlocalise version
+      description: Output of `hyperlocalise version` (or git commit SHA if building from source).
+      placeholder: v0.0.0
+
+  - type: input
+    id: go_version
+    attributes:
+      label: Go version
+      description: Output of `go version`.
+      placeholder: go1.22.x
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add anything else that might help diagnose the issue.
