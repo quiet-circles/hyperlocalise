@@ -25,14 +25,28 @@ Use `bedrock` in `llm.profiles.<name>.provider`.
 
 ## Required environment variables
 
-```bash
+<CodeGroup>
+```bash Export
 export AWS_REGION="us-east-1"
 export AWS_ACCESS_KEY_ID="your-access-key-id"
 export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
 ```
 
+```bash .env.local
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+```
+</CodeGroup>
+
 Optional when using temporary credentials:
 
-```bash
+<CodeGroup>
+```bash Export
 export AWS_SESSION_TOKEN="your-session-token"
 ```
+
+```bash .env.local
+AWS_SESSION_TOKEN="your-session-token"
+```
+</CodeGroup>

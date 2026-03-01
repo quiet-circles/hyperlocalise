@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/quiet-circles/hyperlocalise/internal/envloader"
 	"github.com/spf13/cobra"
 )
 
@@ -10,6 +11,13 @@ func newRootCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "hyperlocalise",
 		Short: "hyperlocalise CLI demo application",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := envloader.LoadProjectFiles(); err != nil {
+				return fmt.Errorf("load env files: %w", err)
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
