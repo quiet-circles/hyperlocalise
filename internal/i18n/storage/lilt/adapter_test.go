@@ -84,8 +84,11 @@ func TestPushBuildsLocalePayloadAndTracksSkipped(t *testing.T) {
 	if len(result.Applied) != 1 {
 		t.Fatalf("expected 1 applied id, got %d", len(result.Applied))
 	}
-	if len(result.Skipped) == 0 {
-		t.Fatalf("expected skipped ids")
+	if len(result.Skipped) != 1 {
+		t.Fatalf("expected 1 skipped id, got %d", len(result.Skipped))
+	}
+	if result.Skipped[0] == result.Applied[0] {
+		t.Fatalf("entry id must not be both applied and skipped")
 	}
 	if result.Revision != "rev2" {
 		t.Fatalf("unexpected revision: %q", result.Revision)

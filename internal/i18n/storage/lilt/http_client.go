@@ -285,12 +285,34 @@ func flattenObject(locale, prefix string, obj map[string]any, out *[]storage.Ent
 		if prefix != "" {
 			nextKey = prefix + "." + key
 		}
+
 		switch typed := val.(type) {
-		case string:
-			*out = append(*out, storage.Entry{Key: nextKey, Locale: locale, Value: typed})
 		case map[string]any:
 			flattenObject(locale, nextKey, typed, out)
+		default:
+			encoded, ok := flattenValue(typed)
+			if !ok {
+				continue
+			}
+			*out = append(*out, storage.Entry{Key: nextKey, Locale: locale, Value: encoded})
 		}
+	}
+}
+
+func flattenValue(v any) (string, bool) {
+	switch typed := v.(type) {
+	case nil:
+		return "", false
+	case string:
+		return typed, true
+	case bool, float64, int, int64, uint64:
+		return fmt.Sprint(typed), true
+	default:
+		raw, err := json.Marshal(typed)
+		if err != nil {
+			return "", false
+		}
+		return string(raw), true
 	}
 }
 

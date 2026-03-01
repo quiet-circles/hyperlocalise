@@ -96,3 +96,26 @@ func TestParseArtifactSupportsObjectArrayAndZip(t *testing.T) {
 		t.Fatalf("unexpected zip contents")
 	}
 }
+
+func TestParseArtifactPreservesNonStringLeafValues(t *testing.T) {
+	entries, err := ParseArtifact("fr.json", "fr", []byte(`{"count":2,"active":true,"meta":["a",1],"nested":{"ratio":1.5}}`))
+	if err != nil {
+		t.Fatalf("parse object: %v", err)
+	}
+	byKey := map[string]string{}
+	for _, entry := range entries {
+		byKey[entry.Key] = entry.Value
+	}
+	if byKey["count"] != "2" {
+		t.Fatalf("expected count to be preserved, got %q", byKey["count"])
+	}
+	if byKey["active"] != "true" {
+		t.Fatalf("expected active to be preserved, got %q", byKey["active"])
+	}
+	if byKey["meta"] != `["a",1]` {
+		t.Fatalf("expected array to be preserved as json, got %q", byKey["meta"])
+	}
+	if byKey["nested.ratio"] != "1.5" {
+		t.Fatalf("expected nested number to be preserved, got %q", byKey["nested.ratio"])
+	}
+}

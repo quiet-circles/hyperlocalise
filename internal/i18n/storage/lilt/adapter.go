@@ -201,18 +201,14 @@ func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.Pu
 		key := strings.TrimSpace(entry.Key)
 		locale := strings.TrimSpace(entry.Locale)
 		value := strings.TrimSpace(entry.Value)
-		id := entry.ID()
 		if key == "" || locale == "" || value == "" {
-			skippedSet[id] = struct{}{}
+			skippedSet[entry.ID()] = struct{}{}
 			continue
 		}
 		entry.Key = key
 		entry.Locale = locale
 		entry.Value = value
-		if _, exists := latestByID[id]; exists {
-			skippedSet[id] = struct{}{}
-		}
-		latestByID[id] = entry
+		latestByID[entry.ID()] = entry
 	}
 
 	filesByLocale := map[string][]flatRecord{}
