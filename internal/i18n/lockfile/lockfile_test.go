@@ -21,6 +21,9 @@ func TestLoadMissingFileReturnsEmptyLock(t *testing.T) {
 	if f.LocaleStates == nil {
 		t.Fatalf("expected initialized locale states map")
 	}
+	if f.RunCompleted == nil {
+		t.Fatalf("expected initialized run completed map")
+	}
 	if len(f.LocaleStates) != 0 {
 		t.Fatalf("expected empty locale states, got %d", len(f.LocaleStates))
 	}

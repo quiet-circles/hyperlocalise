@@ -14,11 +14,16 @@ type File struct {
 	ProjectID    string                      `json:"project_id,omitempty"`
 	LastPullAt   *time.Time                  `json:"last_pull_at,omitempty"`
 	LocaleStates map[string]LocaleCheckpoint `json:"locale_states,omitempty"`
+	RunCompleted map[string]RunCompletion    `json:"run_completed,omitempty"`
 }
 
 type LocaleCheckpoint struct {
 	Revision  string     `json:"revision,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+type RunCompletion struct {
+	CompletedAt time.Time `json:"completed_at"`
 }
 
 func Load(path string) (*File, error) {
@@ -29,7 +34,7 @@ func Load(path string) (*File, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &File{LocaleStates: map[string]LocaleCheckpoint{}}, nil
+			return &File{LocaleStates: map[string]LocaleCheckpoint{}, RunCompleted: map[string]RunCompletion{}}, nil
 		}
 		return nil, fmt.Errorf("read lockfile: %w", err)
 	}
@@ -41,6 +46,9 @@ func Load(path string) (*File, error) {
 	if f.LocaleStates == nil {
 		f.LocaleStates = map[string]LocaleCheckpoint{}
 	}
+	if f.RunCompleted == nil {
+		f.RunCompleted = map[string]RunCompletion{}
+	}
 
 	return &f, nil
 }
@@ -51,6 +59,9 @@ func Save(path string, f File) error {
 	}
 	if f.LocaleStates == nil {
 		f.LocaleStates = map[string]LocaleCheckpoint{}
+	}
+	if f.RunCompleted == nil {
+		f.RunCompleted = map[string]RunCompletion{}
 	}
 
 	content, err := json.MarshalIndent(f, "", "  ")
