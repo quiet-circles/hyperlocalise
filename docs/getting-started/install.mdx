@@ -6,7 +6,23 @@ description: "Install hyperlocalise, verify it works, and upgrade safely."
 ## Prerequisites
 
 - macOS or Linux
-- one of: prebuilt binary, `.deb`/`.rpm` package, or Go toolchain
+- one of: installer script, prebuilt binary, `.deb`/`.rpm` package, or Go toolchain
+
+## Install with the bootstrap script
+
+Use the stable bootstrap URL:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | bash
+```
+
+Pin a specific release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | VERSION=v1.2.3 bash
+```
+
+The installer script is also attached to each GitHub release so you can review or download the tagged version directly from release assets.
 
 ## Install from source (Go)
 
@@ -34,5 +50,6 @@ Expected output includes the available commands: `init`, `run`, `status`, `sync`
 
 Re-run your install method.
 
+- Installer users: run the bootstrap command again, optionally with `VERSION=<tag>`.
 - Go install users: run `go install ...@latest` again.
 - Repository users: pull latest changes, then run `make install`.

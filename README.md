@@ -26,6 +26,20 @@ A high-performance localization CLI built in Go for modern development workflows
 - Storage adapter based translation sync with POEditor, Lokalise, Crowdin, and Smartling support
 - Local provenance sidecar metadata for LLM-vs-curation workflows (`draft` vs `curated`)
 
+## Install
+
+Use the stable bootstrap URL:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | bash
+```
+
+Pin a specific release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | VERSION=v1.2.3 bash
+```
+
 # Commands
 
 ```

@@ -41,6 +41,13 @@ nfpms:
     description: High-performance localization CLI for modern development workflows.
     license: MIT
 
+release:
+  github:
+    owner: quiet-circles
+    name: hyperlocalise
+  extra_files:
+    - glob: ./install.sh
+
 checksum:
   name_template: checksums.txt
 
