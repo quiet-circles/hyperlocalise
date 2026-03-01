@@ -5,19 +5,24 @@ description: "Set up a minimal project layout and understand expected output fil
 
 ## Minimal layout
 
-```text
-.
-├── apps/
-│   ├── web/
-│   │   └── lang/
-│   │       └── es-ES.json
-│   └── lab/
-├── packages/
-│   └── ui/
-│       └── lang/
-│           └── en-US.json
-└── i18n.jsonc
-```
+<Tree>
+  <Tree.Folder name="apps" defaultOpen>
+    <Tree.Folder name="web" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="es-ES.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+    <Tree.Folder name="lab" />
+  </Tree.Folder>
+  <Tree.Folder name="packages" defaultOpen>
+    <Tree.Folder name="ui" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="en-US.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+  </Tree.Folder>
+  <Tree.File name="i18n.jsonc" />
+</Tree>
 
 ## Minimal config pattern
 

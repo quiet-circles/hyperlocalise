@@ -17,54 +17,117 @@ This writes `i18n.jsonc` in your current directory.
 
 ## 2. Configure provider credentials
 
-OpenAI:
+`hyperlocalise` automatically reads credentials from `.env` and `.env.local` in your current project directory. Exported shell variables still take precedence.
 
-```bash
+Example:
+
+<CodeGroup>
+```bash Export
 export OPENAI_API_KEY="your-openai-api-key"
 ```
 
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
+OpenAI:
+
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
 Azure OpenAI:
 
-```bash
+<CodeGroup>
+```bash Export
 # Example: https://<resource>.openai.azure.com/openai/v1
 export AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
 export AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
 ```
 
+```bash .env.local
+# Example: https://<resource>.openai.azure.com/openai/v1
+AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
+```
+</CodeGroup>
+
 Gemini:
 
-```bash
+<CodeGroup>
+```bash Export
 export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
 export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
+```bash .env.local
+GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+GEMINI_API_KEY="your-gemini-api-key"
+```
+</CodeGroup>
+
 Anthropic:
 
-```bash
+<CodeGroup>
+```bash Export
 export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 ```
 
+```bash .env.local
+ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+</CodeGroup>
+
 LM Studio:
 
-```bash
+<CodeGroup>
+```bash Export
 export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
 export LM_STUDIO_API_KEY="lm-studio"
 ```
 
+```bash .env.local
+LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+LM_STUDIO_API_KEY="lm-studio"
+```
+</CodeGroup>
+
 Ollama:
 
-```bash
+<CodeGroup>
+```bash Export
 export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
 export OLLAMA_API_KEY="ollama"
 ```
 
+```bash .env.local
+OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+OLLAMA_API_KEY="ollama"
+```
+</CodeGroup>
+
 Groq:
 
-```bash
+<CodeGroup>
+```bash Export
 export GROQ_BASE_URL="https://api.groq.com/openai/v1"
 export GROQ_API_KEY="your-groq-api-key"
 ```
+
+```bash .env.local
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_API_KEY="your-groq-api-key"
+```
+</CodeGroup>
 
 ## 3. Dry-run first
 
