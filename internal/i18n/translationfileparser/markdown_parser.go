@@ -27,10 +27,7 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 	entries := map[string]string{}
 	keyIndex := 0
 
-	inFrontmatter := false
-	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "---" {
-		inFrontmatter = true
-	}
+	inFrontmatter := len(lines) > 0 && strings.TrimSpace(lines[0]) == "---"
 
 	inFence := false
 	fenceMarker := ""
