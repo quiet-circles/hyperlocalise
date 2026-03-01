@@ -13,12 +13,13 @@ A high-performance localization CLI built in Go for modern development workflows
    * [Storage Adapters](#storage-adapters)
    * [Project Layout](#project-layout)
    * [Makefile Targets](#makefile-targets)
+   * [Release](#release)
    * [Contribute](#contribute)
 
 <!--te-->
 
 # Features
-- [goreleaser](https://goreleaser.com/) with `deb.` and `.rpm` packer releasing, including `manpages`, `shell completions`, and grouped changelog generation.
+- [goreleaser](https://goreleaser.com/) releases publishing multi-arch (`amd64`/`arm64`) binaries for macOS and Linux, plus `.deb` and `.rpm` packages.
 - [golangci-lint](https://golangci-lint.run/) for linting and formatting
 - [cobra](https://cobra.dev/) setup including tests
 - [Makefile](Makefile) - with various useful targets and documentation (see Makefile Targets)
@@ -281,6 +282,20 @@ run                            run the app
 staticcheck                    run staticcheck directly
 test                           run tests with JSON output and coverage
 ```
+
+# Release
+- Create and push a semantic version tag to trigger release CI:
+  ```sh
+  git tag v0.1.0
+  git push origin v0.1.0
+  ```
+- Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
+- GoReleaser config: [`.goreleaser.yml`](.goreleaser.yml)
+- Published artifacts include:
+  - `darwin/amd64`, `darwin/arm64` archives
+  - `linux/amd64`, `linux/arm64` archives
+  - Linux `.deb` and `.rpm` packages
+- No extra repository secrets are required beyond the default `GITHUB_TOKEN`.
 
 # Contribute
 If you find issues in that setup or have some nice features / improvements, I would welcome an issue or a PR :)

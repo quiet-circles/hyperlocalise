@@ -1,0 +1,55 @@
+version: 2
+
+project_name: hyperlocalise
+
+builds:
+  - id: hyperlocalise
+    main: ./main.go
+    binary: hyperlocalise
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: binaries
+    ids:
+      - hyperlocalise
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{- .Os }}_{{- .Arch }}
+
+nfpms:
+  - id: linux-packages
+    ids:
+      - hyperlocalise
+    package_name: hyperlocalise
+    file_name_template: "{{ .ConventionalFileName }}"
+    bindir: /usr/bin
+    formats:
+      - deb
+      - rpm
+    homepage: https://github.com/quiet-circles/hyperlocalise
+    maintainer: quiet-circles
+    description: High-performance localization CLI for modern development workflows.
+    license: MIT
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?:.*$'
+    - title: Fixes
+      regexp: '^fix(\(.+\))?:.*$'
+    - title: Maintenance
+      regexp: '^(chore|ci|build|refactor|perf|docs|test)(\(.+\))?:.*$'
