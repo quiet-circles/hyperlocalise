@@ -5,6 +5,14 @@ description: "Build a representative translation evaluation set that catches rea
 
 Use an eval set to measure translation quality on the strings that matter most to you.
 
+## Choose a file format
+
+You can store eval sets as JSON, JSONC, or CSV.
+
+- use JSON or JSONC when you want nested structure and explicit metadata
+- use CSV when you want quick spreadsheet editing with columns like `id`, `source`, `targetLocale`, `context`, `reference`, `tags`, `bucket`, and `group`
+- in CSV, separate multiple tags with semicolons (`ui;short;icu`)
+
 ## Pick representative coverage
 
 Include a mix of string types so you can detect regressions across different content shapes.

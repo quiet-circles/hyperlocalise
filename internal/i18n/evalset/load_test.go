@@ -7,14 +7,16 @@ import (
 	"testing"
 )
 
-func TestLoad(t *testing.T) {
+func TestLoadJSONAndJSONC(t *testing.T) {
 	testCases := []struct {
 		name        string
+		filename    string
 		content     string
 		errContains string
 	}{
 		{
-			name: "decode valid jsonc dataset",
+			name:     "decode valid jsonc dataset",
+			filename: "evalset.jsonc",
 			content: `{
 			  // schema metadata for tooling
 			  "version": "v1",
@@ -37,7 +39,8 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
-			name: "reject unknown fields",
+			name:     "reject unknown fields",
+			filename: "evalset.json",
 			content: `{
 			  "cases": [
 			    {
@@ -51,61 +54,18 @@ func TestLoad(t *testing.T) {
 			errContains: "unknown field",
 		},
 		{
-			name: "validate non-empty cases",
+			name:     "validate non-empty cases",
+			filename: "evalset.json",
 			content: `{
 			  "cases": []
 			}`,
 			errContains: "cases: must not be empty",
 		},
-		{
-			name: "validate required source",
-			content: `{
-			  "cases": [
-			    {
-			      "id": "a",
-			      "source": "",
-			      "targetLocale": "de-DE"
-			    }
-			  ]
-			}`,
-			errContains: "source: must not be empty",
-		},
-		{
-			name: "validate required target locale",
-			content: `{
-			  "cases": [
-			    {
-			      "id": "a",
-			      "source": "Settings",
-			      "targetLocale": ""
-			    }
-			  ]
-			}`,
-			errContains: "targetLocale: must not be empty",
-		},
-		{
-			name: "validate unique id",
-			content: `{
-			  "cases": [
-			    {
-			      "id": "dup",
-			      "source": "One",
-			      "targetLocale": "ja-JP"
-			    },
-			    {
-			      "id": "dup",
-			      "source": "Two",
-			      "targetLocale": "ja-JP"
-			    }
-			  ]
-			}`,
-			errContains: "duplicate id",
-		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "evalset.jsonc")
+			path := filepath.Join(t.TempDir(), tc.filename)
 			if err := os.WriteFile(path, []byte(tc.content), 0o644); err != nil {
 				t.Fatalf("write evalset: %v", err)
 			}
@@ -137,6 +97,106 @@ func TestLoad(t *testing.T) {
 
 			if dataset.Cases[0].ID != "ui.pay.cta" {
 				t.Fatalf("expected case id ui.pay.cta, got %q", dataset.Cases[0].ID)
+			}
+		})
+	}
+}
+
+func TestLoadCSV(t *testing.T) {
+	testCases := []struct {
+		name        string
+		content     string
+		errContains string
+	}{
+		{
+			name: "decode valid csv dataset",
+			content: strings.Join([]string{
+				"id,source,targetLocale,context,reference,tags,bucket,group",
+				`ui.pay.cta,Pay now,fr-FR,Primary CTA,Payer maintenant,"ui;short",checkout,critical`,
+			}, "\n"),
+		},
+		{
+			name: "reject unknown csv header",
+			content: strings.Join([]string{
+				"id,source,targetLocale,unknown",
+				"a,Hello,es-ES,x",
+			}, "\n"),
+			errContains: "unknown header",
+		},
+		{
+			name: "reject missing required csv header",
+			content: strings.Join([]string{
+				"id,source",
+				"a,Hello",
+			}, "\n"),
+			errContains: "missing required header \"targetLocale\"",
+		},
+		{
+			name: "validate required source from csv",
+			content: strings.Join([]string{
+				"id,source,targetLocale",
+				"a,,de-DE",
+			}, "\n"),
+			errContains: "source: must not be empty",
+		},
+		{
+			name: "validate required target locale from csv",
+			content: strings.Join([]string{
+				"id,source,targetLocale",
+				"a,Settings,",
+			}, "\n"),
+			errContains: "targetLocale: must not be empty",
+		},
+		{
+			name: "validate unique id from csv",
+			content: strings.Join([]string{
+				"id,source,targetLocale",
+				"dup,One,ja-JP",
+				"dup,Two,ja-JP",
+			}, "\n"),
+			errContains: "duplicate id",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "evalset.csv")
+			if err := os.WriteFile(path, []byte(tc.content), 0o644); err != nil {
+				t.Fatalf("write evalset: %v", err)
+			}
+
+			dataset, err := Load(path)
+			if tc.errContains != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tc.errContains)
+				}
+
+				if !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("expected error containing %q, got %q", tc.errContains, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+
+			if dataset == nil {
+				t.Fatalf("Load() dataset is nil")
+			}
+
+			if len(dataset.Cases) != 1 {
+				t.Fatalf("expected 1 case, got %d", len(dataset.Cases))
+			}
+
+			if dataset.Cases[0].ID != "ui.pay.cta" {
+				t.Fatalf("expected case id ui.pay.cta, got %q", dataset.Cases[0].ID)
+			}
+
+			tags := dataset.Cases[0].Tags
+			if len(tags) != 2 || tags[0] != "ui" || tags[1] != "short" {
+				t.Fatalf("expected tags [ui short], got %#v", tags)
 			}
 		})
 	}
