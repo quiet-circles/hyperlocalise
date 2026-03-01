@@ -7,39 +7,41 @@
     "light": "#14b8a6",
     "dark": "#0d9488"
   },
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        "index",
-        "getting-started/quickstart",
-        "getting-started/project-layout"
-      ]
-    },
-    {
-      "group": "CLI",
-      "pages": [
-        "cli/commands",
-        "cli/sync",
-        "cli/status"
-      ]
-    },
-    {
-      "group": "Storage",
-      "pages": [
-        "storage/overview",
-        "storage/poeditor",
-        "storage/lokalise",
-        "storage/crowdin"
-      ]
-    },
-    {
-      "group": "Reference",
-      "pages": [
-        "reference/llm-providers",
-        "reference/translationfileparser",
-        "reference/maintenance"
-      ]
-    }
-  ]
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "getting-started/quickstart",
+          "getting-started/project-layout"
+        ]
+      },
+      {
+        "group": "CLI",
+        "pages": [
+          "cli/commands",
+          "cli/sync",
+          "cli/status"
+        ]
+      },
+      {
+        "group": "Storage",
+        "pages": [
+          "storage/overview",
+          "storage/poeditor",
+          "storage/lokalise",
+          "storage/crowdin"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/llm-providers",
+          "reference/translationfileparser",
+          "reference/maintenance"
+        ]
+      }
+    ]
+  }
 }
