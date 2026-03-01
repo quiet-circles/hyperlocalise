@@ -1,0 +1,31 @@
+---
+title: "sync push"
+description: "Push local translation changes to remote storage adapters."
+---
+
+## Usage
+
+```bash
+hyperlocalise sync push [--config <path>] [flags]
+```
+
+## Safe default behavior
+
+`sync push` defaults to dry-run mode and conflict failure.
+
+## Flags
+
+- `--config`: config path
+- `--locale`: target locale(s), repeatable
+- `--dry-run`: preview only (default `true`)
+- `--output`: `text` or `json`
+- `--fail-on-conflict`: return error when conflicts are detected (default `true`)
+- `--force-conflicts`: allow overwrite for mismatch cases where policy allows (default `false`)
+
+## Example
+
+```bash
+hyperlocalise sync push --config i18n.jsonc --locale es-ES --dry-run=false
+```
+
+See [conflict handling](/troubleshooting/conflicts) before using `--force-conflicts`.

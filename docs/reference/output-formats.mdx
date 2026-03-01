@@ -1,0 +1,44 @@
+---
+title: "Output formats"
+description: "Reference for run, status, and sync command output formats."
+---
+
+## `run` output (`text`)
+
+Key summary fields:
+
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+Failure line format:
+
+```text
+failure target=<path> key=<key> reason=<reason>
+```
+
+## `status` output (`csv`)
+
+Header columns:
+
+```csv
+key,namespace,locale,status,origin,state
+```
+
+## `sync` output (`text` or `json`)
+
+Text summary fields:
+
+- `action`
+- `creates`
+- `updates`
+- `unchanged`
+- `conflicts`
+- `applied`
+- `skipped`
+- `warnings`
+
+Use JSON output when integrating with CI checks.

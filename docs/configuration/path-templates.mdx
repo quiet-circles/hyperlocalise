@@ -1,0 +1,38 @@
+---
+title: "Path templates"
+description: "Use source and target placeholders safely in bucket file mappings."
+---
+
+## Supported placeholders
+
+- `{{source}}`: source locale
+- `{{target}}`: target locale
+
+Example:
+
+```jsonc
+{
+  "from": "packages/ui/lang/{{source}}.json",
+  "to": "apps/web/lang/{{target}}.json"
+}
+```
+
+## Good patterns
+
+- Keep source and target trees separate.
+- Use stable bucket names by domain (`ui`, `marketing`, `emails`).
+- Keep one responsibility per file mapping.
+
+## Anti-patterns
+
+- Writing `to` paths back into source directories.
+- Reusing the same output path for multiple buckets.
+- Mixing locale tokens with ad-hoc string replacement outside templates.
+
+## Quick checks
+
+Before running:
+
+1. confirm `from` resolves for source locale,
+2. confirm `to` can be created for each target locale,
+3. run `hyperlocalise run --dry-run` to inspect planned tasks.

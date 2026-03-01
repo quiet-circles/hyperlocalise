@@ -1,0 +1,29 @@
+---
+title: "CI automation"
+description: "Suggested CI checks for drift, conflicts, and translation completeness."
+---
+
+## Suggested checks
+
+### 1. Config + planning smoke test
+
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+### 2. Status snapshot
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+Store CSV as a build artifact for trend tracking.
+
+### 3. Sync conflict gate
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --output json --fail-on-conflict
+hyperlocalise sync push --config i18n.jsonc --output json --fail-on-conflict
+```
+
+Keep `--dry-run` enabled in CI unless your pipeline is explicitly authorized to modify files or remote systems.

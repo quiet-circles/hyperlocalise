@@ -1,30 +1,32 @@
 ---
 title: "hyperlocalise"
-description: "High-performance localization CLI for local translation generation and TMS synchronization."
+description: "CLI-first localization workflows for draft generation, curation sync, and status reporting."
 ---
 
-`hyperlocalise` is a Go CLI for localization workflows that combine local files, LLM draft generation, and remote TMS curation.
+`hyperlocalise` helps you generate local translation drafts, sync with your TMS, and track what still needs review.
 
-## Features
+## Who this is for
 
-- Fast CLI with Go + Cobra command structure.
-- Local translation generation with lock-file based task skipping.
-- Sync workflows for POEditor, Lokalise, Crowdin, and Smartling adapters.
-- Sidecar metadata model for translation provenance (`draft` vs `curated`).
-- Release pipeline with multi-arch binaries and Linux packages.
+Use this CLI if you:
 
-## Core commands
+- keep translation files in your repository,
+- want AI-generated drafts as a starting point,
+- still need human curation in POEditor, Lokalise, or Crowdin.
 
-```bash
-hyperlocalise init
-hyperlocalise run
-hyperlocalise status
-hyperlocalise sync pull
-hyperlocalise sync push
+## Core workflow
+
+```text
+init -> configure i18n.jsonc -> run --dry-run -> run -> sync push -> curate in TMS -> sync pull -> status
 ```
 
-See:
+## Start in 10 minutes
 
-- [Quickstart](/getting-started/quickstart)
-- [Command reference](/cli/commands)
-- [Storage overview](/storage/overview)
+1. [Install the CLI](/getting-started/install).
+2. [Run quickstart](/getting-started/quickstart).
+3. [Set up your i18n config](/configuration/i18n-config).
+
+## Common next steps
+
+- Learn command behavior in [commands overview](/commands/overview).
+- Configure provider credentials in [provider credentials](/configuration/provider-credentials).
+- Understand sync behavior in [storage overview](/storage/overview).

@@ -1,25 +1,9 @@
 ---
 title: "Smartling adapter"
-description: "Smartling adapter configuration and sync behavior."
+description: "Configure Smartling for remote translation pull/push synchronization."
 ---
 
-The Smartling adapter implements `sync pull` and `sync push` through Smartling Auth and Strings APIs.
-
-## Sync behavior
-
-- `Pull`: list translations for selected locales and map them to normalized entries.
-- `Push`: upsert non-empty local entries keyed by `key + context + locale`.
-
-## Secret resolution
-
-Smartling authentication secret lookup uses this order:
-
-1. Environment variable named by `storage.config.userSecretEnv`.
-2. `SMARTLING_USER_SECRET`.
-
-The adapter rejects inline `userSecret` in config. Use environment variables only.
-
-## Config
+## Required config
 
 ```jsonc
 {
@@ -27,26 +11,28 @@ The adapter rejects inline `userSecret` in config. Use environment variables onl
     "adapter": "smartling",
     "config": {
       "projectID": "your-project-id",
-      "userIdentifier": "your-user-identifier",
-      "userSecretEnv": "SMARTLING_USER_SECRET",
-      "targetLanguages": ["fr", "de"],
-      "timeoutSeconds": 30
+      "userIdentifier": "your-smartling-user-identifier",
+      "userSecretEnv": "SMARTLING_USER_SECRET"
     }
   }
 }
 ```
 
-Supported config fields:
+## Required secret
 
-- `projectID` (required)
-- `userIdentifier` (required)
-- `userSecretEnv` (optional, default `SMARTLING_USER_SECRET`)
-- `targetLanguages` (optional)
-- `timeoutSeconds` (optional, default `30`)
+```bash
+export SMARTLING_USER_SECRET="your-smartling-user-secret"
+```
 
-## Behavior notes
+`userSecret` inline in config is not supported. Use environment variables only.
 
-- Empty locale or value entries are skipped on pull and push.
-- Context is supported and mapped to Smartling instruction text.
-- Namespace mapping is local-only.
-- Conflict resolution is handled by sync service logic.
+## Optional config fields
+
+- `targetLanguages`
+- `timeoutSeconds` (defaults to `30`)
+
+## Common issues
+
+- missing secret: export `SMARTLING_USER_SECRET` in the same shell session
+- missing user identifier: set `storage.config.userIdentifier`
+- locale mismatch: align `targetLanguages` with your project locales

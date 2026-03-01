@@ -1,16 +1,9 @@
 ---
 title: "Lokalise adapter"
-description: "Lokalise API v2 adapter flow and configuration."
+description: "Configure Lokalise API v2 for pull/push synchronization."
 ---
 
-The Lokalise adapter implements `sync pull` and `sync push` over Lokalise API v2.
-
-## Sync behavior
-
-- `Pull`: resolve locales, list keys with translations, map to normalized entries.
-- `Push`: normalize local entries, split existing/missing keys, update existing keys, create missing keys.
-
-## Config
+## Required config
 
 ```jsonc
 {
@@ -18,15 +11,24 @@ The Lokalise adapter implements `sync pull` and `sync push` over Lokalise API v2
     "adapter": "lokalise",
     "config": {
       "projectID": "your-project-id",
-      "apiTokenEnv": "LOKALISE_API_TOKEN",
-      "targetLanguages": ["fr", "de"],
-      "timeoutSeconds": 30
+      "apiTokenEnv": "LOKALISE_API_TOKEN"
     }
   }
 }
 ```
 
-Token source:
+## Optional config fields
 
-- `LOKALISE_API_TOKEN` by default.
-- Or the environment variable defined in `apiTokenEnv`.
+- `targetLanguages`
+- `timeoutSeconds`
+
+## Token resolution
+
+- default env var: `LOKALISE_API_TOKEN`
+- override with `apiTokenEnv`
+
+## Common issues
+
+- unauthorized errors: token missing or insufficient scope
+- locale mismatch: align Lokalise language codes with target locales
+- timeout errors: increase `timeoutSeconds` for large projects

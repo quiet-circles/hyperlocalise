@@ -1,0 +1,58 @@
+---
+title: "Development"
+description: "Develop and validate the hyperlocalise CLI in Go."
+---
+
+## Prerequisites
+
+- Go 1.26+
+- repository clone
+- `make` available in your shell
+
+## Bootstrap tools and modules
+
+```bash
+make bootstrap
+```
+
+This downloads Go modules and installs the pinned lint toolchain.
+
+## Daily development loop
+
+```bash
+make fmt
+make lint
+make test
+make check-build
+```
+
+## Run the CLI locally
+
+```bash
+make run
+# or
+go run -ldflags "-X main.version=dev" main.go
+```
+
+## Install local binary
+
+```bash
+make install
+hyperlocalise version
+```
+
+## Key code locations
+
+- `cmd/`: Cobra commands, flags, and CLI output behavior
+- `internal/config/`: `i18n.jsonc` parsing and validation
+- `internal/i18n/runsvc/`: `run` planning and execution flow
+- `internal/i18n/syncsvc/`: sync orchestration and conflict logic
+- `internal/i18n/storage/`: adapter contracts and provider integrations
+
+## Before opening a PR
+
+```bash
+make precommit
+```
+
+This runs formatting, linting, tests, and build checks in the same flow used by contributors.

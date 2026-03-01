@@ -1,0 +1,26 @@
+---
+title: "init"
+description: "Create or overwrite the i18n.jsonc template in your project."
+---
+
+## Usage
+
+```bash
+hyperlocalise init [--force]
+```
+
+## What it does
+
+- writes `i18n.jsonc` from the built-in template
+- fails if file already exists (unless `--force`)
+
+## Flag
+
+- `--force`: overwrite an existing `i18n.jsonc`
+
+## Typical flow
+
+```bash
+hyperlocalise init
+hyperlocalise run --dry-run
+```

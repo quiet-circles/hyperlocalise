@@ -1,0 +1,30 @@
+---
+title: "status"
+description: "Report translation status per key/namespace/locale in CSV format."
+---
+
+## Usage
+
+```bash
+hyperlocalise status [--config <path>] [flags]
+```
+
+## Flags
+
+- `--config`: path to config file
+- `--locale`: target locale filter (repeatable)
+- `--output`: output format (`csv`)
+- `--group`: filter by group name
+- `--bucket`: filter by bucket name
+
+## Status values
+
+- `translated`: value is non-empty and not marked as draft
+- `needs_review`: provenance is `origin=llm` and `state=draft`
+- `untranslated`: value is empty
+
+## Example
+
+```bash
+hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
+```

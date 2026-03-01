@@ -1,0 +1,23 @@
+---
+title: "Local generation workflow"
+description: "Run draft generation safely and make lock-file behavior predictable."
+---
+
+## Recommended loop
+
+1. `hyperlocalise run --dry-run`
+2. inspect task list and counts
+3. `hyperlocalise run`
+4. review failures and rerun if needed
+
+## Lock-file behavior
+
+`.hyperlocalise.lock.json` tracks completed tasks to avoid repeated work.
+
+When you change source content or config mappings, re-run and verify whether new tasks are planned.
+
+## Good practice
+
+- keep dry-run in CI for visibility
+- use deterministic file mappings
+- avoid manual edits to lock state

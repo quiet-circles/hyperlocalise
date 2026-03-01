@@ -10,24 +10,38 @@
   "navigation": {
     "groups": [
       {
-        "group": "Getting Started",
+        "group": "Start Here",
         "pages": [
           "index",
+          "getting-started/install",
           "getting-started/quickstart",
-          "getting-started/project-layout"
+          "getting-started/first-project"
         ]
       },
       {
-        "group": "CLI",
+        "group": "Configuration",
         "pages": [
-          "cli/commands",
-          "cli/sync",
-          "cli/status"
+          "configuration/i18n-config",
+          "configuration/path-templates",
+          "configuration/provider-credentials"
         ]
       },
       {
-        "group": "Storage",
+        "group": "Commands",
         "pages": [
+          "commands/overview",
+          "commands/init",
+          "commands/run",
+          "commands/status",
+          "commands/sync-pull",
+          "commands/sync-push",
+          "commands/version-and-completion"
+        ]
+      },
+      {
+        "group": "Providers & Storage",
+        "pages": [
+          "providers/llm-providers",
           "storage/overview",
           "storage/poeditor",
           "storage/lokalise",
@@ -36,11 +50,36 @@
         ]
       },
       {
+        "group": "Workflows",
+        "pages": [
+          "workflows/local-generation",
+          "workflows/tms-curation-loop",
+          "workflows/ci-automation"
+        ]
+      },
+      {
+        "group": "Troubleshooting",
+        "pages": [
+          "troubleshooting/common-errors",
+          "troubleshooting/conflicts",
+          "troubleshooting/performance"
+        ]
+      },
+      {
         "group": "Reference",
         "pages": [
-          "reference/llm-providers",
-          "reference/translationfileparser",
-          "reference/maintenance"
+          "reference/config-schema",
+          "reference/output-formats",
+          "reference/glossary",
+          "reference/creator"
+        ]
+      },
+      {
+        "group": "Contributing",
+        "pages": [
+          "contributing/docs-contributions",
+          "contributing/development",
+          "contributing/release-maintenance"
         ]
       }
     ]

@@ -1,0 +1,27 @@
+---
+title: "TMS curation loop"
+description: "Move from local draft generation to human-curated translations and back."
+---
+
+## End-to-end sequence
+
+1. generate drafts locally with `run`
+2. push drafts with `sync push --dry-run=false`
+3. translators curate in POEditor/Lokalise/Crowdin
+4. pull curated updates with `sync pull --dry-run=false`
+5. verify with `status`
+
+## Decision points
+
+- Keep `--fail-on-conflict=true` for safety.
+- Use `--apply-curated-over-draft` on pull when curated data should win.
+- Use `--force-conflicts` on push only after reviewing conflicts.
+
+## Auditability
+
+Use JSON output for machine-readable review:
+
+```bash
+hyperlocalise sync pull --output json
+hyperlocalise sync push --output json
+```

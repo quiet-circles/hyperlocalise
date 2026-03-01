@@ -1,0 +1,33 @@
+---
+title: "Conflict handling"
+description: "Understand pull/push conflicts and apply safe resolution strategies."
+---
+
+## Pull conflicts
+
+Typical case: local curated value differs from remote value.
+
+Safe resolution:
+
+1. run `sync pull` with `--output json`
+2. inspect conflict entries
+3. decide source of truth
+4. rerun with updated local/remote state
+
+`--apply-curated-over-draft` only applies when local entry is draft.
+
+## Push conflicts
+
+Typical case: local draft differs from remote curated value.
+
+Safe resolution:
+
+1. inspect conflict report in JSON
+2. keep default conflict fail behavior
+3. use `--force-conflicts` only for reviewed exceptions
+
+## Recommended defaults
+
+- keep `--fail-on-conflict=true`
+- keep `--dry-run=true` until report is reviewed
+- archive JSON reports in CI for audit trails

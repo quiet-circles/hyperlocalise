@@ -1,66 +1,40 @@
 ---
 title: "Storage overview"
-description: "Normalized translation entry model, adapter contract, and sync conflict behavior."
+description: "How local files, sidecar metadata, and remote adapters work during sync."
 ---
 
-This storage model is the contract between local translation files, remote adapters, and sync orchestration.
+## What the storage layer does
 
-## Core model
+Storage connects:
 
-A translation entry uses this identity:
+- local translation files,
+- sidecar provenance metadata,
+- remote adapter APIs.
+
+## Entry identity
+
+Each translation entry is identified by:
 
 - `key`
 - `context`
 - `locale`
 
-Relevant fields include:
-
-- `value`
-- `provenance` (`origin`, `state`, `updated_at`, `updated_by`)
-- `remote` metadata (`adapter`, `revision`, `updated_at`)
-
 ## Why sidecar metadata exists
 
-Local values remain in normal translation files (for example `lang/fr.json`).
-Operational metadata is stored separately (for example `lang/fr.meta.json`) to avoid mixing translation content with provenance state.
+Your user-facing text stays in normal translation files. Operational metadata (for example draft vs curated state) stays in sidecar metadata files so translation content remains clean.
 
-## Adapter interface
+## Pull and push lifecycle
 
-Remote providers map API payloads to normalized entries through an adapter contract:
+1. `run` generates local drafts (`origin=llm`, `state=draft`).
+2. `sync push` sends local changes to remote storage.
+3. Human translators curate values in remote TMS.
+4. `sync pull` applies curated changes locally.
 
-- `Pull(...)`
-- `Push(...)`
-- `Name()`
-- `Capabilities()`
+## Conflict rules
 
-Conflict decisions are centralized in sync service logic, not adapter code.
+- Pull can auto-apply curated-over-draft when enabled.
+- Push protects curated remote values by default.
+- `--fail-on-conflict` prevents silent drift.
+- `--force-conflicts` is opt-in for risky overwrite paths.
 
-## LLM to curation flow
-
-1. Generate local drafts and mark metadata as `origin=llm`, `state=draft`.
-2. Optionally push drafts to remote storage.
-3. Human translators curate in remote TMS.
-4. Pull curated values back into local files and metadata.
-
-## Pull conflict behavior
-
-- Missing local key with remote value: create locally.
-- Equal local and remote values: unchanged.
-- Local `llm/draft` differs from remote curated value: update local.
-- Local `curated` differs from remote value: conflict.
-- Local provenance missing and value differs: conflict.
-
-## Push conflict behavior
-
-- Missing remote key: create candidate.
-- Equal local and remote values: unchanged.
-- Local draft differs from remote curated value: conflict by default.
-- Unknown local provenance with mismatch: conflict by default.
-- `--force-conflicts` can allow selected overwrite candidates.
-
-## Operational flags
-
-- `--dry-run`: compute and report only.
-- `--fail-on-conflict`: return error when conflicts are present.
-- `--apply-curated-over-draft`: allow curated pull-overwrites for local drafts.
-- `--force-conflicts`: allow push overwrite candidates where policy permits.
+For specific conflict decisions, see [conflicts](/troubleshooting/conflicts).

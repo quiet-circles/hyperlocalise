@@ -1,0 +1,36 @@
+---
+title: "run"
+description: "Plan and execute local translation generation from configured source files."
+---
+
+## Usage
+
+```bash
+hyperlocalise run [--config <path>] [--dry-run]
+```
+
+## Behavior
+
+1. load and validate config,
+2. plan tasks from groups and buckets,
+3. skip tasks already in `.hyperlocalise.lock.json`,
+4. execute remaining tasks,
+5. persist successful tasks to lock state.
+
+## Flags
+
+- `--config`: path to config file (default `i18n.jsonc` in current directory)
+- `--dry-run`: print plan only, do not translate or write files
+
+## Output fields
+
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+## Failure output
+
+On task failure, output includes `failure target=<...> key=<...> reason=<...>`.

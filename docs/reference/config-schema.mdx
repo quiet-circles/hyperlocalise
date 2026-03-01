@@ -1,0 +1,41 @@
+---
+title: "Config schema"
+description: "Concise reference for i18n.jsonc fields used by hyperlocalise."
+---
+
+## Top-level keys
+
+- `locales`
+- `buckets`
+- `groups`
+- `llm`
+- `storage` (required for `sync`)
+
+## `locales`
+
+- `source` (string, required)
+- `targets` (string array, required)
+- `fallbacks` (object, optional)
+
+## `buckets`
+
+- map of bucket name -> bucket definition
+- `files` array with `from` and `to` templates
+
+## `groups`
+
+- map of group name -> group definition
+- `targets` array
+- `buckets` array
+
+## `llm`
+
+- `profiles` map of profile name -> provider/model/prompt
+- `rules` array with `priority`, `group`, `profile`
+
+## `storage`
+
+- `adapter`: `poeditor` | `lokalise` | `crowdin` | `smartling`
+- `config`: adapter-specific fields
+
+For examples, see [i18n config](/configuration/i18n-config).

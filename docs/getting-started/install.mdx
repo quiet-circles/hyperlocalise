@@ -1,0 +1,38 @@
+---
+title: "Install"
+description: "Install hyperlocalise, verify it works, and upgrade safely."
+---
+
+## Prerequisites
+
+- macOS or Linux
+- one of: prebuilt binary, `.deb`/`.rpm` package, or Go toolchain
+
+## Install from source (Go)
+
+```bash
+go install github.com/quiet-circles/hyperlocalise@latest
+```
+
+## Build from repository
+
+```bash
+make bootstrap
+make install
+```
+
+## Verify install
+
+```bash
+hyperlocalise version
+hyperlocalise --help
+```
+
+Expected output includes the available commands: `init`, `run`, `status`, `sync`, and `version`.
+
+## Upgrade
+
+Re-run your install method.
+
+- Go install users: run `go install ...@latest` again.
+- Repository users: pull latest changes, then run `make install`.

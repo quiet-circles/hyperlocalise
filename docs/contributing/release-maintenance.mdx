@@ -1,0 +1,31 @@
+---
+title: "Release maintenance"
+description: "Maintainer workflow for quality gates and CLI release publishing."
+---
+
+## Quality checks
+
+```bash
+make fmt
+make lint
+make test
+make precommit
+```
+
+## Release flow
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release automation files:
+
+- `.github/workflows/release.yml`
+- `.goreleaser.yml`
+
+## Published artifact targets
+
+- macOS: `amd64`, `arm64`
+- Linux: `amd64`, `arm64`
+- packages: `.deb`, `.rpm`

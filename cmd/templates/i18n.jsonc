@@ -20,12 +20,12 @@
         {
           // Input path template.
           // Example with source=en-US:
-          // content/ui/en-US/strings.json
-          "from": "content/ui/{{source}}/strings.json",
+          // packages/ui/lang/en-US.json
+          "from": "packages/ui/lang/{{source}}.json",
           // Output path template.
           // Example with target=es-ES:
-          // dist/ui/es-ES/strings.json
-          "to": "dist/ui/{{target}}/strings.json"
+          // apps/web/lang/es-ES.json
+          "to": "apps/web/lang/{{target}}.json"
         }
       ]
     }

@@ -1,0 +1,68 @@
+---
+title: "i18n config"
+description: "Field-by-field guide for i18n.jsonc used by run, status, and sync commands."
+---
+
+## File overview
+
+`i18n.jsonc` controls locales, file mapping, model profiles, and rule selection.
+
+## Locales
+
+- `locales.source`: source locale.
+- `locales.targets`: list of target locales.
+- optional `locales.fallbacks`: fallback order per locale.
+
+## Buckets
+
+`buckets` map source files to target output templates.
+
+Each file mapping uses:
+
+- `from`: source path template
+- `to`: target path template
+
+Use `{{source}}` and `{{target}}` in templates.
+
+## Groups
+
+`groups.<name>` defines what to process together.
+
+- `targets`: subset of `locales.targets`
+- `buckets`: list of bucket names
+
+## LLM profiles
+
+`llm.profiles.<name>` fields:
+
+- `provider`: `openai` or `lmstudio`
+- `model`: provider model id
+- `prompt`: translation prompt template
+
+Prompt variables:
+
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`
+
+## Rules
+
+`llm.rules` choose profile per group.
+
+- `priority`: higher wins
+- `group`: group name
+- `profile`: profile name
+
+## Starter config
+
+```bash
+hyperlocalise init
+```
+
+Then edit the generated `i18n.jsonc` for your project.
+
+## Validation tips
+
+- Keep group targets inside `locales.targets`.
+- Keep group buckets aligned with `buckets` keys.
+- Keep profile names consistent between `profiles` and `rules`.

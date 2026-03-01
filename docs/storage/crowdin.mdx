@@ -1,25 +1,30 @@
 ---
 title: "Crowdin adapter"
-description: "Crowdin adapter configuration for hyperlocalise sync operations."
+description: "Configure Crowdin for remote translation synchronization."
 ---
 
-The Crowdin adapter provides remote sync support through Crowdin project APIs.
+## Required config
 
-## Config
-
-```json
+```jsonc
 {
-  "adapter": "crowdin",
-  "config": {
-    "projectID": "123456",
-    "apiTokenEnv": "CROWDIN_API_TOKEN",
-    "sourceLanguage": "en",
-    "targetLanguages": ["fr", "de"]
+  "storage": {
+    "adapter": "crowdin",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "CROWDIN_API_TOKEN"
+    }
   }
 }
 ```
 
-Requirements:
+## Optional config fields
 
-- Set `CROWDIN_API_TOKEN` in your environment.
-- Use a numeric Crowdin `projectID`.
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+## Common issues
+
+- token not found: export `CROWDIN_API_TOKEN`
+- project lookup failure: check project ID and account permissions
+- partial updates: review conflict report with `--output json`

@@ -1,35 +1,21 @@
 ---
 title: "Quickstart"
-description: "Run hyperlocalise locally with your i18n config and provider credentials."
+description: "Run hyperlocalise end-to-end in about 10 minutes."
 ---
 
-## Prerequisites
+## Goal
 
-- Go toolchain available on your machine.
-- An `i18n.jsonc` file in your project.
-- Provider credentials if you run translation or remote sync.
+Create an `i18n.jsonc`, run translation planning safely, generate outputs, and review status.
 
-## Bootstrap and run
+## 1. Initialize config
 
 ```bash
-make bootstrap
-make test
-make install
+hyperlocalise init
 ```
 
-Then run:
+This writes `i18n.jsonc` in your current directory.
 
-```bash
-hyperlocalise run --config i18n.jsonc
-```
-
-Use dry-run mode to inspect planned work without writing changes:
-
-```bash
-hyperlocalise run --config i18n.jsonc --dry-run
-```
-
-## Configure provider credentials
+## 2. Configure provider credentials
 
 OpenAI:
 
@@ -37,15 +23,38 @@ OpenAI:
 export OPENAI_API_KEY="your-openai-api-key"
 ```
 
-LM Studio (optional overrides):
+LM Studio:
 
 ```bash
 export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
 export LM_STUDIO_API_KEY="lm-studio"
 ```
 
-## Next steps
+## 3. Dry-run first
 
-- Review CLI details in [Commands](/cli/commands).
-- Review remote sync behavior in [Sync](/cli/sync).
-- Choose a storage adapter in [Storage overview](/storage/overview).
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+Check `planned_total`, `executable_total`, and the listed `tasks`.
+
+## 4. Execute generation
+
+```bash
+hyperlocalise run --config i18n.jsonc
+```
+
+This writes translations and updates `.hyperlocalise.lock.json`.
+
+## 5. Review status
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+Use `needs_review` rows to identify entries that still need human curation.
+
+## Next
+
+- Tune config in [i18n config](/configuration/i18n-config).
+- Sync with your TMS using [sync push](/commands/sync-push) and [sync pull](/commands/sync-pull).

@@ -1,0 +1,35 @@
+---
+title: "Common errors"
+description: "Troubleshoot frequent setup, config, provider, and sync failures."
+---
+
+## `i18n.jsonc already exists; use --force to overwrite`
+
+Cause: running `init` where config already exists.
+
+Fix:
+
+```bash
+hyperlocalise init --force
+```
+
+## `storage config is required`
+
+Cause: `sync` command used without top-level `storage` config.
+
+Fix: add `storage.adapter` and `storage.config` in `i18n.jsonc`.
+
+## `unsupported output format`
+
+Cause: wrong `--output` value.
+
+Fixes:
+
+- `status`: only `csv`
+- `sync`: `text` or `json`
+
+## Provider auth failures
+
+Cause: missing/invalid env token.
+
+Fix: re-export token in the same shell session and rerun.

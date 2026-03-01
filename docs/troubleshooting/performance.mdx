@@ -1,0 +1,22 @@
+---
+title: "Performance"
+description: "Improve runtime and stability on large localization projects."
+---
+
+## Reduce avoidable work
+
+- rely on lock-file skipping in `run`
+- split very large mappings into smaller buckets
+- limit locale scope with repeated `--locale`
+
+## Improve sync reliability
+
+- set adapter `timeoutSeconds` when working with large projects
+- run per-locale sync jobs instead of full fan-out when needed
+- use JSON output for easier automated retry logic
+
+## Diagnose hotspots
+
+- compare `planned_total` vs `executable_total`
+- inspect repeated failures by `target` and `key`
+- check network/API rate limits from your provider

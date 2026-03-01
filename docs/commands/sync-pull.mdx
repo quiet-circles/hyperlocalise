@@ -1,0 +1,31 @@
+---
+title: "sync pull"
+description: "Pull curated translations from remote storage into local files."
+---
+
+## Usage
+
+```bash
+hyperlocalise sync pull [--config <path>] [flags]
+```
+
+## Safe default behavior
+
+`sync pull` defaults to dry-run mode. Start by reviewing the report, then rerun with `--dry-run=false`.
+
+## Flags
+
+- `--config`: config path
+- `--locale`: target locale(s), repeatable
+- `--dry-run`: preview only (default `true`)
+- `--output`: `text` or `json`
+- `--fail-on-conflict`: return error when conflicts are detected (default `true`)
+- `--apply-curated-over-draft`: allow curated remote values to replace local draft values (default `true`)
+
+## Example
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --locale es-ES --output json
+```
+
+See [conflict handling](/troubleshooting/conflicts) for resolution strategy.

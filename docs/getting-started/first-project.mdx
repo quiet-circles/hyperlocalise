@@ -1,0 +1,41 @@
+---
+title: "First project"
+description: "Set up a minimal project layout and understand expected output files."
+---
+
+## Minimal layout
+
+```text
+.
+├── apps/
+│   ├── web/
+│   │   └── lang/
+│   │       └── es-ES.json
+│   └── lab/
+├── packages/
+│   └── ui/
+│       └── lang/
+│           └── en-US.json
+└── i18n.jsonc
+```
+
+## Minimal config pattern
+
+Use one bucket and one group to start:
+
+- `locales.source`: your source locale (for example `en-US`)
+- `locales.targets`: one target locale (for example `es-ES`)
+- `buckets.ui.files`: map source path template to target path template
+- `groups.default`: attach `targets` and `buckets`
+
+For full fields, see [i18n config](/configuration/i18n-config).
+
+In this setup, translations are sourced from `packages/ui/lang` and generated into `apps/web/lang`.
+
+## Generated artifacts
+
+After `hyperlocalise run`:
+
+- translated target files under your configured `to` paths
+- `.hyperlocalise.lock.json` in project root
+- sidecar metadata files for provenance, depending on your store layout
