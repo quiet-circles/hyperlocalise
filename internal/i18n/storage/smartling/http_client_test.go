@@ -159,6 +159,108 @@ func TestHTTPClientListTranslationsPaginates(t *testing.T) {
 	}
 }
 
+func TestHTTPClientListTranslationsAttemptsAllLocalesAndJoinsErrors(t *testing.T) {
+	requestedLocales := make([]string, 0, 2)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token","expiresIn":3600}}`)
+		case "/projects/123/translations":
+			locale := r.URL.Query().Get("targetLocaleId")
+			requestedLocales = append(requestedLocales, locale)
+			if locale == "fr" {
+				http.Error(w, "fr unavailable", http.StatusInternalServerError)
+				return
+			}
+			if locale == "de" {
+				_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"items":[{"stringText":"k1","translation":"hallo","targetLocaleId":"de"}]}}`)
+				return
+			}
+			t.Fatalf("unexpected locale: %s", locale)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		authBaseURL:    srv.URL,
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+		userIdentifier: "id",
+		userSecret:     "secret",
+	}
+	items, _, err := client.ListTranslations(context.Background(), ListTranslationsInput{
+		ProjectID: "123",
+		Locales:   []string{"fr", "de"},
+	})
+	if err == nil {
+		t.Fatal("expected aggregated locale error, got nil")
+	}
+	if !strings.Contains(err.Error(), "list translations fr") {
+		t.Fatalf("expected fr locale error, got %v", err)
+	}
+	if got := len(requestedLocales); got != 2 {
+		t.Fatalf("expected both locales to be attempted, got %d (%v)", got, requestedLocales)
+	}
+	if got := len(items); got != 1 {
+		t.Fatalf("expected successful locale entries to be returned, got %d", got)
+	}
+	if items[0].Locale != "de" || items[0].Value != "hallo" {
+		t.Fatalf("unexpected successful locale item: %+v", items[0])
+	}
+}
+
+func TestHTTPClientListTranslationsReusesAuthTokenBeforeExpiry(t *testing.T) {
+	authenticateCalls := 0
+	translationsCalls := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			authenticateCalls++
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token","expiresIn":3600}}`)
+		case "/projects/123/translations":
+			translationsCalls++
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"items":[{"stringText":"k1","translation":"bonjour","targetLocaleId":"fr"}]}}`)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		authBaseURL:    srv.URL,
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+		userIdentifier: "id",
+		userSecret:     "secret",
+	}
+
+	_, _, err := client.ListTranslations(context.Background(), ListTranslationsInput{
+		ProjectID: "123",
+		Locales:   []string{"fr"},
+	})
+	if err != nil {
+		t.Fatalf("first list translations: %v", err)
+	}
+	_, _, err = client.ListTranslations(context.Background(), ListTranslationsInput{
+		ProjectID: "123",
+		Locales:   []string{"fr"},
+	})
+	if err != nil {
+		t.Fatalf("second list translations: %v", err)
+	}
+
+	if authenticateCalls != 1 {
+		t.Fatalf("expected one authenticate call with cached token, got %d", authenticateCalls)
+	}
+	if translationsCalls != 2 {
+		t.Fatalf("expected two translation calls, got %d", translationsCalls)
+	}
+}
+
 func TestHTTPClientUpsertLocaleTranslationsAllowsNoContent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/projects/123/locales/fr/translations" {

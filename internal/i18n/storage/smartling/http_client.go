@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +26,10 @@ type HTTPClient struct {
 	http           *http.Client
 	userIdentifier string
 	userSecret     string
+
+	tokenMu           sync.Mutex
+	cachedAccessToken string
+	tokenExpiresAt    time.Time
 }
 
 func NewHTTPClient(cfg Config) (*HTTPClient, error) {
@@ -42,7 +48,7 @@ func NewHTTPClient(cfg Config) (*HTTPClient, error) {
 }
 
 func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsInput) ([]StringTranslation, string, error) {
-	token, err := c.authenticate(ctx)
+	token, err := c.accessToken(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -52,6 +58,7 @@ func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsIn
 	}
 
 	entries := make([]StringTranslation, 0)
+	errs := make([]error, 0)
 	for _, locale := range in.Locales {
 		trimmedLocale := strings.TrimSpace(locale)
 		if trimmedLocale == "" {
@@ -61,7 +68,8 @@ func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsIn
 		for {
 			batch, hasMore, err := c.listTranslationsPage(ctx, token, in.ProjectID, trimmedLocale, translationsLimit, offset)
 			if err != nil {
-				return nil, "", err
+				errs = append(errs, err)
+				break
 			}
 			entries = append(entries, batch...)
 			if !hasMore {
@@ -71,6 +79,10 @@ func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsIn
 		}
 	}
 
+	if len(errs) > 0 {
+		return entries, revision, errors.Join(errs...)
+	}
+
 	return entries, revision, nil
 }
 
@@ -78,7 +90,7 @@ func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslatio
 	if len(in.Entries) == 0 {
 		return time.Now().UTC().Format(time.RFC3339Nano), nil
 	}
-	token, err := c.authenticate(ctx)
+	token, err := c.accessToken(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -119,6 +131,7 @@ func (c *HTTPClient) authenticate(ctx context.Context) (string, error) {
 		} `json:"response"`
 		Data struct {
 			AccessToken string `json:"accessToken"`
+			ExpiresIn   int    `json:"expiresIn"`
 		} `json:"data"`
 	}
 
@@ -128,7 +141,34 @@ func (c *HTTPClient) authenticate(ctx context.Context) (string, error) {
 	if strings.TrimSpace(resp.Data.AccessToken) == "" {
 		return "", fmt.Errorf("authenticate: empty access token")
 	}
+
+	c.tokenMu.Lock()
+	c.cachedAccessToken = resp.Data.AccessToken
+	if resp.Data.ExpiresIn > 0 {
+		expiry := time.Now().UTC().Add(time.Duration(resp.Data.ExpiresIn) * time.Second)
+		// Refresh slightly before expiry to avoid edge-of-window failures.
+		c.tokenExpiresAt = expiry.Add(-15 * time.Second)
+	} else {
+		c.tokenExpiresAt = time.Time{}
+	}
+	c.tokenMu.Unlock()
+
 	return resp.Data.AccessToken, nil
+}
+
+func (c *HTTPClient) accessToken(ctx context.Context) (string, error) {
+	c.tokenMu.Lock()
+	cached := c.cachedAccessToken
+	expiresAt := c.tokenExpiresAt
+	c.tokenMu.Unlock()
+
+	now := time.Now().UTC()
+	if strings.TrimSpace(cached) != "" {
+		if expiresAt.IsZero() || now.Before(expiresAt) {
+			return cached, nil
+		}
+	}
+	return c.authenticate(ctx)
 }
 
 func (c *HTTPClient) listTranslationsPage(ctx context.Context, token string, projectID string, locale string, limit int, offset int) ([]StringTranslation, bool, error) {
