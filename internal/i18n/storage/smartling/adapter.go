@@ -26,10 +26,10 @@ type Config struct {
 }
 
 type StringTranslation struct {
-	Key     string
-	Context string
-	Locale  string
-	Value   string
+	Key     string `json:"stringText"`
+	Context string `json:"instruction,omitempty"`
+	Locale  string `json:"targetLocaleId"`
+	Value   string `json:"translation"`
 }
 
 type ListTranslationsInput struct {
@@ -175,21 +175,25 @@ func (a *Adapter) Pull(ctx context.Context, req storage.PullRequest) (storage.Pu
 
 func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	payload := make([]StringTranslation, 0, len(req.Entries))
+	applied := make([]storage.EntryID, 0, len(req.Entries))
 	for _, entry := range req.Entries {
-		if strings.TrimSpace(entry.Value) == "" {
+		key := strings.TrimSpace(entry.Key)
+		locale := strings.TrimSpace(entry.Locale)
+		if key == "" || locale == "" || strings.TrimSpace(entry.Value) == "" {
 			continue
 		}
-		payload = append(payload, StringTranslation{Key: entry.Key, Context: entry.Context, Locale: entry.Locale, Value: entry.Value})
+		payload = append(payload, StringTranslation{
+			Key:     key,
+			Context: strings.TrimSpace(entry.Context),
+			Locale:  locale,
+			Value:   entry.Value,
+		})
+		applied = append(applied, entry.ID())
 	}
 
 	revision, err := a.client.UpsertTranslations(ctx, UpsertTranslationsInput{ProjectID: a.cfg.ProjectID, Entries: payload})
 	if err != nil {
 		return storage.PushResult{}, fmt.Errorf("smartling push: %w", err)
-	}
-
-	applied := make([]storage.EntryID, 0, len(req.Entries))
-	for _, entry := range req.Entries {
-		applied = append(applied, entry.ID())
 	}
 	return storage.PushResult{Applied: applied, Revision: revision}, nil
 }

@@ -89,6 +89,52 @@ func TestAdapterPushGroupsEntries(t *testing.T) {
 	}
 }
 
+func TestAdapterPushAppliedOnlyIncludesSentEntries(t *testing.T) {
+	client := &fakeClient{}
+	adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec"}, client)
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	req := storage.PushRequest{Entries: []storage.Entry{
+		{Key: "hello", Context: "home", Locale: "fr", Value: "bonjour"},
+		{Key: "goodbye", Context: "home", Locale: "fr", Value: "   "},
+		{Key: "   ", Context: "home", Locale: "fr", Value: "au revoir"},
+	}}
+	result, err := adapter.Push(context.Background(), req)
+	if err != nil {
+		t.Fatalf("push: %v", err)
+	}
+	if got := len(client.upsertIn.Entries); got != 1 {
+		t.Fatalf("expected 1 upsert entry, got %d", got)
+	}
+	if got := len(result.Applied); got != 1 {
+		t.Fatalf("expected 1 applied entry, got %d", got)
+	}
+	if result.Applied[0] != req.Entries[0].ID() {
+		t.Fatalf("unexpected applied entry id: got %v want %v", result.Applied[0], req.Entries[0].ID())
+	}
+}
+
+func TestAdapterPushPreservesTranslationWhitespace(t *testing.T) {
+	client := &fakeClient{}
+	adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec"}, client)
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	value := "  Bonjour  "
+	_, err = adapter.Push(context.Background(), storage.PushRequest{Entries: []storage.Entry{
+		{Key: "hello", Context: "home", Locale: "fr", Value: value},
+	}})
+	if err != nil {
+		t.Fatalf("push: %v", err)
+	}
+	if got := client.upsertIn.Entries[0].Value; got != value {
+		t.Fatalf("unexpected pushed value: got %q want %q", got, value)
+	}
+}
+
 func TestNewBuildsAdapterFromRawConfig(t *testing.T) {
 	t.Setenv("SMARTLING_USER_SECRET", "secret")
 	adapter, err := New(json.RawMessage(`{"projectID":"123","userIdentifier":"uid"}`))

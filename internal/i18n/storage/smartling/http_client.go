@@ -15,6 +15,7 @@ import (
 const (
 	authAPIBaseURL    = "https://api.smartling.com/auth-api/v2"
 	stringsAPIBaseURL = "https://api.smartling.com/strings-api/v2"
+	translationsLimit = 500
 )
 
 type HTTPClient struct {
@@ -46,37 +47,27 @@ func (c *HTTPClient) ListTranslations(ctx context.Context, in ListTranslationsIn
 		return nil, "", err
 	}
 	revision := time.Now().UTC().Format(time.RFC3339Nano)
-	allowed := make(map[string]struct{}, len(in.Locales))
-	for _, locale := range in.Locales {
-		trimmed := strings.TrimSpace(locale)
-		if trimmed == "" {
-			continue
-		}
-		allowed[trimmed] = struct{}{}
-	}
-
-	locales := in.Locales
-	if len(locales) == 0 {
+	if len(in.Locales) == 0 {
 		return nil, revision, nil
 	}
 
 	entries := make([]StringTranslation, 0)
-	for _, locale := range locales {
+	for _, locale := range in.Locales {
 		trimmedLocale := strings.TrimSpace(locale)
 		if trimmedLocale == "" {
 			continue
 		}
-		batch, err := c.listLocaleTranslations(ctx, token, in.ProjectID, trimmedLocale)
-		if err != nil {
-			return nil, "", err
-		}
-		for _, item := range batch {
-			if len(allowed) > 0 {
-				if _, ok := allowed[item.Locale]; !ok {
-					continue
-				}
+		offset := 0
+		for {
+			batch, hasMore, err := c.listTranslationsPage(ctx, token, in.ProjectID, trimmedLocale, translationsLimit, offset)
+			if err != nil {
+				return nil, "", err
 			}
-			entries = append(entries, item)
+			entries = append(entries, batch...)
+			if !hasMore {
+				break
+			}
+			offset += translationsLimit
 		}
 	}
 
@@ -94,10 +85,17 @@ func (c *HTTPClient) UpsertTranslations(ctx context.Context, in UpsertTranslatio
 
 	grouped := make(map[string][]StringTranslation)
 	for _, entry := range in.Entries {
-		if strings.TrimSpace(entry.Key) == "" || strings.TrimSpace(entry.Locale) == "" || strings.TrimSpace(entry.Value) == "" {
+		key := strings.TrimSpace(entry.Key)
+		locale := strings.TrimSpace(entry.Locale)
+		if key == "" || locale == "" || strings.TrimSpace(entry.Value) == "" {
 			continue
 		}
-		grouped[entry.Locale] = append(grouped[entry.Locale], entry)
+		grouped[locale] = append(grouped[locale], StringTranslation{
+			Key:     key,
+			Context: strings.TrimSpace(entry.Context),
+			Locale:  locale,
+			Value:   entry.Value,
+		})
 	}
 
 	for locale, items := range grouped {
@@ -133,40 +131,66 @@ func (c *HTTPClient) authenticate(ctx context.Context) (string, error) {
 	return resp.Data.AccessToken, nil
 }
 
-func (c *HTTPClient) listLocaleTranslations(ctx context.Context, token string, projectID string, locale string) ([]StringTranslation, error) {
-	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/translations", c.stringsBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
+func (c *HTTPClient) listTranslationsPage(ctx context.Context, token string, projectID string, locale string, limit int, offset int) ([]StringTranslation, bool, error) {
+	endpoint := fmt.Sprintf("%s/projects/%s/translations", c.stringsBaseURL, url.PathEscape(projectID))
+	params := url.Values{}
+	params.Set("targetLocaleId", locale)
+	params.Set("limit", fmt.Sprintf("%d", limit))
+	params.Set("offset", fmt.Sprintf("%d", offset))
+	endpoint = endpoint + "?" + params.Encode()
+
 	var resp struct {
 		Response struct {
 			Code string `json:"code"`
 		} `json:"response"`
 		Data struct {
 			Items []struct {
-				StringText  string `json:"stringText"`
-				Translation string `json:"translation"`
-				Instruction string `json:"instruction"`
+				StringText       string `json:"stringText"`
+				ParsedStringText string `json:"parsedStringText"`
+				Translation      string `json:"translation"`
+				Instruction      string `json:"instruction"`
+				FileURI          string `json:"fileUri"`
+				TargetLocaleID   string `json:"targetLocaleId"`
 			} `json:"items"`
 		} `json:"data"`
 	}
 
 	if err := c.getJSON(ctx, endpoint, token, &resp); err != nil {
-		return nil, fmt.Errorf("list translations %s: %w", locale, err)
+		return nil, false, fmt.Errorf("list translations %s: %w", locale, err)
 	}
 
 	out := make([]StringTranslation, 0, len(resp.Data.Items))
 	for _, item := range resp.Data.Items {
-		if strings.TrimSpace(item.StringText) == "" {
+		key := strings.TrimSpace(item.ParsedStringText)
+		if key == "" {
+			key = strings.TrimSpace(item.StringText)
+		}
+		if key == "" {
 			continue
 		}
-		out = append(out, StringTranslation{Key: item.StringText, Context: item.Instruction, Locale: locale, Value: item.Translation})
+		contextValue := strings.TrimSpace(item.Instruction)
+		if contextValue == "" {
+			contextValue = strings.TrimSpace(item.FileURI)
+		}
+		targetLocale := strings.TrimSpace(item.TargetLocaleID)
+		if targetLocale == "" {
+			targetLocale = locale
+		}
+		out = append(out, StringTranslation{
+			Key:     key,
+			Context: contextValue,
+			Locale:  targetLocale,
+			Value:   item.Translation,
+		})
 	}
 
-	return out, nil
+	return out, len(resp.Data.Items) == limit, nil
 }
 
 func (c *HTTPClient) upsertLocaleTranslations(ctx context.Context, token string, projectID string, locale string, entries []StringTranslation) error {
 	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/translations", c.stringsBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
 	payload := map[string]any{"items": entries}
-	if err := c.putJSON(ctx, endpoint, token, payload, &struct{}{}); err != nil {
+	if err := c.putJSON(ctx, endpoint, token, payload, nil); err != nil {
 		return fmt.Errorf("upsert translations %s: %w", locale, err)
 	}
 	return nil
@@ -212,7 +236,9 @@ func (c *HTTPClient) do(req *http.Request, out any) error {
 	if err != nil {
 		return fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))

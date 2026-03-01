@@ -2,10 +2,13 @@ package smartling
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -67,4 +70,199 @@ func TestHTTPClientAuthenticate(t *testing.T) {
 	if token != "token" {
 		t.Fatalf("unexpected token: %q", token)
 	}
+}
+
+func TestHTTPClientListTranslationsUsesProjectTranslationsEndpoint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token"}}`)
+		case "/projects/123/translations":
+			assertTranslationsQuery(t, r.URL.Query(), "fr", 500, 0)
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"items":[{"parsedStringText":"welcome.title","stringText":"welcome.title","translation":"  Bienvenue  ","instruction":"home","targetLocaleId":"fr"}]}}`)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		authBaseURL:    srv.URL,
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+		userIdentifier: "id",
+		userSecret:     "secret",
+	}
+	items, _, err := client.ListTranslations(context.Background(), ListTranslationsInput{
+		ProjectID: "123",
+		Locales:   []string{"fr"},
+	})
+	if err != nil {
+		t.Fatalf("list translations: %v", err)
+	}
+	if got := len(items); got != 1 {
+		t.Fatalf("expected 1 item, got %d", got)
+	}
+	if items[0].Key != "welcome.title" || items[0].Locale != "fr" || items[0].Value != "  Bienvenue  " || items[0].Context != "home" {
+		t.Fatalf("unexpected mapping: %+v", items[0])
+	}
+}
+
+func TestHTTPClientListTranslationsPaginates(t *testing.T) {
+	requestedOffsets := make([]int, 0, 2)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token"}}`)
+		case "/projects/123/translations":
+			offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+			if err != nil {
+				t.Fatalf("offset query: %v", err)
+			}
+			requestedOffsets = append(requestedOffsets, offset)
+			if offset == 0 {
+				assertTranslationsQuery(t, r.URL.Query(), "fr", 500, 0)
+				writeTranslationsItemsResponse(w, 500, 0, "fr")
+				return
+			}
+			if offset == 500 {
+				assertTranslationsQuery(t, r.URL.Query(), "fr", 500, 500)
+				writeTranslationsItemsResponse(w, 1, 500, "fr")
+				return
+			}
+			t.Fatalf("unexpected offset: %d", offset)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		authBaseURL:    srv.URL,
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+		userIdentifier: "id",
+		userSecret:     "secret",
+	}
+	items, _, err := client.ListTranslations(context.Background(), ListTranslationsInput{
+		ProjectID: "123",
+		Locales:   []string{"fr"},
+	})
+	if err != nil {
+		t.Fatalf("list translations: %v", err)
+	}
+	if got := len(items); got != 501 {
+		t.Fatalf("expected 501 items, got %d", got)
+	}
+	if got := len(requestedOffsets); got != 2 {
+		t.Fatalf("expected 2 paged requests, got %d (%v)", got, requestedOffsets)
+	}
+}
+
+func TestHTTPClientUpsertLocaleTranslationsAllowsNoContent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/projects/123/locales/fr/translations" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPut {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+	}
+	err := client.upsertLocaleTranslations(context.Background(), "token", "123", "fr", []StringTranslation{
+		{Key: "welcome.title", Locale: "fr", Value: "Bienvenue"},
+	})
+	if err != nil {
+		t.Fatalf("upsert locale translations: %v", err)
+	}
+}
+
+func TestHTTPClientUpsertTranslationsPreservesWhitespace(t *testing.T) {
+	var putBody struct {
+		Items []StringTranslation `json:"items"`
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token"}}`)
+		case "/projects/123/locales/fr/translations":
+			if r.Method != http.MethodPut {
+				t.Fatalf("unexpected method: %s", r.Method)
+			}
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Fatalf("read body: %v", err)
+			}
+			if err := json.Unmarshal(body, &putBody); err != nil {
+				t.Fatalf("decode body: %v", err)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{
+		authBaseURL:    srv.URL,
+		stringsBaseURL: srv.URL,
+		http:           srv.Client(),
+		userIdentifier: "id",
+		userSecret:     "secret",
+	}
+	value := "  Bonjour  "
+	_, err := client.UpsertTranslations(context.Background(), UpsertTranslationsInput{
+		ProjectID: "123",
+		Entries: []StringTranslation{
+			{Key: "welcome.title", Locale: "fr", Value: value},
+		},
+	})
+	if err != nil {
+		t.Fatalf("upsert translations: %v", err)
+	}
+	if got := len(putBody.Items); got != 1 {
+		t.Fatalf("expected 1 item in PUT payload, got %d", got)
+	}
+	if got := putBody.Items[0].Value; got != value {
+		t.Fatalf("unexpected payload value: got %q want %q", got, value)
+	}
+}
+
+func assertTranslationsQuery(t *testing.T, values url.Values, locale string, limit int, offset int) {
+	t.Helper()
+	if got := values.Get("targetLocaleId"); got != locale {
+		t.Fatalf("unexpected targetLocaleId: got %q want %q", got, locale)
+	}
+	if got := values.Get("limit"); got != strconv.Itoa(limit) {
+		t.Fatalf("unexpected limit: got %q want %d", got, limit)
+	}
+	if got := values.Get("offset"); got != strconv.Itoa(offset) {
+		t.Fatalf("unexpected offset: got %q want %d", got, offset)
+	}
+}
+
+func writeTranslationsItemsResponse(w http.ResponseWriter, count int, start int, locale string) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"items":[`)
+	for i := 0; i < count; i++ {
+		if i > 0 {
+			_, _ = fmt.Fprint(w, ",")
+		}
+		idx := start + i
+		_, _ = fmt.Fprintf(
+			w,
+			`{"stringText":"k%d","translation":"v%d","targetLocaleId":"%s"}`,
+			idx,
+			idx,
+			locale,
+		)
+	}
+	_, _ = fmt.Fprint(w, `]}}`)
 }
