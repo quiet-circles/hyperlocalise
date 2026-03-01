@@ -176,18 +176,29 @@ func (a *Adapter) Pull(ctx context.Context, req storage.PullRequest) (storage.Pu
 func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	payload := make([]StringTranslation, 0, len(req.Entries))
 	applied := make([]storage.EntryID, 0, len(req.Entries))
+	indexByID := make(map[storage.EntryID]int, len(req.Entries))
 	for _, entry := range req.Entries {
 		key := strings.TrimSpace(entry.Key)
 		locale := strings.TrimSpace(entry.Locale)
 		if key == "" || locale == "" || strings.TrimSpace(entry.Value) == "" {
 			continue
 		}
-		payload = append(payload, StringTranslation{
+
+		id := entry.ID()
+		translation := StringTranslation{
 			Key:     key,
 			Context: strings.TrimSpace(entry.Context),
 			Locale:  locale,
 			Value:   entry.Value,
-		})
+		}
+		if idx, exists := indexByID[id]; exists {
+			// Keep one write per EntryID and let the newest entry win.
+			payload[idx] = translation
+			continue
+		}
+
+		indexByID[id] = len(payload)
+		payload = append(payload, translation)
 		applied = append(applied, entry.ID())
 	}
 

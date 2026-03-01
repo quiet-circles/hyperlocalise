@@ -135,6 +135,43 @@ func TestAdapterPushPreservesTranslationWhitespace(t *testing.T) {
 	}
 }
 
+func TestAdapterPushDeduplicatesByEntryID(t *testing.T) {
+	client := &fakeClient{}
+	adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec"}, client)
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	first := storage.Entry{Key: "hello", Context: "home", Locale: "fr", Value: "bonjour"}
+	second := storage.Entry{Key: "hello", Context: "home", Locale: "fr", Value: "salut"}
+	third := storage.Entry{Key: "hello", Context: "home", Locale: "de", Value: "hallo"}
+
+	result, err := adapter.Push(context.Background(), storage.PushRequest{Entries: []storage.Entry{
+		first,
+		second,
+		third,
+	}})
+	if err != nil {
+		t.Fatalf("push: %v", err)
+	}
+
+	if got := len(client.upsertIn.Entries); got != 2 {
+		t.Fatalf("expected 2 upsert entries after dedup, got %d", got)
+	}
+	if got := client.upsertIn.Entries[0].Value; got != "salut" {
+		t.Fatalf("expected latest duplicate value to win, got %q", got)
+	}
+	if got := len(result.Applied); got != 2 {
+		t.Fatalf("expected 2 applied entries after dedup, got %d", got)
+	}
+	if result.Applied[0] != first.ID() {
+		t.Fatalf("unexpected first applied id: got %v want %v", result.Applied[0], first.ID())
+	}
+	if result.Applied[1] != third.ID() {
+		t.Fatalf("unexpected second applied id: got %v want %v", result.Applied[1], third.ID())
+	}
+}
+
 func TestNewBuildsAdapterFromRawConfig(t *testing.T) {
 	t.Setenv("SMARTLING_USER_SECRET", "secret")
 	adapter, err := New(json.RawMessage(`{"projectID":"123","userIdentifier":"uid"}`))
