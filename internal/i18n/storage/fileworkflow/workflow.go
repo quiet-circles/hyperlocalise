@@ -264,7 +264,7 @@ func withRetry[T any](ctx context.Context, opts Options, fn func(context.Context
 		if !opts.IsRetryable(err) {
 			return zero, err
 		}
-		if opts.Retry.MaxAttempts > 0 && attempt >= opts.Retry.MaxAttempts {
+		if opts.Retry.MaxAttempts > 0 && attempt+1 >= opts.Retry.MaxAttempts {
 			return zero, err
 		}
 		delay := retryDelay(opts.Retry, attempt)

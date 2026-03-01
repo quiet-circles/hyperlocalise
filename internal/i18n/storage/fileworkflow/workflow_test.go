@@ -209,6 +209,45 @@ func TestRunnerRetriesRetryableErrors(t *testing.T) {
 	}
 }
 
+func TestRunnerRetryMaxAttemptsCapsTotalCalls(t *testing.T) {
+	t.Parallel()
+	retryableErr := errors.New("retry")
+	attempts := 0
+
+	runner, err := NewRunner(stubAPI{
+		startExportFn: func(context.Context, StartRequest) (JobRef, error) {
+			attempts++
+			return JobRef{}, retryableErr
+		},
+		startImportFn: func(context.Context, StartRequest) (JobRef, error) {
+			return JobRef{}, errors.New("unexpected import")
+		},
+		getJobStatusFn: func(context.Context, JobRef) (JobStatus, error) {
+			return JobStatus{State: JobStateSuccess}, nil
+		},
+		downloadArtifactFn: func(context.Context, ArtifactRef) ([]byte, error) {
+			return nil, nil
+		},
+	}, Options{
+		Retry: RetryConfig{MaxAttempts: 2, InitialDelay: time.Millisecond, MaxDelay: time.Millisecond},
+		IsRetryable: func(err error) bool {
+			return errors.Is(err, retryableErr)
+		},
+		Sleep: func(context.Context, time.Duration) error { return nil },
+	})
+	if err != nil {
+		t.Fatalf("new runner: %v", err)
+	}
+
+	_, runErr := runner.RunExport(context.Background(), StartRequest{})
+	if runErr == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want 2", attempts)
+	}
+}
+
 func TestRunnerPassesIdempotencyKey(t *testing.T) {
 	t.Parallel()
 	gotKey := ""
