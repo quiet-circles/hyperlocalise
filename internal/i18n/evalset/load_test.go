@@ -61,6 +61,67 @@ func TestLoadJSONAndJSONC(t *testing.T) {
 			}`,
 			errContains: "cases: must not be empty",
 		},
+		{
+			name:     "validate required source",
+			filename: "evalset.json",
+			content: `{
+			  "cases": [
+			    {
+			      "id": "a",
+			      "source": "",
+			      "targetLocale": "de-DE"
+			    }
+			  ]
+			}`,
+			errContains: "source: must not be empty",
+		},
+		{
+			name:     "validate required target locale",
+			filename: "evalset.json",
+			content: `{
+			  "cases": [
+			    {
+			      "id": "a",
+			      "source": "Settings",
+			      "targetLocale": ""
+			    }
+			  ]
+			}`,
+			errContains: "targetLocale: must not be empty",
+		},
+		{
+			name:     "validate empty id",
+			filename: "evalset.json",
+			content: `{
+			  "cases": [
+			    {
+			      "id": "   ",
+			      "source": "Settings",
+			      "targetLocale": "fr-FR"
+			    }
+			  ]
+			}`,
+			errContains: "id: must not be empty",
+		},
+		{
+			name:     "validate duplicate id with whitespace",
+			filename: "evalset.json",
+			content: `{
+			  "cases": [
+			    {
+			      "id": "dup",
+			      "source": "One",
+			      "targetLocale": "ja-JP"
+			    },
+			    {
+			      "id": "dup ",
+			      "source": "Two",
+			      "targetLocale": "ja-JP"
+			    }
+			  ]
+			}`,
+			errContains: "duplicate id",
+		},
 	}
 
 	for _, tc := range testCases {

@@ -33,11 +33,13 @@ func (d Dataset) Validate() error {
 	ids := make(map[string]struct{}, len(d.Cases))
 
 	for i, tc := range d.Cases {
-		if strings.TrimSpace(tc.ID) == "" {
+		normalizedID := strings.TrimSpace(tc.ID)
+
+		if normalizedID == "" {
 			return fmt.Errorf("cases[%d].id: must not be empty", i)
 		}
 
-		if _, exists := ids[tc.ID]; exists {
+		if _, exists := ids[normalizedID]; exists {
 			return fmt.Errorf("cases[%d].id: duplicate id %q", i, tc.ID)
 		}
 
@@ -49,7 +51,7 @@ func (d Dataset) Validate() error {
 			return fmt.Errorf("cases[%d].targetLocale: must not be empty", i)
 		}
 
-		ids[tc.ID] = struct{}{}
+		ids[normalizedID] = struct{}{}
 	}
 
 	return nil
