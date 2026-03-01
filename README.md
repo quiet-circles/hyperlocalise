@@ -23,7 +23,7 @@ A high-performance localization CLI built in Go for modern development workflows
 - [golangci-lint](https://golangci-lint.run/) for linting and formatting
 - [cobra](https://cobra.dev/) setup including tests
 - [Makefile](Makefile) - with various useful targets and documentation (see Makefile Targets)
-- Storage adapter based translation sync with POEditor, Lokalise, and Crowdin support
+- Storage adapter based translation sync with POEditor, Lokalise, Crowdin, and Smartling support
 - Local provenance sidecar metadata for LLM-vs-curation workflows (`draft` vs `curated`)
 
 # Commands
@@ -256,6 +256,26 @@ Configuration:
 ```
 
 Environment variable: `CROWDIN_API_TOKEN`
+
+### Smartling
+
+Docs: [`internal/i18n/storage/smartling/README.md`](internal/i18n/storage/smartling/README.md)
+
+Configuration:
+```json
+{
+  "adapter": "smartling",
+  "config": {
+    "projectID": "your-project-id",
+    "userIdentifier": "your-user-identifier",
+    "userSecretEnv": "SMARTLING_USER_SECRET",
+    "targetLanguages": ["fr", "de", "es"],
+    "timeoutSeconds": 30
+  }
+}
+```
+
+Environment variable: `SMARTLING_USER_SECRET`
 
 For more details on the storage system and sync model, see [`internal/i18n/storage/README.md`](internal/i18n/storage/README.md).
 
