@@ -1,6 +1,6 @@
 ---
 title: "LLM providers"
-description: "Configure OpenAI, LM Studio, or Groq for translation generation profiles."
+description: "Configure OpenAI, LM Studio, Ollama, or Groq for translation generation profiles."
 ---
 
 Supported `llm.profiles.*.provider` values:
@@ -8,6 +8,7 @@ Supported `llm.profiles.*.provider` values:
 - `openai`
 - `lmstudio`
 - `groq`
+- `ollama`
 
 Required fields per profile:
 
@@ -82,4 +83,25 @@ export LM_STUDIO_API_KEY="lm-studio"
 ```bash
 export GROQ_BASE_URL="https://api.groq.com/openai/v1"
 export GROQ_API_KEY="your-groq-api-key"
+```
+
+## Ollama example
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+```bash
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+export OLLAMA_API_KEY="ollama"
 ```

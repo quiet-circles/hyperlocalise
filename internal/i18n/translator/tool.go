@@ -29,6 +29,7 @@ func New() *Tool {
 	t.MustRegister(NewOpenAIProvider())
 	t.MustRegister(NewLMStudioProvider())
 	t.MustRegister(NewGroqProvider())
+	t.MustRegister(NewOllamaProvider())
 	return t
 }
 

@@ -131,6 +131,7 @@ Flags:
 - `openai`
 - `lmstudio`
 - `groq`
+- `ollama`
 
 `llm.profiles.default` is required, and each profile requires:
 - `provider`
@@ -193,6 +194,36 @@ export LM_STUDIO_API_KEY="lm-studio"
 Notes:
 - LM Studio must be running locally and serving its OpenAI-compatible API.
 - `model` must match an identifier exposed by your local LM Studio server.
+
+## Ollama Example (Local Model)
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to http://127.0.0.1:11434/v1
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+
+# Optional, defaults to ollama
+export OLLAMA_API_KEY="ollama"
+```
+
+Notes:
+- Ollama must be running locally with OpenAI-compatible API access enabled.
+- `model` must match an identifier available in your local Ollama instance.
 
 ## Groq Example
 

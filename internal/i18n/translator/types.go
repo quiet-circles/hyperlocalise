@@ -10,6 +10,7 @@ const (
 	ProviderOpenAI   = "openai"
 	ProviderLMStudio = "lmstudio"
 	ProviderGroq     = "groq"
+	ProviderOllama   = "ollama"
 )
 
 type Request struct {
