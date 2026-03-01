@@ -49,11 +49,11 @@
   "llm": {
     // Profiles define provider/model/prompt behavior.
     // A default profile is required.
-    // Supported providers: openai, gemini, lmstudio, groq, ollama.
+    // Supported providers: openai, anthropic, gemini, lmstudio, groq, ollama.
     // Available vars: {{source}}, {{target}}, {{input}}.
     "profiles": {
       "default": {
-        // Provider: openai, gemini, lmstudio, groq, or ollama.
+        // Provider: openai, anthropic, gemini, lmstudio, groq, or ollama.
         "provider": "openai",
         "model": "gpt-5.2",
         // Prompt template used for each translation task.

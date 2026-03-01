@@ -129,6 +129,7 @@ Flags:
 
 `hyperlocalise` supports these translation model providers in `llm.profiles.*.provider`:
 - `openai`
+- `anthropic`
 - `lmstudio`
 - `groq`
 - `ollama`
@@ -189,6 +190,31 @@ Environment:
 export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
 
 export GEMINI_API_KEY="your-gemini-api-key"
+```
+
+## Anthropic Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to https://api.anthropic.com/v1
+export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
 ```
 
 ## LM Studio Example (Local Model)

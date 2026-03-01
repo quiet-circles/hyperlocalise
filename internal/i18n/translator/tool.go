@@ -27,6 +27,7 @@ func Translate(ctx context.Context, req Request) (string, error) {
 func New() *Tool {
 	t := &Tool{providers: map[string]Provider{}}
 	t.MustRegister(NewOpenAIProvider())
+	t.MustRegister(NewAnthropicProvider())
 	t.MustRegister(NewLMStudioProvider())
 	t.MustRegister(NewGroqProvider())
 	t.MustRegister(NewOllamaProvider())

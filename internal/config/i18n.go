@@ -12,13 +12,14 @@ import (
 )
 
 const (
-	defaultConfigPath   = "i18n.jsonc"
-	llmProviderOpenAI   = "openai"
-	llmProviderLMStudio = "lmstudio"
-	llmProviderGroq     = "groq"
-	llmProviderOllama   = "ollama"
-	llmProviderGemini   = "gemini"
-	llmDefaultProfile   = "default"
+	defaultConfigPath    = "i18n.jsonc"
+	llmProviderOpenAI    = "openai"
+	llmProviderAnthropic = "anthropic"
+	llmProviderLMStudio  = "lmstudio"
+	llmProviderGroq      = "groq"
+	llmProviderOllama    = "ollama"
+	llmProviderGemini    = "gemini"
+	llmDefaultProfile    = "default"
 )
 
 // I18NConfig defines the i18n configuration file structure.
@@ -429,7 +430,7 @@ func validateProfile(fieldPrefix string, profile LLMProfile) error {
 	}
 
 	switch provider {
-	case llmProviderOpenAI, llmProviderLMStudio, llmProviderGroq, llmProviderOllama, llmProviderGemini:
+	case llmProviderOpenAI, llmProviderAnthropic, llmProviderLMStudio, llmProviderGroq, llmProviderOllama, llmProviderGemini:
 	default:
 		return fmt.Errorf("%s.provider: unsupported provider %q", fieldPrefix, profile.Provider)
 	}

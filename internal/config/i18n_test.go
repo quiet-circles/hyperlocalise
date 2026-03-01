@@ -137,6 +137,15 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
+			name: "valid llm provider anthropic",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "anthropic", "model": "x", "prompt": "p"}}}
+			}`,
+		},
+		{
 			name: "invalid unknown field rejected",
 			content: `{
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},
@@ -274,7 +283,7 @@ func TestLoad(t *testing.T) {
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},
 			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
 			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
-			  "llm": {"profiles": {"default": {"provider": "anthropic", "model": "x", "prompt": "p"}}}
+			  "llm": {"profiles": {"default": {"provider": "bedrock", "model": "x", "prompt": "p"}}}
 			}`,
 			errContains: "unsupported provider",
 		},

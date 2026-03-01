@@ -7,11 +7,12 @@ import (
 )
 
 const (
-	ProviderOpenAI   = "openai"
-	ProviderLMStudio = "lmstudio"
-	ProviderGroq     = "groq"
-	ProviderOllama   = "ollama"
-	ProviderGemini   = "gemini"
+	ProviderOpenAI    = "openai"
+	ProviderAnthropic = "anthropic"
+	ProviderLMStudio  = "lmstudio"
+	ProviderGroq      = "groq"
+	ProviderOllama    = "ollama"
+	ProviderGemini    = "gemini"
 )
 
 type Request struct {

@@ -83,6 +83,10 @@ func TestNewRegistersDefaultProviders(t *testing.T) {
 		t.Fatalf("expected %q provider to be registered", ProviderOpenAI)
 	}
 
+	if _, ok := tool.providers[ProviderAnthropic]; !ok {
+		t.Fatalf("expected %q provider to be registered", ProviderAnthropic)
+	}
+
 	if _, ok := tool.providers[ProviderLMStudio]; !ok {
 		t.Fatalf("expected %q provider to be registered", ProviderLMStudio)
 	}
