@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -397,9 +398,7 @@ func (s *Service) flushOutputs(staged map[string]map[string]string) error {
 			return err
 		}
 
-		for key, translated := range staged[targetPath] {
-			values[key] = translated
-		}
+		maps.Copy(values, staged[targetPath])
 
 		content, err := marshalTargetFile(targetPath, values)
 		if err != nil {
