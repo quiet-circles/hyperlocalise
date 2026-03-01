@@ -11,6 +11,9 @@ import (
 type runOptions struct {
 	configPath string
 	dryRun     bool
+	prune      bool
+	pruneLimit int
+	pruneForce bool
 }
 
 func newRunCmd() *cobra.Command {
@@ -24,6 +27,9 @@ func newRunCmd() *cobra.Command {
 			report, err := runsvc.Run(backgroundContext(), runsvc.Input{
 				ConfigPath: o.configPath,
 				DryRun:     o.dryRun,
+				Prune:      o.prune,
+				PruneLimit: o.pruneLimit,
+				PruneForce: o.pruneForce,
 			})
 
 			if writeErr := writeRunReport(cmd.OutOrStdout(), report, o.dryRun); writeErr != nil {
@@ -43,6 +49,9 @@ func newRunCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.configPath, "config", "", "path to i18n config")
 	cmd.Flags().BoolVar(&o.dryRun, "dry-run", o.dryRun, "preview planned translation work without executing")
+	cmd.Flags().BoolVar(&o.prune, "prune", o.prune, "remove target keys that no longer exist in source files")
+	cmd.Flags().IntVar(&o.pruneLimit, "prune-max-deletions", 100, "maximum stale keys that can be deleted in one run before requiring an explicit override")
+	cmd.Flags().BoolVar(&o.pruneForce, "prune-force", o.pruneForce, "bypass prune deletion safety limit")
 
 	return cmd
 }
@@ -89,6 +98,16 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 	}
 
 	if dryRun {
+		if len(report.PruneCandidates) > 0 {
+			if _, err := fmt.Fprintf(w, "prune_candidates=%d\n", len(report.PruneCandidates)); err != nil {
+				return err
+			}
+			for _, candidate := range report.PruneCandidates {
+				if _, err := fmt.Fprintf(w, "prune target=%s key=%s\n", candidate.TargetPath, candidate.EntryKey); err != nil {
+					return err
+				}
+			}
+		}
 		_, err := fmt.Fprintln(w, "dry_run=true")
 		return err
 	}
@@ -107,6 +126,10 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 		if _, err := fmt.Fprintf(w, "failure target=%s key=%s reason=%s\n", failure.TargetPath, failure.EntryKey, failure.Reason); err != nil {
 			return err
 		}
+	}
+
+	if _, err := fmt.Fprintf(w, "prune_applied=%d\n", report.PruneApplied); err != nil {
+		return err
 	}
 
 	return nil

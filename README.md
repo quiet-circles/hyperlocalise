@@ -62,7 +62,7 @@ Available Commands:
 Generate local translations from configured source files into target files:
 
 ```
-hyperlocalise run [--config <path>] [--dry-run]
+hyperlocalise run [--config <path>] [--dry-run] [--prune] [--prune-max-deletions <n>] [--prune-force]
 ```
 
 Behavior:
@@ -72,9 +72,17 @@ Behavior:
 - Executes remaining tasks in parallel (worker count = CPU core count)
 - Persists each successful task completion to lock state
 
+Prune workflow recommendation:
+- Run `hyperlocalise run --dry-run --prune` regularly (for example weekly or before releases) to review stale-key candidates.
+- Apply approved cleanup with `hyperlocalise run --prune` in a dedicated change so key deletions are easy to audit.
+- Keep the safety limit enabled and only use `--prune-force` for intentional large restructures.
+
 Flags:
 - `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
 - `--dry-run` - print plan without translating or writing files
+- `--prune` - preview/apply deletion of stale target keys missing from source
+- `--prune-max-deletions` - safety guard for max deletions per run before requiring override (default: 100)
+- `--prune-force` - bypass the prune safety limit
 
 
 ## eval

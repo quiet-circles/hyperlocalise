@@ -29,8 +29,13 @@ const (
 type Input struct {
 	ConfigPath string
 	DryRun     bool
+	Prune      bool
+	PruneLimit int
+	PruneForce bool
 	LockPath   string
 }
+
+const defaultPruneLimit = 100
 
 type Task struct {
 	SourceLocale string `json:"sourceLocale"`
@@ -52,15 +57,22 @@ type Failure struct {
 }
 
 type Report struct {
-	PlannedTotal    int       `json:"plannedTotal"`
-	SkippedByLock   int       `json:"skippedByLock"`
-	ExecutableTotal int       `json:"executableTotal"`
-	Succeeded       int       `json:"succeeded"`
-	Failed          int       `json:"failed"`
-	PersistedToLock int       `json:"persistedToLock"`
-	Failures        []Failure `json:"failures,omitempty"`
-	Executable      []Task    `json:"executable,omitempty"`
-	Skipped         []Task    `json:"skipped,omitempty"`
+	PlannedTotal    int              `json:"plannedTotal"`
+	SkippedByLock   int              `json:"skippedByLock"`
+	ExecutableTotal int              `json:"executableTotal"`
+	Succeeded       int              `json:"succeeded"`
+	Failed          int              `json:"failed"`
+	PersistedToLock int              `json:"persistedToLock"`
+	Failures        []Failure        `json:"failures,omitempty"`
+	Executable      []Task           `json:"executable,omitempty"`
+	Skipped         []Task           `json:"skipped,omitempty"`
+	PruneCandidates []PruneCandidate `json:"pruneCandidates,omitempty"`
+	PruneApplied    int              `json:"pruneApplied"`
+}
+
+type PruneCandidate struct {
+	TargetPath string `json:"targetPath"`
+	EntryKey   string `json:"entryKey"`
 }
 
 type Service struct {
@@ -117,7 +129,22 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 
 	report, executable := applyLockFilter(planned, state.RunCompleted)
 
-	if in.DryRun || len(executable) == 0 {
+	pruneTargets := map[string]map[string]struct{}{}
+	if in.Prune {
+		pruneTargets = buildPlannedTargetKeySet(planned)
+		report.PruneCandidates, err = s.planPruneCandidates(pruneTargets)
+		if err != nil {
+			return report, err
+		}
+		if err := validatePruneLimit(in, len(report.PruneCandidates)); err != nil {
+			return report, err
+		}
+	}
+
+	if in.DryRun {
+		return report, nil
+	}
+	if len(executable) == 0 && len(report.PruneCandidates) == 0 {
 		return report, nil
 	}
 
@@ -130,9 +157,10 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 		return report, err
 	}
 
-	if err := s.flushOutputs(staged); err != nil {
+	if err := s.flushOutputs(staged, pruneTargets); err != nil {
 		return report, err
 	}
+	report.PruneApplied = len(report.PruneCandidates)
 
 	return report, nil
 }
@@ -419,17 +447,33 @@ func stageTaskOutput(staged map[string]map[string]string, targetPath, entryKey, 
 	return nil
 }
 
-func (s *Service) flushOutputs(staged map[string]map[string]string) error {
+func (s *Service) flushOutputs(staged map[string]map[string]string, pruneTargets map[string]map[string]struct{}) error {
 	targetPaths := make([]string, 0, len(staged))
 	for path := range staged {
 		targetPaths = append(targetPaths, path)
 	}
+	for path := range pruneTargets {
+		if _, ok := staged[path]; ok {
+			continue
+		}
+		targetPaths = append(targetPaths, path)
+	}
 	slices.Sort(targetPaths)
+	targetPaths = slices.Compact(targetPaths)
 
 	for _, targetPath := range targetPaths {
 		values, err := s.loadExistingTarget(targetPath)
 		if err != nil {
 			return err
+		}
+
+		if keep := pruneTargets[targetPath]; keep != nil {
+			for key := range values {
+				if _, ok := keep[key]; ok {
+					continue
+				}
+				delete(values, key)
+			}
 		}
 
 		maps.Copy(values, staged[targetPath])
@@ -444,6 +488,58 @@ func (s *Service) flushOutputs(staged map[string]map[string]string) error {
 	}
 
 	return nil
+}
+
+func buildPlannedTargetKeySet(planned []Task) map[string]map[string]struct{} {
+	keep := map[string]map[string]struct{}{}
+	for _, task := range planned {
+		bucket := keep[task.TargetPath]
+		if bucket == nil {
+			bucket = map[string]struct{}{}
+			keep[task.TargetPath] = bucket
+		}
+		bucket[task.EntryKey] = struct{}{}
+	}
+	return keep
+}
+
+func (s *Service) planPruneCandidates(pruneTargets map[string]map[string]struct{}) ([]PruneCandidate, error) {
+	candidates := make([]PruneCandidate, 0)
+	targetPaths := make([]string, 0, len(pruneTargets))
+	for path := range pruneTargets {
+		targetPaths = append(targetPaths, path)
+	}
+	slices.Sort(targetPaths)
+
+	for _, targetPath := range targetPaths {
+		existing, err := s.loadExistingTarget(targetPath)
+		if err != nil {
+			return nil, err
+		}
+		keys := sortedEntryKeys(existing)
+		for _, key := range keys {
+			if _, ok := pruneTargets[targetPath][key]; ok {
+				continue
+			}
+			candidates = append(candidates, PruneCandidate{TargetPath: targetPath, EntryKey: key})
+		}
+	}
+
+	return candidates, nil
+}
+
+func validatePruneLimit(in Input, candidates int) error {
+	if !in.Prune || in.DryRun || in.PruneForce {
+		return nil
+	}
+	limit := in.PruneLimit
+	if limit <= 0 {
+		limit = defaultPruneLimit
+	}
+	if candidates <= limit {
+		return nil
+	}
+	return fmt.Errorf("prune safety limit exceeded: %d keys scheduled for deletion (limit %d). rerun with --prune-max-deletions %d or --prune-force", candidates, limit, candidates)
 }
 
 func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
