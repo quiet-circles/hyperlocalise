@@ -143,6 +143,7 @@ Flags:
 
 `hyperlocalise` supports these translation model providers in `llm.profiles.*.provider`:
 - `openai`
+- `azure_openai`
 - `anthropic`
 - `lmstudio`
 - `groq`
@@ -180,6 +181,30 @@ Config:
 Environment:
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
+```
+
+## Azure OpenAI Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "azure_openai",
+        "model": "gpt-4.1-mini",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Example: https://<resource>.openai.azure.com/openai/v1
+export AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+export AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
 ```
 
 ## Gemini Example
