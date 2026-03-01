@@ -210,6 +210,10 @@ func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.Pu
 		entry.Value = value
 		latestByID[entry.ID()] = entry
 	}
+	// Remove IDs from skippedSet that ended up being applied
+	for id := range latestByID {
+		delete(skippedSet, id)
+	}
 
 	filesByLocale := map[string][]flatRecord{}
 	applied := make([]storage.EntryID, 0, len(latestByID))
