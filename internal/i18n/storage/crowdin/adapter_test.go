@@ -92,6 +92,39 @@ func TestAdapterPushGroupsEntries(t *testing.T) {
 	}
 }
 
+func TestAdapterPushAppliedOnlyIncludesSentEntries(t *testing.T) {
+	client := &fakeClient{}
+	adapter, err := NewWithClient(Config{ProjectID: "123", APIToken: "token"}, client)
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	req := storage.PushRequest{
+		Entries: []storage.Entry{
+			{Key: "hello", Context: "home", Locale: "fr", Value: "bonjour"},
+			{Key: "hello", Context: "home", Locale: "fr", Value: "bonjour-again"}, // duplicate id
+			{Key: "empty-value", Context: "home", Locale: "fr", Value: "   "},     // skipped
+			{Key: "", Context: "home", Locale: "fr", Value: "x"},                  // skipped
+			{Key: "bye", Context: "home", Locale: "", Value: "au revoir"},         // skipped
+		},
+	}
+
+	result, err := adapter.Push(context.Background(), req)
+	if err != nil {
+		t.Fatalf("push: %v", err)
+	}
+
+	if got := len(client.upsertIn.Entries); got != 1 {
+		t.Fatalf("expected 1 sent upsert entry, got %d", got)
+	}
+	if got := len(result.Applied); got != 1 {
+		t.Fatalf("expected 1 applied entry id, got %d", got)
+	}
+	if expected := req.Entries[0].ID(); result.Applied[0] != expected {
+		t.Fatalf("unexpected applied id: got %q, want %q", result.Applied[0], expected)
+	}
+}
+
 func TestNewBuildsAdapterFromRawConfig(t *testing.T) {
 	t.Setenv("CROWDIN_API_TOKEN", "token")
 

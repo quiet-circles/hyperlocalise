@@ -182,21 +182,44 @@ func (a *Adapter) Pull(ctx context.Context, req storage.PullRequest) (storage.Pu
 
 func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.PushResult, error) {
 	payload := make([]StringTranslation, 0, len(req.Entries))
+	applied := make([]storage.EntryID, 0, len(req.Entries))
+	seen := make(map[storage.EntryID]struct{}, len(req.Entries))
+
 	for _, entry := range req.Entries {
+		key := strings.TrimSpace(entry.Key)
+		locale := strings.TrimSpace(entry.Locale)
 		if strings.TrimSpace(entry.Value) == "" {
 			continue
 		}
-		payload = append(payload, StringTranslation{Key: entry.Key, Context: entry.Context, Locale: entry.Locale, Value: entry.Value})
+		if key == "" || locale == "" {
+			continue
+		}
+
+		id := entry.ID()
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+
+		payload = append(payload, StringTranslation{
+			Key:     key,
+			Context: entry.Context,
+			Locale:  locale,
+			Value:   entry.Value,
+		})
+		applied = append(applied, id)
+	}
+
+	if len(payload) == 0 {
+		return storage.PushResult{
+			Applied:  nil,
+			Revision: time.Now().UTC().Format(time.RFC3339Nano),
+		}, nil
 	}
 
 	revision, err := a.client.UpsertTranslations(ctx, UpsertTranslationsInput{ProjectID: a.cfg.ProjectID, APIToken: a.cfg.APIToken, Entries: payload})
 	if err != nil {
 		return storage.PushResult{}, fmt.Errorf("crowdin push: %w", err)
-	}
-
-	applied := make([]storage.EntryID, 0, len(req.Entries))
-	for _, entry := range req.Entries {
-		applied = append(applied, entry.ID())
 	}
 
 	return storage.PushResult{Applied: applied, Revision: revision}, nil
