@@ -203,6 +203,14 @@ func TestAdapterModeDefaultsToStrings(t *testing.T) {
 	}
 }
 
+func TestParseConfigFilesModeRequiresFileURI(t *testing.T) {
+	t.Setenv("SMARTLING_USER_SECRET", "secret")
+	_, err := ParseConfig(json.RawMessage(`{"projectID":"123","userIdentifier":"uid","mode":"files"}`))
+	if err == nil || !strings.Contains(err.Error(), "fileURI") {
+		t.Fatalf("expected fileURI requirement error, got %v", err)
+	}
+}
+
 func TestAdapterModeRoutingPull(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -222,7 +230,7 @@ func TestAdapterModeRoutingPull(t *testing.T) {
 				fileEntries:  []storage.Entry{{Key: "hello", Locale: "fr", Value: "bonjour"}},
 				fileRevision: "rev-file",
 			}
-			adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: tc.mode}, client)
+			adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: tc.mode, FileURI: "/messages.json"}, client)
 			if err != nil {
 				t.Fatalf("new adapter: %v", err)
 			}
@@ -254,7 +262,7 @@ func TestAdapterModeRoutingPush(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &fakeClient{}
-			adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: tc.mode}, client)
+			adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: tc.mode, FileURI: "/messages.json"}, client)
 			if err != nil {
 				t.Fatalf("new adapter: %v", err)
 			}
@@ -283,7 +291,7 @@ func TestAdapterFileModePullAndPushDeduplicatesAndMatchesStringsSemantics(t *tes
 		fileRevision: "rev-file",
 	}
 
-	adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: ModeFiles}, client)
+	adapter, err := NewWithClient(Config{ProjectID: "123", UserIdentifier: "uid", UserSecret: "sec", Mode: ModeFiles, FileURI: "/messages.json"}, client)
 	if err != nil {
 		t.Fatalf("new adapter: %v", err)
 	}

@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	authAPIBaseURL    = "https://api.smartling.com/auth-api/v2"
-	stringsAPIBaseURL = "https://api.smartling.com/strings-api/v2"
-	filesAPIBaseURL   = "https://api.smartling.com/files-api/v2"
-	translationsLimit = 500
+	authAPIBaseURL         = "https://api.smartling.com/auth-api/v2"
+	stringsAPIBaseURL      = "https://api.smartling.com/strings-api/v2"
+	filesAPIBaseURL        = "https://api.smartling.com/files-api/v2"
+	translationsLimit      = 500
+	defaultJobPollInterval = 2 * time.Second
 )
 
 type HTTPClient struct {
@@ -30,6 +31,8 @@ type HTTPClient struct {
 	http           *http.Client
 	userIdentifier string
 	userSecret     string
+	fileURI        string
+	jobPollTimeout time.Duration
 
 	tokenMu           sync.Mutex
 	cachedAccessToken string
@@ -49,6 +52,8 @@ func NewHTTPClient(cfg Config) (*HTTPClient, error) {
 		http:           &http.Client{Timeout: timeout},
 		userIdentifier: cfg.UserIdentifier,
 		userSecret:     cfg.UserSecret,
+		fileURI:        strings.TrimSpace(cfg.FileURI),
+		jobPollTimeout: time.Duration(cfg.JobPollTimeout) * time.Second,
 	}, nil
 }
 
@@ -63,6 +68,7 @@ func (c *HTTPClient) ExportFileEntries(ctx context.Context, in ExportFileInput) 
 	}
 
 	out := make([]storage.Entry, 0)
+	errList := make([]error, 0)
 	for _, locale := range in.Locales {
 		trimmedLocale := strings.TrimSpace(locale)
 		if trimmedLocale == "" {
@@ -71,21 +77,28 @@ func (c *HTTPClient) ExportFileEntries(ctx context.Context, in ExportFileInput) 
 
 		jobUID, err := c.requestFileExport(ctx, token, in.ProjectID, trimmedLocale)
 		if err != nil {
-			return out, revision, err
+			errList = append(errList, err)
+			continue
 		}
 		downloadURL, err := c.pollExportJob(ctx, token, jobUID)
 		if err != nil {
-			return out, revision, err
+			errList = append(errList, err)
+			continue
 		}
 		payload, err := c.downloadFile(ctx, token, downloadURL)
 		if err != nil {
-			return out, revision, err
+			errList = append(errList, err)
+			continue
 		}
 		entries, err := entriesFromFilePayload(trimmedLocale, payload)
 		if err != nil {
-			return out, revision, err
+			errList = append(errList, err)
+			continue
 		}
 		out = append(out, entries...)
+	}
+	if len(errList) > 0 {
+		return out, revision, errors.Join(errList...)
 	}
 
 	return out, revision, nil
@@ -106,18 +119,25 @@ func (c *HTTPClient) ImportFileEntries(ctx context.Context, in ImportFileInput) 
 		byLocale[locale] = append(byLocale[locale], entry)
 	}
 
+	errList := make([]error, 0)
 	for locale, entries := range byLocale {
 		payload, err := filePayloadFromEntries(entries)
 		if err != nil {
-			return "", err
+			errList = append(errList, fmt.Errorf("import file %s: %w", locale, err))
+			continue
 		}
 		jobUID, err := c.requestFileImport(ctx, token, in.ProjectID, locale, payload)
 		if err != nil {
-			return "", err
+			errList = append(errList, err)
+			continue
 		}
 		if err := c.pollImportJob(ctx, token, jobUID); err != nil {
-			return "", err
+			errList = append(errList, err)
+			continue
 		}
+	}
+	if len(errList) > 0 {
+		return "", errors.Join(errList...)
 	}
 
 	return time.Now().UTC().Format(time.RFC3339Nano), nil
@@ -319,7 +339,11 @@ func (c *HTTPClient) requestFileExport(ctx context.Context, token string, projec
 			JobUID string `json:"jobUid"`
 		} `json:"data"`
 	}
-	if err := c.postJSON(ctx, endpoint, token, map[string]any{"retrieveType": "published"}, &resp); err != nil {
+	payload := map[string]any{"retrieveType": "published"}
+	if c.fileURI != "" {
+		payload["fileUri"] = c.fileURI
+	}
+	if err := c.postJSON(ctx, endpoint, token, payload, &resp); err != nil {
 		return "", fmt.Errorf("export file %s: %w", locale, err)
 	}
 	if strings.TrimSpace(resp.Data.JobUID) == "" {
@@ -341,6 +365,11 @@ func (c *HTTPClient) pollExportJob(ctx context.Context, token string, jobUID str
 
 func (c *HTTPClient) requestFileImport(ctx context.Context, token string, projectID string, locale string, payload []byte) (string, error) {
 	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/file/import", c.filesBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
+	if c.fileURI != "" {
+		params := url.Values{}
+		params.Set("fileUri", c.fileURI)
+		endpoint = endpoint + "?" + params.Encode()
+	}
 
 	var resp struct {
 		Data struct {
@@ -380,10 +409,15 @@ type jobStatus struct {
 
 func (c *HTTPClient) pollJob(ctx context.Context, token string, jobUID string) (jobStatus, error) {
 	endpoint := fmt.Sprintf("%s/jobs/%s", c.filesBaseURL, url.PathEscape(jobUID))
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(defaultJobPollInterval)
 	defer ticker.Stop()
+	timeout := c.jobPollTimeout
+	if timeout <= 0 {
+		timeout = 120 * time.Second
+	}
+	deadline := time.Now().Add(timeout)
 
-	for attempts := 0; attempts < 20; attempts++ {
+	for time.Now().Before(deadline) {
 		var resp struct {
 			Data struct {
 				Status      string `json:"status"`
@@ -408,7 +442,7 @@ func (c *HTTPClient) pollJob(ctx context.Context, token string, jobUID string) (
 		}
 	}
 
-	return jobStatus{}, fmt.Errorf("job %s: timed out", jobUID)
+	return jobStatus{}, fmt.Errorf("job %s: timed out after %s", jobUID, timeout)
 }
 
 func (c *HTTPClient) downloadFile(ctx context.Context, token string, endpoint string) ([]byte, error) {
@@ -454,11 +488,17 @@ func entriesFromFilePayload(locale string, payload []byte) ([]storage.Entry, err
 
 func filePayloadFromEntries(entries []storage.Entry) ([]byte, error) {
 	payload := make(map[string]string, len(entries))
+	contextsByKey := make(map[string]string, len(entries))
 	for _, entry := range entries {
 		key := strings.TrimSpace(entry.Key)
 		if key == "" || strings.TrimSpace(entry.Value) == "" {
 			continue
 		}
+		context := strings.TrimSpace(entry.Context)
+		if existingContext, exists := contextsByKey[key]; exists && existingContext != context {
+			return nil, fmt.Errorf("multiple contexts for key %q in file mode: %q vs %q", key, existingContext, context)
+		}
+		contextsByKey[key] = context
 		payload[key] = entry.Value
 	}
 	body, err := json.Marshal(payload)

@@ -22,6 +22,8 @@ type Config struct {
 	UserSecret      string   `json:"-"`
 	UserSecretEnv   string   `json:"userSecretEnv,omitempty"`
 	Mode            string   `json:"mode,omitempty"`
+	FileURI         string   `json:"fileURI,omitempty"`
+	JobPollTimeout  int      `json:"jobPollTimeoutSeconds,omitempty"`
 	TargetLanguages []string `json:"targetLanguages,omitempty"`
 	TimeoutSeconds  int      `json:"timeoutSeconds,omitempty"`
 }
@@ -137,6 +139,9 @@ func normalizeConfig(cfg Config) Config {
 	} else {
 		cfg.Mode = strings.ToLower(strings.TrimSpace(cfg.Mode))
 	}
+	if cfg.JobPollTimeout <= 0 {
+		cfg.JobPollTimeout = 120
+	}
 	return cfg
 }
 
@@ -152,6 +157,9 @@ func validateConfig(cfg Config) error {
 	}
 	if cfg.Mode != ModeStrings && cfg.Mode != ModeFiles {
 		return fmt.Errorf("smartling config: mode must be one of %q or %q", ModeStrings, ModeFiles)
+	}
+	if cfg.Mode == ModeFiles && strings.TrimSpace(cfg.FileURI) == "" {
+		return fmt.Errorf("smartling config: fileURI is required when mode=%q", ModeFiles)
 	}
 	return nil
 }

@@ -34,6 +34,8 @@ description: "Configure Smartling for remote translation pull/push synchronizati
       "userIdentifier": "your-smartling-user-identifier",
       "userSecretEnv": "SMARTLING_USER_SECRET",
       "mode": "files",
+      "fileURI": "/messages.json",
+      "jobPollTimeoutSeconds": 120,
       "targetLanguages": ["fr", "de"],
       "timeoutSeconds": 30
     }
@@ -52,6 +54,8 @@ export SMARTLING_USER_SECRET="your-smartling-user-secret"
 ## Optional config fields
 
 - `mode` (`strings` | `files`, default: `strings`)
+- `fileURI` (required in `files` mode)
+- `jobPollTimeoutSeconds` (optional, default: `120`)
 - `targetLanguages`
 - `timeoutSeconds` (defaults to `30`)
 
@@ -59,11 +63,13 @@ export SMARTLING_USER_SECRET="your-smartling-user-secret"
 
 - `strings` mode uses Smartling string translation endpoints.
 - `files` mode uses Smartling file export/import endpoints and async job polling.
+- `files` mode targets the Smartling file you provide in `fileURI`.
 
 ## Known limitations
 
 - File mode currently normalizes payloads as flat JSON key/value objects.
 - File mode does not preserve Smartling-native context fields.
+- File mode rejects conflicting contexts for the same key and locale to prevent silent overwrites.
 - Namespace mapping is not supported in either mode.
 
 ## Common issues

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage"
 )
 
 func TestNewHTTPClientUsesDefaultTimeout(t *testing.T) {
@@ -334,6 +336,93 @@ func TestHTTPClientUpsertTranslationsPreservesWhitespace(t *testing.T) {
 	}
 	if got := putBody.Items[0].Value; got != value {
 		t.Fatalf("unexpected payload value: got %q want %q", got, value)
+	}
+}
+
+func TestHTTPClientExportFileEntriesAttemptsAllLocalesAndJoinsErrors(t *testing.T) {
+	requestedLocales := make([]string, 0, 2)
+	baseURL := ""
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authenticate":
+			_, _ = fmt.Fprint(w, `{"response":{"code":"SUCCESS"},"data":{"accessToken":"token"}}`)
+		case "/projects/123/locales/fr/file/export":
+			requestedLocales = append(requestedLocales, "fr")
+			http.Error(w, "fr export unavailable", http.StatusInternalServerError)
+		case "/projects/123/locales/de/file/export":
+			requestedLocales = append(requestedLocales, "de")
+			_, _ = fmt.Fprint(w, `{"data":{"jobUid":"job-de"}}`)
+		case "/jobs/job-de":
+			_, _ = fmt.Fprintf(w, `{"data":{"status":"COMPLETED","downloadUri":"%s/download/de.json"}}`, baseURL)
+		case "/download/de.json":
+			_, _ = fmt.Fprint(w, `{"welcome":"hallo"}`)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+	baseURL = srv.URL
+
+	client := &HTTPClient{authBaseURL: srv.URL, filesBaseURL: srv.URL, http: srv.Client(), userIdentifier: "id", userSecret: "secret", fileURI: "/messages.json", jobPollTimeout: time.Second}
+	items, _, err := client.ExportFileEntries(context.Background(), ExportFileInput{ProjectID: "123", Locales: []string{"fr", "de"}})
+	if err == nil {
+		t.Fatal("expected aggregated locale error, got nil")
+	}
+	if !strings.Contains(err.Error(), "export file fr") {
+		t.Fatalf("expected fr locale export error, got %v", err)
+	}
+	if got := len(requestedLocales); got != 2 {
+		t.Fatalf("expected both locales attempted, got %d (%v)", got, requestedLocales)
+	}
+	if got := len(items); got != 1 {
+		t.Fatalf("expected 1 successful locale entry, got %d", got)
+	}
+	if items[0].Locale != "de" || items[0].Key != "welcome" {
+		t.Fatalf("unexpected successful export item: %+v", items[0])
+	}
+}
+
+func TestHTTPClientFilePayloadFromEntriesRejectsConflictingContexts(t *testing.T) {
+	_, err := filePayloadFromEntries([]storage.Entry{
+		{Key: "welcome", Context: "home", Locale: "fr", Value: "bonjour"},
+		{Key: "welcome", Context: "marketing", Locale: "fr", Value: "salut"},
+	})
+	if err == nil || !strings.Contains(err.Error(), "multiple contexts") {
+		t.Fatalf("expected multiple contexts error, got %v", err)
+	}
+}
+
+func TestHTTPClientRequestFileExportIncludesFileURI(t *testing.T) {
+	var payload struct {
+		RetrieveType string `json:"retrieveType"`
+		FileURI      string `json:"fileUri"`
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/projects/123/locales/fr/file/export" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		_, _ = fmt.Fprint(w, `{"data":{"jobUid":"job-1"}}`)
+	}))
+	defer srv.Close()
+
+	client := &HTTPClient{filesBaseURL: srv.URL, http: srv.Client(), fileURI: "/messages.json"}
+	if _, err := client.requestFileExport(context.Background(), "token", "123", "fr"); err != nil {
+		t.Fatalf("request file export: %v", err)
+	}
+	if payload.RetrieveType != "published" {
+		t.Fatalf("unexpected retrieveType: %q", payload.RetrieveType)
+	}
+	if payload.FileURI != "/messages.json" {
+		t.Fatalf("unexpected fileUri: %q", payload.FileURI)
 	}
 }
 
