@@ -1,0 +1,113 @@
+---
+title: "eval"
+description: "Run translation quality experiments and compare candidate reports against a baseline."
+---
+
+Use `eval` commands to benchmark translation quality on a representative eval set and enforce quality thresholds in CI.
+
+## Usage
+
+```bash
+hyperlocalise eval run --eval-set <path> [flags]
+hyperlocalise eval compare --candidate <path> --baseline <path> [flags]
+```
+
+## eval run
+
+Run one or more experiment variants across your eval set.
+
+### What this command does
+
+1. Loads the eval dataset from `--eval-set`.
+2. Expands experiment variants from your selected profiles, providers, models, and prompt override.
+3. Executes every case against every experiment variant.
+4. Writes a JSON report when you pass `--output`.
+5. Prints a concise per-experiment summary table.
+
+### Flags
+
+- `--eval-set`: path to eval dataset (`.json`, `.jsonc`, `.csv`) (required)
+- `--profile`: profile name override (repeatable)
+- `--provider`: provider override (repeatable)
+- `--model`: model override (repeatable)
+- `--prompt-file`: prompt file override
+- `--prompt`: inline prompt override (mutually exclusive with `--prompt-file`)
+- `--output`: JSON output report path
+
+### Summary table fields
+
+- `score`: average weighted quality score for the experiment
+- `pass_rate`: successful runs / total runs for the experiment
+- `placeholder_violations`: count of placeholder integrity hard-fail violations
+- `latency_ms`: average latency for the experiment
+
+### Examples
+
+Run with defaults from your configuration and write a report:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.jsonc \
+  --output ./artifacts/eval-report.json
+```
+
+Run a matrix of profiles and provider/model overrides:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.csv \
+  --profile default \
+  --profile fast \
+  --provider openai \
+  --provider anthropic \
+  --model gpt-4.1-mini \
+  --model claude-sonnet-4-5
+```
+
+Run with a prompt file override:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --prompt-file ./prompts/translation-eval.txt
+```
+
+## eval compare
+
+Compare a candidate report with a baseline report.
+
+Use this command in CI to prevent quality regressions.
+
+### Flags
+
+- `--candidate`: candidate report JSON path (required)
+- `--baseline`: baseline report JSON path (required)
+- `--min-score`: minimum candidate weighted score
+- `--max-regression`: maximum allowed score regression from baseline to candidate
+
+### CI behavior
+
+The command exits with an error when:
+
+- candidate weighted score is below `--min-score`, or
+- score regression exceeds `--max-regression`.
+
+### Examples
+
+Compare reports and print summary values only:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json
+```
+
+Fail CI if the candidate score drops below `0.82` or regresses by more than `0.02`:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json \
+  --min-score 0.82 \
+  --max-regression 0.02
+```

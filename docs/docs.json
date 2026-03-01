@@ -32,6 +32,7 @@
           "commands/overview",
           "commands/init",
           "commands/run",
+          "commands/eval",
           "commands/status",
           "commands/sync-pull",
           "commands/sync-push",

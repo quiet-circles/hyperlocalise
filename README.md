@@ -49,6 +49,7 @@ hyperlocalise [command]
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
+  eval        evaluate translation quality across experiment variants
   init        write the latest i18n.jsonc template
   run         generate local translations from source files
   status      show translation status by locale
@@ -74,6 +75,22 @@ Behavior:
 Flags:
 - `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
 - `--dry-run` - print plan without translating or writing files
+
+
+## eval
+
+Run experiment-based translation quality checks and compare reports:
+
+```
+hyperlocalise eval run --eval-set <path> [--profile <name> ...] [--provider <name> ...] [--model <name> ...] [--prompt <text> | --prompt-file <path>] [--output <report.json>]
+hyperlocalise eval compare --candidate <report.json> --baseline <report.json> [--min-score <value>] [--max-regression <value>]
+```
+
+`eval run` prints a concise per-experiment table with score, pass rate, placeholder violations, and latency.
+
+`eval compare` supports CI gating:
+- `--min-score` fails when candidate weighted score is below threshold
+- `--max-regression` fails when candidate regresses more than allowed versus baseline
 
 ## sync
 
