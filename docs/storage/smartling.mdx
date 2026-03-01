@@ -3,7 +3,9 @@ title: "Smartling adapter"
 description: "Configure Smartling for remote translation pull/push synchronization."
 ---
 
-## Required config
+## Config
+
+### Strings mode (default)
 
 ```jsonc
 {
@@ -12,7 +14,28 @@ description: "Configure Smartling for remote translation pull/push synchronizati
     "config": {
       "projectID": "your-project-id",
       "userIdentifier": "your-smartling-user-identifier",
-      "userSecretEnv": "SMARTLING_USER_SECRET"
+      "userSecretEnv": "SMARTLING_USER_SECRET",
+      "mode": "strings",
+      "targetLanguages": ["fr", "de"],
+      "timeoutSeconds": 30
+    }
+  }
+}
+```
+
+### Files mode
+
+```jsonc
+{
+  "storage": {
+    "adapter": "smartling",
+    "config": {
+      "projectID": "your-project-id",
+      "userIdentifier": "your-smartling-user-identifier",
+      "userSecretEnv": "SMARTLING_USER_SECRET",
+      "mode": "files",
+      "targetLanguages": ["fr", "de"],
+      "timeoutSeconds": 30
     }
   }
 }
@@ -28,8 +51,20 @@ export SMARTLING_USER_SECRET="your-smartling-user-secret"
 
 ## Optional config fields
 
+- `mode` (`strings` | `files`, default: `strings`)
 - `targetLanguages`
 - `timeoutSeconds` (defaults to `30`)
+
+## Mode behavior
+
+- `strings` mode uses Smartling string translation endpoints.
+- `files` mode uses Smartling file export/import endpoints and async job polling.
+
+## Known limitations
+
+- File mode currently normalizes payloads as flat JSON key/value objects.
+- File mode does not preserve Smartling-native context fields.
+- Namespace mapping is not supported in either mode.
 
 ## Common issues
 

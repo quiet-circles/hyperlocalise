@@ -39,4 +39,11 @@ description: "Concise reference for i18n.jsonc fields used by hyperlocalise."
 - `adapter`: `poeditor` | `lokalise` | `crowdin` | `smartling`
 - `config`: adapter-specific fields
 
+### Smartling config highlights
+
+- `projectID` (required)
+- `userIdentifier` (required)
+- `userSecretEnv` (optional, defaults to `SMARTLING_USER_SECRET`)
+- `mode` (optional: `strings` or `files`, defaults to `strings`)
+
 For examples, see [i18n config](/configuration/i18n-config).
