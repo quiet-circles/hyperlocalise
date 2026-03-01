@@ -21,6 +21,9 @@ func TestLoadMissingFileReturnsEmptyLock(t *testing.T) {
 	if f.LocaleStates == nil {
 		t.Fatalf("expected initialized locale states map")
 	}
+	if f.RunCompleted == nil {
+		t.Fatalf("expected initialized run completed map")
+	}
 	if len(f.LocaleStates) != 0 {
 		t.Fatalf("expected empty locale states, got %d", len(f.LocaleStates))
 	}
@@ -39,6 +42,12 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 			"fr": {
 				Revision:  "rev1",
 				UpdatedAt: &now,
+			},
+		},
+		RunCompleted: map[string]RunCompletion{
+			"locales/fr.json::hello": {
+				CompletedAt: now,
+				SourceHash:  "abc123",
 			},
 		},
 	})
@@ -62,6 +71,13 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	}
 	if checkpoint.UpdatedAt == nil || !checkpoint.UpdatedAt.Equal(now) {
 		t.Fatalf("unexpected updated_at: %+v", checkpoint.UpdatedAt)
+	}
+	completion, ok := got.RunCompleted["locales/fr.json::hello"]
+	if !ok {
+		t.Fatalf("expected run completion")
+	}
+	if completion.SourceHash != "abc123" {
+		t.Fatalf("unexpected source hash: %q", completion.SourceHash)
 	}
 }
 

@@ -35,10 +35,30 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   init        write the latest i18n.jsonc template
+  run         generate local translations from source files
   status      show translation status by locale
   sync        synchronize translations with remote storage adapters
   version     hyperlocalise version
 ```
+
+## run
+
+Generate local translations from configured source files into target files:
+
+```
+hyperlocalise run [--config <path>] [--dry-run]
+```
+
+Behavior:
+- Loads and validates `i18n.jsonc`
+- Plans entry-level translation tasks from group/bucket mappings
+- Skips tasks already recorded in `.hyperlocalise.lock.json`
+- Executes remaining tasks in parallel (worker count = CPU core count)
+- Persists each successful task completion to lock state
+
+Flags:
+- `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
+- `--dry-run` - print plan without translating or writing files
 
 ## sync
 
