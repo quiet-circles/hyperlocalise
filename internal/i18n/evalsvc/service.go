@@ -13,19 +13,21 @@ import (
 	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/evalset"
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/evalsvc/scoring"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translator"
 )
 
 // Input controls evaluation execution.
 type Input struct {
-	EvalSetPath string
-	Profiles    []string
-	Providers   []string
-	Models      []string
-	Prompts     []string
-	Concurrency int
-	Seed        int64
-	OutputPath  string
+	EvalSetPath    string
+	Profiles       []string
+	Providers      []string
+	Models         []string
+	Prompts        []string
+	Concurrency    int
+	Seed           int64
+	OutputPath     string
+	EnableLLMJudge bool
 }
 
 // Aggregate summarizes evaluation totals.
@@ -35,6 +37,8 @@ type Aggregate struct {
 	FailedRuns         int                `json:"failedRuns"`
 	AverageLatencyMS   float64            `json:"averageLatencyMs"`
 	AverageScoreByName map[string]float64 `json:"averageScoreByName,omitempty"`
+	WeightedScore      float64            `json:"weightedScore,omitempty"`
+	HardFailCounts     map[string]int     `json:"hardFailCounts,omitempty"`
 }
 
 // Report is the full result payload for an eval execution.
@@ -58,6 +62,7 @@ type RunResult struct {
 	LatencyMS    float64            `json:"latencyMs"`
 	Error        string             `json:"error,omitempty"`
 	Scores       map[string]float64 `json:"scores,omitempty"`
+	Quality      scoring.Result     `json:"quality"`
 }
 
 // CaseSummary aggregates all runs for a single case.
@@ -68,6 +73,8 @@ type CaseSummary struct {
 	FailedRuns         int                `json:"failedRuns"`
 	AverageLatencyMS   float64            `json:"averageLatencyMs"`
 	AverageScoreByName map[string]float64 `json:"averageScoreByName,omitempty"`
+	WeightedScore      float64            `json:"weightedScore,omitempty"`
+	HardFailCounts     map[string]int     `json:"hardFailCounts,omitempty"`
 }
 
 // ScoreInput is passed to scorer implementations.
@@ -111,15 +118,17 @@ type Service struct {
 
 	referenceScorers []ReferenceScorer
 	judgeScorers     []JudgeScorer
+	qualityEvaluator *scoring.Evaluator
 }
 
 func New() *Service {
 	return &Service{
-		loadEvalset: evalset.Load,
-		translate:   translator.Translate,
-		writeFile:   os.WriteFile,
-		now:         func() time.Time { return time.Now().UTC() },
-		numCPU:      runtime.NumCPU,
+		loadEvalset:      evalset.Load,
+		translate:        translator.Translate,
+		writeFile:        os.WriteFile,
+		now:              func() time.Time { return time.Now().UTC() },
+		numCPU:           runtime.NumCPU,
+		qualityEvaluator: scoring.NewEvaluator(),
 	}
 }
 
@@ -157,7 +166,11 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	workerCount := resolveWorkerCount(in.Concurrency, s.numCPU)
-	scorers := adaptScorers(s.referenceScorers, s.judgeScorers)
+	judges := []JudgeScorer(nil)
+	if in.EnableLLMJudge {
+		judges = s.judgeScorers
+	}
+	scorers := adaptScorers(s.referenceScorers, judges)
 	runs, err := s.execute(ctx, cases, experiments, scorers, workerCount)
 	if err != nil {
 		return Report{}, err
@@ -313,6 +326,10 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 }
 
 func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, scorers []scoreAdapter) RunResult {
+	if s.qualityEvaluator == nil {
+		s.qualityEvaluator = scoring.NewEvaluator()
+	}
+
 	req := translator.Request{
 		Source:         tc.Source,
 		TargetLanguage: tc.TargetLocale,
@@ -338,8 +355,10 @@ func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experi
 
 	if err != nil {
 		run.Error = err.Error()
+		run.Quality = s.qualityEvaluator.Evaluate(tc.Source, "", tc.Reference)
 		return run
 	}
+	run.Quality = s.qualityEvaluator.Evaluate(tc.Source, translated, tc.Reference)
 
 	scoreInput := ScoreInput{Case: tc, Request: req, Translated: translated}
 	for _, scorer := range scorers {
@@ -363,14 +382,20 @@ func aggregateRuns(runs []RunResult) Aggregate {
 	}
 
 	totalLatency := 0.0
+	totalWeighted := 0.0
 	scoreSums := map[string]float64{}
 	scoreCounts := map[string]int{}
+	hardFailCounts := map[string]int{}
 	for _, run := range runs {
 		totalLatency += run.LatencyMS
+		totalWeighted += run.Quality.WeightedAggregate
 		if run.Error != "" {
 			agg.FailedRuns++
 		} else {
 			agg.SuccessfulRuns++
+		}
+		for _, cat := range run.Quality.HardFails {
+			hardFailCounts[cat]++
 		}
 		for name, score := range run.Scores {
 			scoreSums[name] += score
@@ -379,11 +404,15 @@ func aggregateRuns(runs []RunResult) Aggregate {
 	}
 
 	agg.AverageLatencyMS = round3(totalLatency / float64(len(runs)))
+	agg.WeightedScore = round3(totalWeighted / float64(len(runs)))
 	if len(scoreSums) > 0 {
 		agg.AverageScoreByName = map[string]float64{}
 		for name, sum := range scoreSums {
 			agg.AverageScoreByName[name] = round3(sum / float64(scoreCounts[name]))
 		}
+	}
+	if len(hardFailCounts) > 0 {
+		agg.HardFailCounts = hardFailCounts
 	}
 
 	return agg
@@ -407,10 +436,13 @@ func summarizeCases(runs []RunResult) []CaseSummary {
 		summary := CaseSummary{CaseID: caseID, RunCount: len(list)}
 
 		totalLatency := 0.0
+		totalWeighted := 0.0
 		scoreSums := map[string]float64{}
 		scoreCounts := map[string]int{}
+		hardFailCounts := map[string]int{}
 		for _, run := range list {
 			totalLatency += run.LatencyMS
+			totalWeighted += run.Quality.WeightedAggregate
 			if run.Error != "" {
 				summary.FailedRuns++
 			} else {
@@ -420,14 +452,21 @@ func summarizeCases(runs []RunResult) []CaseSummary {
 				scoreSums[name] += score
 				scoreCounts[name]++
 			}
+			for _, cat := range run.Quality.HardFails {
+				hardFailCounts[cat]++
+			}
 		}
 
 		summary.AverageLatencyMS = round3(totalLatency / float64(len(list)))
+		summary.WeightedScore = round3(totalWeighted / float64(len(list)))
 		if len(scoreSums) > 0 {
 			summary.AverageScoreByName = map[string]float64{}
 			for name, sum := range scoreSums {
 				summary.AverageScoreByName[name] = round3(sum / float64(scoreCounts[name]))
 			}
+		}
+		if len(hardFailCounts) > 0 {
+			summary.HardFailCounts = hardFailCounts
 		}
 
 		summaries = append(summaries, summary)

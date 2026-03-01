@@ -67,6 +67,8 @@ func TestRunIsDeterministicWithSeed(t *testing.T) {
 	zeroCaseLatency(report2.CaseSummaries)
 	report1.Aggregate.AverageLatencyMS = 0
 	report2.Aggregate.AverageLatencyMS = 0
+	report1.Aggregate.WeightedScore = 0
+	report2.Aggregate.WeightedScore = 0
 
 	if !reflect.DeepEqual(report1, report2) {
 		t.Fatalf("expected deterministic report for same seed")
@@ -119,12 +121,13 @@ func TestRunAggregatesScorersAndPersistsReport(t *testing.T) {
 	svc.WithReferenceScorers(fakeReferenceScorer{}).WithJudgeScorers(fakeJudgeScorer{})
 
 	report, err := svc.Run(context.Background(), Input{
-		EvalSetPath: "unused.json",
-		Profiles:    []string{"default"},
-		Providers:   []string{"openai", "anthropic"},
-		Models:      []string{"model-a"},
-		Prompts:     []string{"prompt A"},
-		OutputPath:  outputPath,
+		EvalSetPath:    "unused.json",
+		Profiles:       []string{"default"},
+		Providers:      []string{"openai", "anthropic"},
+		Models:         []string{"model-a"},
+		Prompts:        []string{"prompt A"},
+		OutputPath:     outputPath,
+		EnableLLMJudge: true,
 	})
 	if err != nil {
 		t.Fatalf("run: %v", err)
@@ -145,6 +148,28 @@ func TestRunAggregatesScorersAndPersistsReport(t *testing.T) {
 
 	if len(svc.writes) != 1 || svc.writes[0] != outputPath {
 		t.Fatalf("expected report written once to output path, got %+v", svc.writes)
+	}
+}
+
+func TestRunJudgeScoringDisabledByDefault(t *testing.T) {
+	svc := newTestService()
+	svc.WithJudgeScorers(fakeJudgeScorer{})
+
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath: "unused.json",
+		Profiles:    []string{"default"},
+		Providers:   []string{"openai"},
+		Models:      []string{"model-a"},
+		Prompts:     []string{"prompt A"},
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	for _, run := range report.Runs {
+		if _, ok := run.Scores["judge"]; ok {
+			t.Fatalf("expected judge scorer to be disabled by default")
+		}
 	}
 }
 
