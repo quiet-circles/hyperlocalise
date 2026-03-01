@@ -302,6 +302,123 @@ func TestRunReturnsFatalErrorWhenLockWriteFails(t *testing.T) {
 	}
 }
 
+func TestRunDryRunReportsPruneCandidates(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello","nested.title":"Title"}`), nil
+		case targetPath:
+			return []byte(`{"hello":"Bonjour","nested":{"title":"Titre","old":"Ancien"},"legacy":"Legacy"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	report, err := svc.Run(context.Background(), Input{DryRun: true, Prune: true})
+	if err != nil {
+		t.Fatalf("run dry-run prune: %v", err)
+	}
+	if len(report.PruneCandidates) != 2 {
+		t.Fatalf("expected 2 prune candidates, got %+v", report.PruneCandidates)
+	}
+	if report.PruneCandidates[0].EntryKey != "legacy" || report.PruneCandidates[1].EntryKey != "nested.old" {
+		t.Fatalf("unexpected prune candidates ordering: %+v", report.PruneCandidates)
+	}
+}
+
+func TestRunPruneRemovesStaleKeysForJSONAndNestedKeys(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello","nested.title":"Title"}`), nil
+		case targetPath:
+			return []byte(`{"hello":"Bonjour","nested":{"title":"Titre","old":"Ancien"},"legacy":"Legacy"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source == "Hello" {
+			return "Salut", nil
+		}
+		return "Titre mis à jour", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Prune: true})
+	if err != nil {
+		t.Fatalf("run prune: %v", err)
+	}
+	if report.PruneApplied != 2 {
+		t.Fatalf("expected 2 prune deletions applied, got %+v", report)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(written, &payload); err != nil {
+		t.Fatalf("decode written payload: %v", err)
+	}
+	if _, ok := payload["legacy"]; ok {
+		t.Fatalf("expected legacy key pruned, got %+v", payload)
+	}
+	nested, ok := payload["nested"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected nested object, got %+v", payload)
+	}
+	if _, ok := nested["old"]; ok {
+		t.Fatalf("expected nested old key pruned, got %+v", nested)
+	}
+	if nested["title"] != "Titre mis à jour" {
+		t.Fatalf("expected nested title preserved and updated, got %+v", nested)
+	}
+}
+
+func TestRunPruneSafetyLimitBlocksMassDeletion(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{"hello":"Bonjour","old":"ancien","older":"ancien2"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	_, err := svc.Run(context.Background(), Input{Prune: true, PruneLimit: 1})
+	if err == nil || !strings.Contains(err.Error(), "prune safety limit exceeded") {
+		t.Fatalf("expected prune safety limit error, got %v", err)
+	}
+}
+
 func newTestService() *Service {
 	now := time.Unix(1700000000, 0).UTC()
 	sourcePath := "/tmp/source.json"
