@@ -1,0 +1,20 @@
+{
+  "name": "hyperlocalise",
+  "version": "1.0.0",
+  "description": "A high-performance localization CLI built in Go for modern development workflows — lightweight, fast, and dependency-minimal.",
+  "homepage": "https://github.com/quiet-circles/hyperlocalise#readme",
+  "bugs": {
+    "url": "https://github.com/quiet-circles/hyperlocalise/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quiet-circles/hyperlocalise.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
