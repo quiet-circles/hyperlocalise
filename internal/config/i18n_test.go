@@ -101,6 +101,15 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
+			name: "valid llm provider azure openai",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "azure_openai", "model": "x", "prompt": "p"}}}
+			}`,
+		},
+		{
 			name: "valid llm provider lmstudio",
 			content: `{
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},

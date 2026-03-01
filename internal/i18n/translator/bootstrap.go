@@ -10,6 +10,7 @@ func RegisterBuiltins(t *Tool) error {
 
 	providers := []Provider{
 		NewOpenAIProvider(),
+		NewAzureOpenAIProvider(),
 		NewAnthropicProvider(),
 		NewLMStudioProvider(),
 		NewGroqProvider(),
