@@ -44,6 +44,7 @@
           "providers/llm-providers",
           "storage/overview",
           "storage/poeditor",
+          "storage/lilt",
           "storage/lokalise",
           "storage/crowdin",
           "storage/smartling"

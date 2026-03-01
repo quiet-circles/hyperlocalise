@@ -1,0 +1,45 @@
+---
+title: "Lilt adapter"
+description: "Configure Lilt for remote translation pull/push synchronization."
+---
+
+## Required config
+
+```jsonc
+{
+  "storage": {
+    "adapter": "lilt",
+    "config": {
+      "projectID": "123",
+      "apiTokenEnv": "LILT_API_TOKEN"
+    }
+  }
+}
+```
+
+## Token resolution
+
+1. env var named by `storage.config.apiTokenEnv`
+2. fallback: `LILT_API_TOKEN`
+
+`apiToken` inline in config is not supported. Use environment variables only.
+
+## Optional config fields
+
+- `targetLanguages`
+- `timeoutSeconds` (defaults to `30`)
+- `pollIntervalMs` (defaults to `1000`)
+- `maxPolls` (defaults to `60`)
+
+## Pull behavior
+
+- starts an export job for each locale
+- polls export status until the job completes
+- downloads JSON artifacts (single file or ZIP)
+- normalizes entries and skips empty key/locale/value rows
+
+## Common issues
+
+- missing token: export `LILT_API_TOKEN` in the same shell session
+- missing project id: set `storage.config.projectID`
+- timeout or slow export: increase `timeoutSeconds`, `pollIntervalMs`, or `maxPolls`
