@@ -30,6 +30,7 @@ func New() *Tool {
 	t.MustRegister(NewLMStudioProvider())
 	t.MustRegister(NewGroqProvider())
 	t.MustRegister(NewOllamaProvider())
+	t.MustRegister(NewGeminiProvider())
 	return t
 }
 

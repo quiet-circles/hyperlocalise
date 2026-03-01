@@ -132,6 +132,7 @@ Flags:
 - `lmstudio`
 - `groq`
 - `ollama`
+- `gemini`
 
 `llm.profiles.default` is required, and each profile requires:
 - `provider`
@@ -163,6 +164,31 @@ Config:
 Environment:
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
+```
+
+## Gemini Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to https://generativelanguage.googleapis.com/v1beta/openai
+export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+
+export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
 ## LM Studio Example (Local Model)

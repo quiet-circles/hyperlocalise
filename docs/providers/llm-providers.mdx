@@ -1,11 +1,12 @@
 ---
 title: "LLM providers"
-description: "Configure OpenAI, LM Studio, Ollama, or Groq for translation generation profiles."
+description: "Configure OpenAI, Gemini, LM Studio, Ollama, or Groq for translation generation profiles."
 ---
 
 Supported `llm.profiles.*.provider` values:
 
 - `openai`
+- `gemini`
 - `lmstudio`
 - `groq`
 - `ollama`
@@ -40,6 +41,27 @@ Prompt variables:
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
+```
+
+## Gemini example
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+```bash
+export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
 ## LM Studio example

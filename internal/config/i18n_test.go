@@ -128,6 +128,15 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
+			name: "valid llm provider gemini",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "gemini", "model": "x", "prompt": "p"}}}
+			}`,
+		},
+		{
 			name: "invalid unknown field rejected",
 			content: `{
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},

@@ -11,6 +11,7 @@ const (
 	ProviderLMStudio = "lmstudio"
 	ProviderGroq     = "groq"
 	ProviderOllama   = "ollama"
+	ProviderGemini   = "gemini"
 )
 
 type Request struct {
