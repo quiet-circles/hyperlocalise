@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -118,6 +119,10 @@ func validateConfig(cfg Config) error {
 	if strings.TrimSpace(cfg.ProjectID) == "" {
 		return fmt.Errorf("crowdin config: projectID is required")
 	}
+	projectID, err := strconv.Atoi(strings.TrimSpace(cfg.ProjectID))
+	if err != nil || projectID <= 0 {
+		return fmt.Errorf("crowdin config: projectID must be a positive integer")
+	}
 	if strings.TrimSpace(cfg.APIToken) == "" {
 		return fmt.Errorf("crowdin config: API token is required (%s)", defaultTokenEnvName)
 	}
@@ -222,12 +227,16 @@ func (a *Adapter) Push(ctx context.Context, req storage.PushRequest) (storage.Pu
 
 	revision, err := a.client.UpsertTranslations(ctx, UpsertTranslationsInput{ProjectID: a.cfg.ProjectID, APIToken: a.cfg.APIToken, Entries: payload})
 	if err != nil {
-		partialApplied := appliedCountFromError(err)
-		if partialApplied > len(applied) {
-			partialApplied = len(applied)
+		sentIndexes := sentIndexesFromError(err)
+		partialApplied := make([]storage.EntryID, 0, len(sentIndexes))
+		for _, idx := range sentIndexes {
+			if idx < 0 || idx >= len(applied) {
+				continue
+			}
+			partialApplied = append(partialApplied, applied[idx])
 		}
 		return storage.PushResult{
-			Applied: applied[:partialApplied],
+			Applied: partialApplied,
 		}, fmt.Errorf("crowdin push: %w", err)
 	}
 

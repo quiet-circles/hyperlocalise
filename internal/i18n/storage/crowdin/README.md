@@ -8,7 +8,7 @@ Crowdin adapter for `hyperlocalise sync` operations.
 {
   "adapter": "crowdin",
   "config": {
-    "projectID": "your-project-id",
+    "projectID": "123456",
     "apiTokenEnv": "CROWDIN_API_TOKEN",
     "sourceLanguage": "en",
     "targetLanguages": ["fr", "de"]
@@ -17,3 +17,4 @@ Crowdin adapter for `hyperlocalise sync` operations.
 ```
 
 Set `CROWDIN_API_TOKEN` in your environment.
+`projectID` must be the numeric Crowdin project ID.

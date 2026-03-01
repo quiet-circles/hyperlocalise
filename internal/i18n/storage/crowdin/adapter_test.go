@@ -50,6 +50,14 @@ func TestParseConfigMissingToken(t *testing.T) {
 	}
 }
 
+func TestParseConfigRejectsNonNumericProjectID(t *testing.T) {
+	t.Setenv("CROWDIN_API_TOKEN", "token")
+	_, err := ParseConfig(json.RawMessage(`{"projectID":"abc"}`))
+	if err == nil || !strings.Contains(err.Error(), "projectID must be a positive integer") {
+		t.Fatalf("expected invalid projectID error, got %v", err)
+	}
+}
+
 func TestParseConfigRejectsInlineToken(t *testing.T) {
 	t.Setenv("CROWDIN_API_TOKEN", "env-token")
 	_, err := ParseConfig(json.RawMessage(`{"projectID":"123","apiToken":"inline"}`))
@@ -135,7 +143,7 @@ func TestAdapterPushAppliedOnlyIncludesSentEntries(t *testing.T) {
 
 func TestAdapterPushReturnsPartialAppliedOnUpsertFailure(t *testing.T) {
 	client := &fakeClient{
-		upsertErr: &partialUpsertError{appliedCount: 1, cause: errors.New("boom")},
+		upsertErr: &partialUpsertError{sentIndexes: []int{0}, cause: errors.New("boom")},
 	}
 	adapter, err := NewWithClient(Config{ProjectID: "123", APIToken: "token"}, client)
 	if err != nil {

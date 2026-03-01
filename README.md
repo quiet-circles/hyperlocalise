@@ -157,7 +157,7 @@ Configuration:
 {
   "adapter": "crowdin",
   "config": {
-    "projectID": "your-project-id",
+    "projectID": "123456",
     "apiTokenEnv": "CROWDIN_API_TOKEN",
     "sourceLanguage": "en",
     "targetLanguages": ["fr", "de", "es"]
