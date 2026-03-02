@@ -153,6 +153,14 @@ hyperlocalise status --config i18n.jsonc --output csv
 
 Use `needs_review` rows to identify entries that still need human curation.
 
+## 6. Evaluate translation quality when needed
+
+```bash
+hyperlocalise eval run --eval-set ./eval-set.json --output ./eval-report.json
+```
+
+Use this when comparing prompt/profile/provider choices or before promoting large translation updates.
+
 ## Next
 
 - Tune config in [i18n config](/configuration/i18n-config).
