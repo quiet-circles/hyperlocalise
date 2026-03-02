@@ -44,6 +44,23 @@ func TestMarkdownParserParseMdxKeepsComponentsAndAttributesOut(t *testing.T) {
 	}
 }
 
+func TestMarkdownParserParseMdxIncludesFrontmatterMetadataValues(t *testing.T) {
+	content := []byte("---\ntitle: \"Conflict handling\"\ndescription: \"Understand pull/push conflicts and apply safe resolution strategies.\"\n---\n\nBody text.\n")
+
+	got, err := (MarkdownParser{}).Parse(content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	combined := strings.Join(mapValues(got), "\n")
+	if !strings.Contains(combined, "Conflict handling") {
+		t.Fatalf("expected title frontmatter value extracted, got %q", combined)
+	}
+	if !strings.Contains(combined, "Understand pull/push conflicts and apply safe resolution strategies.") {
+		t.Fatalf("expected description frontmatter value extracted, got %q", combined)
+	}
+}
+
 func TestMarshalMarkdownRoundTripReplacesOnlyExtractedSegments(t *testing.T) {
 	template := []byte("# Heading\n\n- First item\n- Second item\n\nSee [docs](https://example.com).\n> Quote\n| Name | Value |\n| ---- | ----- |\n| Alpha | Beta |\n")
 
@@ -112,6 +129,55 @@ func TestMarshalMarkdownMdxRoundTripPreservesComponentSyntax(t *testing.T) {
 	}
 }
 
+func TestMarshalMarkdownPreservesBoundaryWhitespaceWithTrimmedTranslations(t *testing.T) {
+	template := []byte("  Hello  \n\n- World \n")
+	entries, err := (MarkdownParser{}).Parse(template)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	updates := map[string]string{}
+	for k, v := range entries {
+		updates[k] = strings.TrimSpace(strings.ToUpper(v))
+	}
+
+	output := string(MarshalMarkdown(template, updates))
+	if output != "  HELLO  \n\n- WORLD \n" {
+		t.Fatalf("expected boundary whitespace preserved, got %q", output)
+	}
+}
+
+func TestMarshalMarkdownPreservesFrontmatterStructureWithTranslatedMetadataValues(t *testing.T) {
+	template := []byte("---\ntitle: \"Conflict handling\"\ndescription: \"Understand pull/push conflicts and apply safe resolution strategies.\"\n---\n")
+	entries, err := (MarkdownParser{}).Parse(template)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	updates := map[string]string{}
+	for k, v := range entries {
+		switch v {
+		case "Conflict handling":
+			updates[k] = "Gestion des conflits"
+		case "Understand pull/push conflicts and apply safe resolution strategies.":
+			updates[k] = "Comprendre les conflits pull/push et appliquer des strategies de resolution sures."
+		default:
+			updates[k] = v
+		}
+	}
+
+	output := string(MarshalMarkdown(template, updates))
+	if !strings.Contains(output, "title: \"Gestion des conflits\"") {
+		t.Fatalf("expected translated title in frontmatter, got %q", output)
+	}
+	if !strings.Contains(output, "description: \"Comprendre les conflits pull/push et appliquer des strategies de resolution sures.\"") {
+		t.Fatalf("expected translated description in frontmatter, got %q", output)
+	}
+	if !strings.HasPrefix(output, "---\n") || !strings.HasSuffix(output, "---\n") {
+		t.Fatalf("expected frontmatter delimiters preserved, got %q", output)
+	}
+}
+
 func TestStrategyParsesMarkdown(t *testing.T) {
 	s := NewDefaultStrategy()
 	content := []byte("# Welcome\n\nHello world\n")
@@ -138,10 +204,55 @@ func TestStrategyParsesMDX(t *testing.T) {
 	}
 }
 
+func TestMarkdownParserKeysAreStableAcrossInsertedSegments(t *testing.T) {
+	base := []byte("Alpha\nBeta\n")
+	withInsert := []byte("Intro\nAlpha\nBeta\n")
+
+	baseEntries, err := (MarkdownParser{}).Parse(base)
+	if err != nil {
+		t.Fatalf("parse base: %v", err)
+	}
+	insertedEntries, err := (MarkdownParser{}).Parse(withInsert)
+	if err != nil {
+		t.Fatalf("parse with insert: %v", err)
+	}
+
+	baseAlpha := findKeyByValue(baseEntries, "Alpha")
+	baseBeta := findKeyByValue(baseEntries, "Beta")
+	insertAlpha := findKeyByValue(insertedEntries, "Alpha")
+	insertBeta := findKeyByValue(insertedEntries, "Beta")
+	if baseAlpha == "" || baseBeta == "" || insertAlpha == "" || insertBeta == "" {
+		t.Fatalf("expected keys for shared segments")
+	}
+	if baseAlpha != insertAlpha || baseBeta != insertBeta {
+		t.Fatalf("expected stable hash keys, base=(%s,%s) inserted=(%s,%s)", baseAlpha, baseBeta, insertAlpha, insertBeta)
+	}
+}
+
+func TestMarkdownParserKeysDisambiguateDuplicateSegments(t *testing.T) {
+	content := []byte("Repeat\nRepeat\n")
+	entries, err := (MarkdownParser{}).Parse(content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected two distinct keys for duplicate segments, got %d", len(entries))
+	}
+}
+
 func mapValues(values map[string]string) []string {
 	out := make([]string, 0, len(values))
 	for _, value := range values {
 		out = append(out, value)
 	}
 	return out
+}
+
+func findKeyByValue(values map[string]string, needle string) string {
+	for key, value := range values {
+		if strings.TrimSpace(value) == needle {
+			return key
+		}
+	}
+	return ""
 }

@@ -212,7 +212,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	emitter.emit(Event{Kind: EventPhase, Phase: PhaseExecuting})
-	staged, execReport, err := s.executePool(ctx, executable, in.LockPath, state, in.Workers, emitter)
+	staged, flushedTargets, execReport, err := s.executePool(ctx, executable, in.LockPath, state, in.Workers, pruneTargets, emitter)
 	report.Succeeded = execReport.Succeeded
 	report.Failed = execReport.Failed
 	report.PersistedToLock = execReport.PersistedToLock
@@ -232,7 +232,15 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	emitter.emit(Event{Kind: EventPhase, Phase: PhaseFinalizingOutput})
-	if err := s.flushOutputs(staged, pruneTargets); err != nil {
+	remainingPruneTargets := map[string]map[string]struct{}{}
+	for path, keep := range pruneTargets {
+		if _, alreadyFlushed := flushedTargets[path]; alreadyFlushed {
+			continue
+		}
+		remainingPruneTargets[path] = keep
+	}
+
+	if err := s.flushOutputs(staged, remainingPruneTargets); err != nil {
 		emitter.emit(Event{
 			Kind:            EventCompleted,
 			PlannedTotal:    report.PlannedTotal,
@@ -389,6 +397,8 @@ type executionReport struct {
 type taskCompletion struct {
 	identity   string
 	sourceHash string
+	targetPath string
+	sourcePath string
 }
 
 type stagedOutput struct {
@@ -419,9 +429,28 @@ func (e *eventEmitter) emit(ev Event) {
 	e.notify(ev)
 }
 
-func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string, state *lockfile.File, workers int, emitter *eventEmitter) (map[string]stagedOutput, executionReport, error) {
+func (s *Service) executePool(
+	ctx context.Context,
+	tasks []Task,
+	lockPath string,
+	state *lockfile.File,
+	workers int,
+	pruneTargets map[string]map[string]struct{},
+	emitter *eventEmitter,
+) (map[string]stagedOutput, map[string]struct{}, executionReport, error) {
 	report := executionReport{}
 	staged := map[string]stagedOutput{}
+	flushedTargets := map[string]struct{}{}
+	pendingByTarget := map[string]int{}
+	sourceByTarget := map[string]string{}
+	for _, task := range tasks {
+		pendingByTarget[task.TargetPath]++
+		existing := sourceByTarget[task.TargetPath]
+		if existing != "" && existing != task.SourcePath {
+			return nil, nil, report, fmt.Errorf("output staging conflict: %s has conflicting source paths", task.TargetPath)
+		}
+		sourceByTarget[task.TargetPath] = task.SourcePath
+	}
 
 	workerCount := workers
 	if workerCount == 0 {
@@ -436,20 +465,39 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string
 	fatalLockErr := make(chan error, 1)
 
 	var (
-		reportMu sync.Mutex
-		stageMu  sync.Mutex
+		reportMu  sync.Mutex
+		stageMu   sync.Mutex
+		pendingMu sync.Mutex
 	)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	lockWriterDone := make(chan struct{})
-	go s.runLockWriter(completions, lockWriterDone, state, lockPath, fatalLockErr, cancel, &report, &reportMu, emitter)
+	go s.runLockWriter(
+		completions,
+		lockWriterDone,
+		state,
+		lockPath,
+		fatalLockErr,
+		cancel,
+		staged,
+		&stageMu,
+		pendingByTarget,
+		sourceByTarget,
+		flushedTargets,
+		pruneTargets,
+		&pendingMu,
+		&report,
+		&reportMu,
+		len(tasks),
+		emitter,
+	)
 
 	var wg sync.WaitGroup
 	for range workerCount {
 		wg.Add(1)
-		go s.runWorker(ctx, jobs, completions, staged, &stageMu, &report, &reportMu, len(tasks), emitter, &wg)
+		go s.runWorker(ctx, jobs, completions, staged, &stageMu, pendingByTarget, sourceByTarget, flushedTargets, pruneTargets, &pendingMu, &report, &reportMu, len(tasks), emitter, &wg, cancel)
 	}
 
 	go s.feedJobs(ctx, jobs, tasks)
@@ -460,11 +508,11 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string
 
 	select {
 	case err := <-fatalLockErr:
-		return staged, report, err
+		return nil, nil, report, err
 	default:
 	}
 
-	return staged, report, nil
+	return staged, flushedTargets, report, nil
 }
 
 func (s *Service) runLockWriter(
@@ -474,8 +522,16 @@ func (s *Service) runLockWriter(
 	lockPath string,
 	fatalLockErr chan<- error,
 	cancel context.CancelFunc,
+	staged map[string]stagedOutput,
+	stageMu *sync.Mutex,
+	pendingByTarget map[string]int,
+	sourceByTarget map[string]string,
+	flushedTargets map[string]struct{},
+	pruneTargets map[string]map[string]struct{},
+	pendingMu *sync.Mutex,
 	report *executionReport,
 	reportMu *sync.Mutex,
+	total int,
 	emitter *eventEmitter,
 ) {
 	defer close(lockWriterDone)
@@ -501,6 +557,15 @@ func (s *Service) runLockWriter(
 			Succeeded:       succeeded,
 			Failed:          failed,
 		})
+		if err := s.flushIfTargetCompleted(completion.targetPath, completion.sourcePath, staged, stageMu, pendingByTarget, sourceByTarget, flushedTargets, pruneTargets, pendingMu); err != nil {
+			recordTaskFailure(report, reportMu, total, Task{TargetPath: completion.targetPath}, err, emitter)
+			select {
+			case fatalLockErr <- err:
+			default:
+			}
+			cancel()
+			return
+		}
 	}
 }
 
@@ -510,11 +575,17 @@ func (s *Service) runWorker(
 	completions chan<- taskCompletion,
 	staged map[string]stagedOutput,
 	stageMu *sync.Mutex,
+	pendingByTarget map[string]int,
+	sourceByTarget map[string]string,
+	flushedTargets map[string]struct{},
+	pruneTargets map[string]map[string]struct{},
+	pendingMu *sync.Mutex,
 	report *executionReport,
 	reportMu *sync.Mutex,
 	total int,
 	emitter *eventEmitter,
 	wg *sync.WaitGroup,
+	cancel context.CancelFunc,
 ) {
 	defer wg.Done()
 	for {
@@ -525,9 +596,69 @@ func (s *Service) runWorker(
 			if !ok {
 				return
 			}
-			s.processTask(ctx, task, staged, stageMu, completions, report, reportMu, total, emitter)
+			if s.processTask(ctx, task, staged, stageMu, completions, report, reportMu, total, emitter) {
+				continue
+			}
+			if err := s.flushIfTargetCompleted(task.TargetPath, task.SourcePath, staged, stageMu, pendingByTarget, sourceByTarget, flushedTargets, pruneTargets, pendingMu); err != nil {
+				recordTaskFailure(report, reportMu, total, task, err, emitter)
+				cancel()
+				return
+			}
 		}
 	}
+}
+
+func (s *Service) flushIfTargetCompleted(
+	targetPath string,
+	sourcePath string,
+	staged map[string]stagedOutput,
+	stageMu *sync.Mutex,
+	pendingByTarget map[string]int,
+	sourceByTarget map[string]string,
+	flushedTargets map[string]struct{},
+	pruneTargets map[string]map[string]struct{},
+	pendingMu *sync.Mutex,
+) error {
+	shouldFlush := false
+	expectedSourcePath := sourcePath
+	pendingMu.Lock()
+	remaining := pendingByTarget[targetPath]
+	if remaining > 0 {
+		remaining--
+		pendingByTarget[targetPath] = remaining
+	}
+	if remaining == 0 {
+		if _, done := flushedTargets[targetPath]; !done {
+			shouldFlush = true
+			flushedTargets[targetPath] = struct{}{}
+			if knownSourcePath := sourceByTarget[targetPath]; knownSourcePath != "" {
+				expectedSourcePath = knownSourcePath
+			}
+		}
+	}
+	pendingMu.Unlock()
+
+	if !shouldFlush {
+		return nil
+	}
+
+	stageMu.Lock()
+	output, ok := staged[targetPath]
+	if ok {
+		delete(staged, targetPath)
+	}
+	stageMu.Unlock()
+
+	if !ok {
+		output = stagedOutput{
+			entries:    map[string]string{},
+			sourcePath: expectedSourcePath,
+		}
+	} else if output.sourcePath == "" {
+		output.sourcePath = expectedSourcePath
+	}
+
+	return s.flushOutputForTarget(targetPath, output, pruneTargets[targetPath])
 }
 
 func (s *Service) processTask(
@@ -540,7 +671,7 @@ func (s *Service) processTask(
 	reportMu *sync.Mutex,
 	total int,
 	emitter *eventEmitter,
-) {
+) bool {
 	translated, err := s.translate(ctx, translator.Request{
 		Source:         task.SourceText,
 		TargetLanguage: task.TargetLocale,
@@ -551,16 +682,21 @@ func (s *Service) processTask(
 	})
 	if err != nil {
 		recordTaskFailure(report, reportMu, total, task, err, emitter)
-		return
+		return false
 	}
 
 	if err := stageTaskOutput(staged, task.TargetPath, task.SourcePath, task.EntryKey, translated, stageMu); err != nil {
 		recordTaskFailure(report, reportMu, total, task, err, emitter)
-		return
+		return false
 	}
 
 	select {
-	case completions <- taskCompletion{identity: taskIdentity(task.TargetPath, task.EntryKey), sourceHash: hashSourceText(task.SourceText)}:
+	case completions <- taskCompletion{
+		identity:   taskIdentity(task.TargetPath, task.EntryKey),
+		sourceHash: hashSourceText(task.SourceText),
+		targetPath: task.TargetPath,
+		sourcePath: task.SourcePath,
+	}:
 		reportMu.Lock()
 		report.Succeeded++
 		succeeded := report.Succeeded
@@ -575,8 +711,9 @@ func (s *Service) processTask(
 			Failed:          failed,
 			ExecutableTotal: total,
 		})
+		return true
 	case <-ctx.Done():
-		return
+		return false
 	}
 }
 
@@ -648,31 +785,38 @@ func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[
 
 	for _, targetPath := range targetPaths {
 		output := staged[targetPath]
-		values, err := s.loadExistingTarget(targetPath)
-		if err != nil {
+		if err := s.flushOutputForTarget(targetPath, output, pruneTargets[targetPath]); err != nil {
 			return err
-		}
-
-		if keep := pruneTargets[targetPath]; keep != nil {
-			for key := range values {
-				if _, ok := keep[key]; ok {
-					continue
-				}
-				delete(values, key)
-			}
-		}
-
-		maps.Copy(values, output.entries)
-
-		content, err := s.marshalTargetFile(targetPath, output.sourcePath, values)
-		if err != nil {
-			return err
-		}
-		if err := s.writeFile(targetPath, content); err != nil {
-			return fmt.Errorf("flush outputs: write %q: %w", targetPath, err)
 		}
 	}
 
+	return nil
+}
+
+func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, keep map[string]struct{}) error {
+	values, err := s.loadExistingTarget(targetPath)
+	if err != nil {
+		return err
+	}
+
+	if keep != nil {
+		for key := range values {
+			if _, ok := keep[key]; ok {
+				continue
+			}
+			delete(values, key)
+		}
+	}
+
+	maps.Copy(values, output.entries)
+
+	content, err := s.marshalTargetFile(targetPath, output.sourcePath, values)
+	if err != nil {
+		return err
+	}
+	if err := s.writeFile(targetPath, content); err != nil {
+		return fmt.Errorf("flush outputs: write %q: %w", targetPath, err)
+	}
 	return nil
 }
 

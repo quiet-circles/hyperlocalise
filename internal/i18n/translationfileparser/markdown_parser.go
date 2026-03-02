@@ -1,6 +1,8 @@
 package translationfileparser
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"unicode"
@@ -25,7 +27,7 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 
 	doc := markdownDocument{parts: make([]markdownPart, 0, len(lines))}
 	entries := map[string]string{}
-	keyIndex := 0
+	hashOccurrences := map[string]int{}
 
 	inFrontmatter := len(lines) > 0 && strings.TrimSpace(lines[0]) == "---"
 
@@ -33,8 +35,7 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 	fenceMarker := ""
 
 	appendKey := func(segment string) {
-		keyIndex++
-		key := fmt.Sprintf("md.%04d", keyIndex)
+		key := markdownSegmentKey(segment, hashOccurrences)
 		doc.parts = append(doc.parts, markdownPart{key: key, source: segment})
 		entries[key] = segment
 	}
@@ -43,10 +44,12 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 		trimmed := strings.TrimSpace(line)
 
 		if inFrontmatter {
-			doc.parts = append(doc.parts, markdownPart{literal: line})
 			if i > 0 && trimmed == "---" {
+				doc.parts = append(doc.parts, markdownPart{literal: line})
 				inFrontmatter = false
+				continue
 			}
+			emitFrontmatterLineParts(line, &doc, appendKey)
 			continue
 		}
 
@@ -81,6 +84,17 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 	}
 
 	return doc, entries
+}
+
+func markdownSegmentKey(segment string, occurrences map[string]int) string {
+	sum := sha256.Sum256([]byte(segment))
+	hash := hex.EncodeToString(sum[:])[:16]
+	count := occurrences[hash]
+	occurrences[hash] = count + 1
+	if count == 0 {
+		return fmt.Sprintf("md.%s", hash)
+	}
+	return fmt.Sprintf("md.%s.%d", hash, count+1)
 }
 
 func isImportExportLine(trimmed string) bool {
@@ -298,6 +312,86 @@ func emitMarkdownTextParts(segment string, doc *markdownDocument, appendKey func
 	flush(len(segment))
 }
 
+func emitFrontmatterLineParts(line string, doc *markdownDocument, appendKey func(string)) {
+	if strings.TrimSpace(line) == "" {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	newline := ""
+	body := line
+	if strings.HasSuffix(body, "\n") {
+		newline = "\n"
+		body = strings.TrimSuffix(body, "\n")
+	}
+
+	colon := strings.IndexByte(body, ':')
+	if colon <= 0 {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	key := strings.TrimSpace(body[:colon])
+	if key == "" {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	valuePart := body[colon+1:]
+	lead := len(valuePart) - len(strings.TrimLeftFunc(valuePart, unicode.IsSpace))
+	if lead >= len(valuePart) {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	valueRest := valuePart[lead:]
+	if len(valueRest) < 2 {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	quote := valueRest[0]
+	if quote != '"' && quote != '\'' {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	end := findQuotedStringEnd(valueRest, quote)
+	if end <= 1 {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	quotedText := valueRest[1:end]
+	if !isTranslatableChunk(quotedText) {
+		doc.parts = append(doc.parts, markdownPart{literal: line})
+		return
+	}
+
+	doc.parts = append(doc.parts, markdownPart{literal: body[:colon+1] + valuePart[:lead] + string(quote)})
+	appendKey(quotedText)
+	doc.parts = append(doc.parts, markdownPart{literal: valueRest[end:] + newline})
+}
+
+func findQuotedStringEnd(s string, quote byte) int {
+	escaped := false
+	for i := 1; i < len(s); i++ {
+		ch := s[i]
+		if escaped {
+			escaped = false
+			continue
+		}
+		if ch == '\\' && quote == '"' {
+			escaped = true
+			continue
+		}
+		if ch == quote {
+			return i
+		}
+	}
+	return -1
+}
+
 func isTranslatableChunk(chunk string) bool {
 	trimmed := strings.TrimSpace(chunk)
 	if trimmed == "" {
@@ -319,12 +413,19 @@ func (d markdownDocument) render(values map[string]string) []byte {
 			continue
 		}
 		if v, ok := values[part.key]; ok {
-			b.WriteString(v)
+			b.WriteString(preserveChunkBoundaryWhitespace(part.source, v))
 			continue
 		}
 		b.WriteString(part.source)
 	}
 	return []byte(b.String())
+}
+
+func preserveChunkBoundaryWhitespace(source, translated string) string {
+	leadEnd := len(source) - len(strings.TrimLeftFunc(source, unicode.IsSpace))
+	trailStart := len(strings.TrimRightFunc(source, unicode.IsSpace))
+	core := strings.TrimFunc(translated, unicode.IsSpace)
+	return source[:leadEnd] + core + source[trailStart:]
 }
 
 // MarkdownParser parses markdown files into stable key/value text segments.
