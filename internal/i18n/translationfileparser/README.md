@@ -7,11 +7,20 @@
 - `.json` via `JSONParser`
 - `.xlf` / `.xliff` via `XLIFFParser` (XLIFF 1.2 and 2.x)
 - `.po` via `POFileParser` (GNU gettext)
+<<<<<<< HEAD
 - `.md` / `.mdx` via `MarkdownParser`
 
 ## Strategy API
 
 - `NewDefaultStrategy()` returns a strategy pre-registered with JSON, XLIFF, PO, and Markdown/MDX parsers.
+=======
+- `.md` via `MarkdownParser`
+- `.strings` via `AppleStringsParser` (Apple/Xcode strings files)
+
+## Strategy API
+
+- `NewDefaultStrategy()` returns a strategy pre-registered with JSON, XLIFF, PO, Markdown, and Apple Strings parsers.
+>>>>>>> b3aa15e (Document .strings support across run and parser docs)
 - `Register(ext, parser)` allows adding/replacing parser implementations by extension.
 - `Parse(path, content)` resolves parser by extension and returns `map[string]string`.
 
@@ -44,6 +53,14 @@
 - Preserves frontmatter blocks (`---`) unchanged.
 - Preserves fenced code blocks (``` and ~~~) unchanged.
 - Preserves Markdown syntax tokens and link destinations while extracting text segments.
+
+### Apple Strings (`.strings`)
+
+- Parses `"key" = "value";` entries into `map[string]string`.
+- Ignores line comments (`// ...`) and block comments (`/* ... */`).
+- Decodes escaped sequences (`\n`, `\r`, `\t`, `\"`, `\\`) and unicode escapes (`\u`, `\Uhhhh`, surrogate pairs).
+- Supports multiline quoted value content.
+- `MarshalAppleStrings(template, values)` preserves template layout/comments/spacing and replaces only value literals.
 
 ## Minimal usage
 

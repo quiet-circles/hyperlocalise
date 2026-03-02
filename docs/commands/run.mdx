@@ -26,7 +26,12 @@ For lockfile fields, lifecycle, and reset guidance, see [Lockfile contract](/ref
 - `.json`
 - `.xlf` and `.xliff`
 - `.po`
+<<<<<<< HEAD
 - `.md` and `.mdx`
+=======
+- `.md`
+- `.strings`
+>>>>>>> b3aa15e (Document .strings support across run and parser docs)
 
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 
@@ -36,6 +41,8 @@ For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and prese
 - Markdown anchors such as link destinations
 - MDX `import` and `export` lines
 - JSX/MDX component tags and attribute values
+
+For Apple/Xcode Strings (`.strings`), `run` preserves comments and key/value formatting from the template while replacing value literals with translated text.
 
 ## Flags
 
