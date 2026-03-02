@@ -9,6 +9,7 @@
 - `.po` via `POFileParser` (GNU gettext)
 - `.md` / `.mdx` via `MarkdownParser`
 - `.strings` via `AppleStringsParser` (Apple/Xcode strings files)
+- `.stringsdict` via `AppleStringsdictParser` (Apple/Xcode plural dictionaries)
 - `.csv` via `CSVParser` (key/value and per-locale column layouts)
 
 ## Strategy API
@@ -54,6 +55,13 @@
 - Decodes escaped sequences (`\n`, `\r`, `\t`, `\"`, `\\`) and unicode escapes (`\u`, `\Uhhhh`, surrogate pairs).
 - Supports multiline quoted value content.
 - `MarshalAppleStrings(template, values)` preserves template layout/comments/spacing and replaces only value literals.
+
+### Apple Stringsdict (`.stringsdict`)
+
+- Parses plist/XML dictionaries and flattens `<string>` leaves to dotted keys.
+  - Example: `item_count.items.one=%d item`
+- Preserves plural category keys (`zero`, `one`, `two`, `few`, `many`, `other`) as part of flattened key paths.
+- `MarshalAppleStringsdict(template, values)` preserves plist/XML layout and replaces only `<string>` text values.
 
 ## Minimal usage
 

@@ -614,6 +614,18 @@ func (s *Service) marshalTargetFile(path, sourcePath string, values map[string]s
 		return content, nil
 	}
 
+	if ext == ".stringsdict" {
+		template, err := s.loadTemplateFallback(path, sourcePath)
+		if err != nil {
+			return nil, err
+		}
+		content, err := translationfileparser.MarshalAppleStringsdict(template, values)
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
+	}
+
 	if ext == ".csv" {
 		template, err := s.loadTemplateFallback(path, sourcePath)
 		if err != nil {

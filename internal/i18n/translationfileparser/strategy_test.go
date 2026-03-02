@@ -96,6 +96,40 @@ func TestStrategyParsesAppleStrings(t *testing.T) {
 	}
 }
 
+func TestStrategyParsesAppleStringsdict(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	content := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>items_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@items@</string>
+    <key>items</key>
+    <dict>
+      <key>one</key>
+      <string>%d item</string>
+      <key>other</key>
+      <string>%d items</string>
+    </dict>
+  </dict>
+</dict>
+</plist>`)
+
+	got, err := s.Parse("fr.stringsdict", content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if got["items_count.NSStringLocalizedFormatKey"] != "%#@items@" {
+		t.Fatalf("unexpected format translation: %q", got["items_count.NSStringLocalizedFormatKey"])
+	}
+	if got["items_count.items.one"] != "%d item" {
+		t.Fatalf("unexpected one translation: %q", got["items_count.items.one"])
+	}
+}
+
 func TestStrategyParsesCSV(t *testing.T) {
 	s := NewDefaultStrategy()
 
