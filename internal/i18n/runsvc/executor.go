@@ -24,9 +24,9 @@ type taskCompletion struct {
 }
 
 type stagedOutput struct {
-	entries       map[string]string
-	sourcePath    string
-	targetLocale  string
+	entries      map[string]string
+	sourcePath   string
+	targetLocale string
 }
 
 type executorState struct {
