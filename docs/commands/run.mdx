@@ -6,7 +6,7 @@ description: "Plan and execute local translation generation from configured sour
 ## Usage
 
 ```bash
-hyperlocalise run [--config <path>] [--bucket <name>] [--dry-run] [--workers <count>]
+hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--workers <count>]
 ```
 
 ## Behavior
@@ -53,10 +53,22 @@ When writing CSV targets, `run` preserves the existing header and non-target col
 ## Flags
 
 - `--config`: path to config file (default `i18n.jsonc` in current directory)
+- `--group`: run only tasks for the given group name
 - `--bucket`: run only tasks for the given bucket name
 - `--dry-run`: print plan only, do not translate or write files
+- `--force`: rerun all planned tasks and ignore lockfile skip state
 - `--workers`: number of parallel translation workers (defaults to CPU cores)
 
+
+## Scope runs to one group
+
+Use `--group` when you want to run only one configured group.
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --dry-run
+```
+
+If the group does not exist in your config, `run` fails with an `unknown group` planning error.
 
 ## Scope runs to one bucket
 
@@ -67,6 +79,14 @@ hyperlocalise run --config i18n.jsonc --bucket ui --dry-run
 ```
 
 If the bucket does not exist in your config, `run` fails with an `unknown bucket` planning error.
+
+## Force rerun all planned tasks
+
+Use `--force` to ignore lockfile skip state and execute every planned task again.
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --force
+```
 
 ## Output fields
 

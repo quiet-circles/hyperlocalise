@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="vi-VN" datatype="plaintext" original="messages">
+    <body>
+      <trans-unit id="common.hello">
+        <source>Xin chào</source>
+      </trans-unit>
+      <trans-unit id="common.goodbye">
+        <source>Tạm biệt</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

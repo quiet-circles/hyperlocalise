@@ -29,6 +29,86 @@
           "to": "docs/{{localeDir}}/**/*.mdx"
         }
       ]
+    },
+    "tests_json": {
+      "files": [
+        {
+          "from": "tests/json/en-US.json",
+          "to": "tests/json/[locale].json"
+        }
+      ]
+    },
+    "tests_xlf": {
+      "files": [
+        {
+          "from": "tests/xlf/en-US.xlf",
+          "to": "tests/xlf/[locale].xlf"
+        }
+      ]
+    },
+    "tests_xlif": {
+      "files": [
+        {
+          "from": "tests/xlif/en-US.xlif",
+          "to": "tests/xlif/[locale].xlif"
+        }
+      ]
+    },
+    "tests_xliff": {
+      "files": [
+        {
+          "from": "tests/xliff/en-US.xliff",
+          "to": "tests/xliff/[locale].xliff"
+        }
+      ]
+    },
+    "tests_po": {
+      "files": [
+        {
+          "from": "tests/po/en-US.po",
+          "to": "tests/po/[locale].po"
+        }
+      ]
+    },
+    "tests_md": {
+      "files": [
+        {
+          "from": "tests/md/en-US.md",
+          "to": "tests/md/[locale].md"
+        }
+      ]
+    },
+    "tests_mdx": {
+      "files": [
+        {
+          "from": "tests/mdx/en-US.mdx",
+          "to": "tests/mdx/[locale].mdx"
+        }
+      ]
+    },
+    "tests_strings": {
+      "files": [
+        {
+          "from": "tests/strings/en-US.strings",
+          "to": "tests/strings/[locale].strings"
+        }
+      ]
+    },
+    "tests_stringsdict": {
+      "files": [
+        {
+          "from": "tests/stringsdict/en-US.stringsdict",
+          "to": "tests/stringsdict/[locale].stringsdict"
+        }
+      ]
+    },
+    "tests_csv": {
+      "files": [
+        {
+          "from": "tests/csv/en-US.csv",
+          "to": "tests/csv/[locale].csv"
+        }
+      ]
     }
   },
   // One group links the target(s) with the bucket(s).
@@ -46,6 +126,24 @@
       "buckets": [
         "docs"
       ]
+    },
+    "tests": {
+      "targets": [
+        "zh-CN",
+        "vi-VN"
+      ],
+      "buckets": [
+        "tests_json",
+        "tests_xlf",
+        "tests_xlif",
+        "tests_xliff",
+        "tests_po",
+        "tests_md",
+        "tests_mdx",
+        "tests_strings",
+        "tests_stringsdict",
+        "tests_csv"
+      ]
     }
   },
   "llm": {
@@ -60,6 +158,12 @@
         "model": "gpt-4.1-mini",
         // Prompt template used for each translation task.
         "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      },
+      "ollama": {
+        "provider": "ollama",
+        // "model": "hf.co/CohereLabs/tiny-aya-global-GGUF:F16",
+        "model": "gpt-oss:20b",
+        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. Input:\n\n{{input}}"
       }
     },
     // Rules connect groups to profiles.
@@ -69,6 +173,11 @@
         "priority": 100,
         "group": "default",
         "profile": "default"
+      },
+      {
+        "priority": 200,
+        "group": "tests",
+        "profile": "ollama"
       }
     ]
   }

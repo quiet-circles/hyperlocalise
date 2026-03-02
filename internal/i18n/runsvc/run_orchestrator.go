@@ -16,7 +16,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 		return Report{}, fmt.Errorf("load config: %w", err)
 	}
 
-	planned, err := s.planTasks(cfg, in.Bucket)
+	planned, err := s.planTasks(cfg, in.Bucket, in.Group)
 	if err != nil {
 		return Report{}, err
 	}
@@ -27,7 +27,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 	initializeLockState(state)
 
-	report, executable := applyLockFilter(planned, state.RunCompleted)
+	report, executable := applyLockFilter(planned, state.RunCompleted, in.Force)
 	emitter.emit(Event{Kind: EventPlanned, PlannedTotal: report.PlannedTotal, SkippedByLock: report.SkippedByLock, ExecutableTotal: report.ExecutableTotal})
 
 	pruneTargets, err := s.collectPruneTargets(in, planned, &report, emitter)
@@ -68,9 +68,15 @@ func initializeLockState(state *lockfile.File) {
 	}
 }
 
-func applyLockFilter(planned []Task, completed map[string]lockfile.RunCompletion) (Report, []Task) {
+func applyLockFilter(planned []Task, completed map[string]lockfile.RunCompletion, force bool) (Report, []Task) {
 	report := Report{PlannedTotal: len(planned)}
 	executable := make([]Task, 0, len(planned))
+	if force {
+		report.Executable = append(report.Executable, planned...)
+		report.ExecutableTotal = len(planned)
+		return report, planned
+	}
+
 	for _, task := range planned {
 		identity := taskIdentity(task.TargetPath, task.EntryKey)
 		sourceHash := hashSourceText(task.SourceText)

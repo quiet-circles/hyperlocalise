@@ -233,6 +233,44 @@ func TestRunDoesNotSkipWhenSourceTextChanges(t *testing.T) {
 	}
 }
 
+func TestRunForceBypassesLockFilter(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{
+			RunCompleted: map[string]lockfile.RunCompletion{
+				taskIdentity(targetPath, "a"): {CompletedAt: time.Now(), SourceHash: hashSourceText("A")},
+				taskIdentity(targetPath, "b"): {CompletedAt: time.Now(), SourceHash: hashSourceText("B")},
+			},
+		}, nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{DryRun: true, Force: true})
+	if err != nil {
+		t.Fatalf("run dry-run force: %v", err)
+	}
+
+	if report.PlannedTotal != 2 || report.SkippedByLock != 0 || report.ExecutableTotal != 2 {
+		t.Fatalf("expected force run to execute all tasks, got %+v", report)
+	}
+	if len(report.Skipped) != 0 {
+		t.Fatalf("expected no skipped tasks with force, got %+v", report.Skipped)
+	}
+}
+
 func TestRunDryRunSkipsWrites(t *testing.T) {
 	writeCount := 0
 	lockSaveCount := 0
@@ -954,6 +992,55 @@ func TestRunReturnsErrorForUnknownBucketFilter(t *testing.T) {
 	}
 }
 
+func TestRunFiltersTasksByGroup(t *testing.T) {
+	svc := newTestService()
+	sourceA := "/tmp/source_a.json"
+	targetA := "/tmp/out_a.json"
+	sourceB := "/tmp/source_b.json"
+	targetB := "/tmp/out_b.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourceA, targetA)
+		cfg.Buckets["marketing"] = config.BucketConfig{
+			Files: []config.BucketFileMapping{{From: sourceB, To: targetB}},
+		}
+		cfg.Groups = map[string]config.GroupConfig{
+			"default": {Targets: []string{"fr"}, Buckets: []string{"ui"}},
+			"tests":   {Targets: []string{"fr"}, Buckets: []string{"marketing"}},
+		}
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourceA:
+			return []byte(`{"ui_key":"UI"}`), nil
+		case sourceB:
+			return []byte(`{"mkt_key":"MKT"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	report, err := svc.Run(context.Background(), Input{DryRun: true, Group: "tests"})
+	if err != nil {
+		t.Fatalf("run dry-run: %v", err)
+	}
+	if report.PlannedTotal != 1 || report.ExecutableTotal != 1 {
+		t.Fatalf("expected one planned task for filtered group, got %+v", report)
+	}
+	if report.Executable[0].EntryKey != "mkt_key" {
+		t.Fatalf("unexpected executable task: %+v", report.Executable)
+	}
+}
+
+func TestRunReturnsErrorForUnknownGroupFilter(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.Run(context.Background(), Input{DryRun: true, Group: "unknown"})
+	if err == nil || !strings.Contains(err.Error(), `unknown group "unknown"`) {
+		t.Fatalf("expected unknown group error, got %v", err)
+	}
+}
+
 func newTestService() *Service {
 	now := time.Unix(1700000000, 0).UTC()
 	sourcePath := "/tmp/source.json"
@@ -1147,6 +1234,8 @@ func TestRunCompletedEventParityForEarlyExitAndFatalError(t *testing.T) {
 func TestMarshalTargetFileDispatchParity(t *testing.T) {
 	svc := newTestService()
 	sourceTemplate := map[string][]byte{
+		"/tmp/source.xlf":         []byte(`<?xml version="1.0" encoding="UTF-8"?><xliff version="1.2"><file><body><trans-unit id="hello"><source>Hello</source><target>Hello</target></trans-unit></body></file></xliff>`),
+		"/tmp/source.po":          []byte("msgid \"hello\"\nmsgstr \"Hello\"\n"),
 		"/tmp/source.md":          []byte("# Hello\n"),
 		"/tmp/source.mdx":         []byte("# Hello\n"),
 		"/tmp/source.strings":     []byte("\"hello\" = \"Hello\";\n"),
@@ -1164,6 +1253,10 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		target string
 		source string
 	}{
+		{target: "/tmp/out.xlf", source: "/tmp/source.xlf"},
+		{target: "/tmp/out.xlif", source: "/tmp/source.xlf"},
+		{target: "/tmp/out.xliff", source: "/tmp/source.xlf"},
+		{target: "/tmp/out.po", source: "/tmp/source.po"},
 		{target: "/tmp/out.md", source: "/tmp/source.md"},
 		{target: "/tmp/out.mdx", source: "/tmp/source.mdx"},
 		{target: "/tmp/out.strings", source: "/tmp/source.strings"},
@@ -1173,13 +1266,73 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		content, err := svc.marshalTargetFile(tc.target, tc.source, map[string]string{"hello": "Bonjour"})
+		content, err := svc.marshalTargetFile(tc.target, tc.source, "fr", map[string]string{"hello": "Bonjour"})
 		if err != nil {
 			t.Fatalf("marshal %s: %v", tc.target, err)
 		}
 		if len(content) == 0 {
 			t.Fatalf("marshal %s returned empty content", tc.target)
 		}
+	}
+}
+
+func TestRunContinuesWhenOneTargetFileFailsToFlush(t *testing.T) {
+	svc := newTestService()
+	badSource := "/tmp/bad_source.json"
+	goodSource := "/tmp/good_source.json"
+	badTarget := "/tmp/bad_out.unsupported"
+	goodTarget := "/tmp/good_out.json"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(goodSource, goodTarget)
+		cfg.Buckets["bad"] = config.BucketConfig{
+			Files: []config.BucketFileMapping{{From: badSource, To: badTarget}},
+		}
+		cfg.Groups["default"] = config.GroupConfig{Targets: []string{"fr"}, Buckets: []string{"bad", "ui"}}
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case badSource:
+			return []byte(`{"bad":"Bad"}`), nil
+		case goodSource:
+			return []byte(`{"good":"Good"}`), nil
+		case goodTarget:
+			return []byte(`{}`), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	writes := map[string][]byte{}
+	var writeMu sync.Mutex
+	svc.writeFile = func(path string, content []byte) error {
+		writeMu.Lock()
+		writes[path] = append([]byte(nil), content...)
+		writeMu.Unlock()
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Workers: 1})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if report.Failed == 0 {
+		t.Fatalf("expected at least one failure for unsupported extension, got %+v", report)
+	}
+
+	writeMu.Lock()
+	_, wroteBad := writes[badTarget]
+	goodContent, wroteGood := writes[goodTarget]
+	writeMu.Unlock()
+	if wroteBad {
+		t.Fatalf("expected bad target not to be flushed")
+	}
+	if !wroteGood {
+		t.Fatalf("expected good target to still flush")
+	}
+	if !strings.Contains(string(goodContent), "\"good\": \"GOOD\"") {
+		t.Fatalf("expected good target content to be written, got %q", string(goodContent))
 	}
 }
 

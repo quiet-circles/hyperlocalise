@@ -13,12 +13,14 @@ import (
 type runOptions struct {
 	configPath string
 	dryRun     bool
+	force      bool
 	prune      bool
 	pruneLimit int
 	pruneForce bool
 	workers    int
 	progress   string
 	bucket     string
+	group      string
 }
 
 var runFunc = runsvc.Run
@@ -56,11 +58,13 @@ func newRunCmd() *cobra.Command {
 			input := runsvc.Input{
 				ConfigPath: o.configPath,
 				DryRun:     o.dryRun,
+				Force:      o.force,
 				Prune:      o.prune,
 				PruneLimit: o.pruneLimit,
 				PruneForce: o.pruneForce,
 				Workers:    workers,
 				Bucket:     o.bucket,
+				Group:      o.group,
 			}
 			if renderer != nil {
 				input.OnEvent = func(event runsvc.Event) {
@@ -90,12 +94,14 @@ func newRunCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.configPath, "config", "", "path to i18n config")
 	cmd.Flags().BoolVar(&o.dryRun, "dry-run", o.dryRun, "preview planned translation work without executing")
+	cmd.Flags().BoolVar(&o.force, "force", o.force, "rerun all planned tasks and ignore lockfile skip state")
 	cmd.Flags().BoolVar(&o.prune, "prune", o.prune, "remove target keys that no longer exist in source files")
 	cmd.Flags().IntVar(&o.pruneLimit, "prune-max-deletions", 100, "maximum stale keys that can be deleted in one run before requiring an explicit override")
 	cmd.Flags().BoolVar(&o.pruneForce, "prune-force", o.pruneForce, "bypass prune deletion safety limit")
 	cmd.Flags().IntVar(&o.workers, "workers", o.workers, "number of parallel translation workers (default: number of CPU cores)")
 	cmd.Flags().StringVar(&o.progress, "progress", string(progressui.ModeAuto), "progress rendering mode: auto|on|off")
 	cmd.Flags().StringVar(&o.bucket, "bucket", "", "only run tasks for the given bucket")
+	cmd.Flags().StringVar(&o.group, "group", "", "only run tasks for the given group")
 
 	return cmd
 }

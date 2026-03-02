@@ -46,7 +46,7 @@ func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, k
 	}
 	maps.Copy(values, output.entries)
 
-	content, err := s.marshalTargetFile(targetPath, output.sourcePath, values)
+	content, err := s.marshalTargetFile(targetPath, output.sourcePath, output.targetLocale, values)
 	if err != nil {
 		return err
 	}
@@ -120,11 +120,11 @@ func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
 	return entries, nil
 }
 
-func (s *Service) marshalTargetFile(path, sourcePath string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
-	case ".md", ".mdx", ".strings", ".stringsdict", ".csv":
-		return s.marshalTemplateBasedTarget(ext, path, sourcePath, values)
+	case ".xlf", ".xlif", ".xliff", ".po", ".md", ".mdx", ".strings", ".stringsdict", ".csv":
+		return s.marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale, values)
 	case ".json":
 		return marshalJSONTarget(path, values)
 	default:
@@ -132,13 +132,25 @@ func (s *Service) marshalTargetFile(path, sourcePath string, values map[string]s
 	}
 }
 
-func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
 	template, err := s.loadTemplateFallback(path, sourcePath)
 	if err != nil {
 		return nil, err
 	}
 
 	switch ext {
+	case ".xlf", ".xlif", ".xliff":
+		content, err := translationfileparser.MarshalXLIFF(template, values, targetLocale)
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
+	case ".po":
+		content, err := translationfileparser.MarshalPOFile(template, values)
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
 	case ".md", ".mdx":
 		return translationfileparser.MarshalMarkdown(template, values), nil
 	case ".strings":

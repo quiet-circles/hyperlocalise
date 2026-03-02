@@ -1,0 +1,9 @@
+msgid ""
+msgstr ""
+"Language: en-US\\n"
+
+msgid "common.hello"
+msgstr "Hello"
+
+msgid "common.goodbye"
+msgstr "Goodbye"

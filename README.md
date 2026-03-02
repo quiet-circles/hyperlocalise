@@ -78,7 +78,7 @@ Available Commands:
 Generate local translations from configured source files into target files:
 
 ```
-hyperlocalise run [--config <path>] [--dry-run] [--prune] [--prune-max-deletions <n>] [--prune-force]
+hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--force] [--prune] [--prune-max-deletions <n>] [--prune-force] [--workers <count>]
 ```
 
 Behavior:
@@ -95,10 +95,14 @@ Prune workflow recommendation:
 
 Flags:
 - `--config` - path to i18n config (optional, defaults to i18n.jsonc in cwd)
+- `--group` - run only tasks for one configured group
+- `--bucket` - run only tasks for one configured bucket
 - `--dry-run` - print plan without translating or writing files
+- `--force` - rerun all planned tasks and ignore lockfile skip state
 - `--prune` - preview/apply deletion of stale target keys missing from source
 - `--prune-max-deletions` - safety guard for max deletions per run before requiring override (default: 100)
 - `--prune-force` - bypass the prune safety limit
+- `--workers` - number of parallel translation workers (defaults to CPU core count)
 
 
 ## eval

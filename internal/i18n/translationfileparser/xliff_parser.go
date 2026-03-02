@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -139,4 +140,131 @@ func attrValue(attrs []xml.Attr, name string) string {
 		}
 	}
 	return ""
+}
+
+// MarshalXLIFF rewrites XLIFF source/target text using values keyed by unit id/name/resname.
+// If a unit has <target>, only target text is updated; otherwise source text is updated.
+func MarshalXLIFF(template []byte, values map[string]string, targetLocale string) ([]byte, error) {
+	decoder := xml.NewDecoder(bytes.NewReader(template))
+	var out bytes.Buffer
+	encoder := xml.NewEncoder(&out)
+
+	currentUnitKey := ""
+	currentUnitHasTarget := false
+
+	type textElementState struct {
+		name       string
+		replace    bool
+		hasValue   bool
+		wroteValue bool
+	}
+	var textState *textElementState
+
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("xml decode: %w", err)
+		}
+
+		switch t := tok.(type) {
+		case xml.StartElement:
+			t = rewriteXLIFFLocaleAttrs(t, targetLocale)
+			switch t.Name.Local {
+			case "trans-unit", "unit":
+				currentUnitKey = resolveXLIFFUnitKey(t.Attr)
+				currentUnitHasTarget = false
+				textState = nil
+			case "target":
+				if currentUnitKey != "" {
+					currentUnitHasTarget = true
+					v, ok := values[currentUnitKey]
+					textState = &textElementState{name: "target", replace: true, hasValue: ok, wroteValue: false}
+					if ok && strings.TrimSpace(v) == "" {
+						textState.wroteValue = true
+					}
+				}
+			case "source":
+				if currentUnitKey != "" {
+					v, ok := values[currentUnitKey]
+					textState = &textElementState{name: "source", replace: !currentUnitHasTarget, hasValue: ok, wroteValue: false}
+					if ok && strings.TrimSpace(v) == "" {
+						textState.wroteValue = true
+					}
+				}
+			}
+			if err := encoder.EncodeToken(t); err != nil {
+				return nil, fmt.Errorf("xml encode start: %w", err)
+			}
+		case xml.EndElement:
+			if textState != nil && t.Name.Local == textState.name {
+				if textState.replace && textState.hasValue && !textState.wroteValue {
+					if err := encoder.EncodeToken(xml.CharData([]byte(values[currentUnitKey]))); err != nil {
+						return nil, fmt.Errorf("xml encode char data: %w", err)
+					}
+				}
+				textState = nil
+			}
+
+			if t.Name.Local == "trans-unit" || t.Name.Local == "unit" {
+				currentUnitKey = ""
+				currentUnitHasTarget = false
+				textState = nil
+			}
+
+			if err := encoder.EncodeToken(t); err != nil {
+				return nil, fmt.Errorf("xml encode end: %w", err)
+			}
+		case xml.CharData:
+			if textState != nil && textState.replace && textState.hasValue {
+				if !textState.wroteValue {
+					if err := encoder.EncodeToken(xml.CharData([]byte(values[currentUnitKey]))); err != nil {
+						return nil, fmt.Errorf("xml encode char data: %w", err)
+					}
+					textState.wroteValue = true
+				}
+				continue
+			}
+
+			if err := encoder.EncodeToken(t); err != nil {
+				return nil, fmt.Errorf("xml encode char data: %w", err)
+			}
+		default:
+			if err := encoder.EncodeToken(t); err != nil {
+				return nil, fmt.Errorf("xml encode token: %w", err)
+			}
+		}
+	}
+
+	if err := encoder.Flush(); err != nil {
+		return nil, fmt.Errorf("xml encode flush: %w", err)
+	}
+	return out.Bytes(), nil
+}
+
+func rewriteXLIFFLocaleAttrs(start xml.StartElement, locale string) xml.StartElement {
+	loc := strings.TrimSpace(locale)
+	if loc == "" {
+		return start
+	}
+
+	switch start.Name.Local {
+	case "file":
+		for i := range start.Attr {
+			switch start.Attr[i].Name.Local {
+			case "source-language", "target-language":
+				start.Attr[i].Value = loc
+			}
+		}
+	case "xliff":
+		for i := range start.Attr {
+			switch start.Attr[i].Name.Local {
+			case "srcLang", "trgLang":
+				start.Attr[i].Value = loc
+			}
+		}
+	}
+	return start
 }

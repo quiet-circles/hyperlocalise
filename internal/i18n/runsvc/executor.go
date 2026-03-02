@@ -24,16 +24,20 @@ type taskCompletion struct {
 }
 
 type stagedOutput struct {
-	entries    map[string]string
-	sourcePath string
+	entries       map[string]string
+	sourcePath    string
+	targetLocale  string
 }
 
 type executorState struct {
 	total           int
 	staged          map[string]stagedOutput
 	flushedTargets  map[string]struct{}
+	failedTargets   map[string]struct{}
+	idsByTarget     map[string][]string
 	pendingByTarget map[string]int
 	sourceByTarget  map[string]string
+	localeByTarget  map[string]string
 	pruneTargets    map[string]map[string]struct{}
 	report          executionReport
 
@@ -47,17 +51,26 @@ func newExecutorState(tasks []Task, pruneTargets map[string]map[string]struct{})
 		total:           len(tasks),
 		staged:          map[string]stagedOutput{},
 		flushedTargets:  map[string]struct{}{},
+		failedTargets:   map[string]struct{}{},
+		idsByTarget:     map[string][]string{},
 		pendingByTarget: map[string]int{},
 		sourceByTarget:  map[string]string{},
+		localeByTarget:  map[string]string{},
 		pruneTargets:    pruneTargets,
 	}
 	for _, task := range tasks {
 		state.pendingByTarget[task.TargetPath]++
+		state.idsByTarget[task.TargetPath] = append(state.idsByTarget[task.TargetPath], taskIdentity(task.TargetPath, task.EntryKey))
 		existing := state.sourceByTarget[task.TargetPath]
 		if existing != "" && existing != task.SourcePath {
 			return nil, fmt.Errorf("output staging conflict: %s has conflicting source paths", task.TargetPath)
 		}
 		state.sourceByTarget[task.TargetPath] = task.SourcePath
+		existingLocale := state.localeByTarget[task.TargetPath]
+		if existingLocale != "" && existingLocale != task.TargetLocale {
+			return nil, fmt.Errorf("output staging conflict: %s has conflicting target locales", task.TargetPath)
+		}
+		state.localeByTarget[task.TargetPath] = task.TargetLocale
 	}
 	return state, nil
 }
@@ -137,12 +150,15 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 
 			if err := s.flushIfTargetCompleted(completion.targetPath, completion.sourcePath, state); err != nil {
 				recordTaskFailure(&state.report, &state.reportMu, state.total, Task{TargetPath: completion.targetPath}, err, emitter)
-				select {
-				case fatalLockErr <- err:
-				default:
+				if rollbackErr := s.rollbackLockForTarget(lockState, lockPath, completion.targetPath, state, emitter); rollbackErr != nil {
+					select {
+					case fatalLockErr <- rollbackErr:
+					default:
+					}
+					cancel()
+					return
 				}
-				cancel()
-				return
+				continue
 			}
 		}
 	}
@@ -163,8 +179,7 @@ func (s *Service) runWorker(ctx context.Context, jobs <-chan Task, completions c
 			}
 			if err := s.flushIfTargetCompleted(task.TargetPath, task.SourcePath, state); err != nil {
 				recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)
-				cancel()
-				return
+				continue
 			}
 		}
 	}
@@ -173,6 +188,7 @@ func (s *Service) runWorker(ctx context.Context, jobs <-chan Task, completions c
 func (s *Service) flushIfTargetCompleted(targetPath, sourcePath string, state *executorState) error {
 	shouldFlush := false
 	expectedSourcePath := sourcePath
+	expectedTargetLocale := ""
 	state.pendingMu.Lock()
 	remaining := state.pendingByTarget[targetPath]
 	if remaining > 0 {
@@ -186,10 +202,14 @@ func (s *Service) flushIfTargetCompleted(targetPath, sourcePath string, state *e
 			if knownSourcePath := state.sourceByTarget[targetPath]; knownSourcePath != "" {
 				expectedSourcePath = knownSourcePath
 			}
+			expectedTargetLocale = state.localeByTarget[targetPath]
 		}
 	}
 	state.pendingMu.Unlock()
 	if !shouldFlush {
+		return nil
+	}
+	if isTargetFailed(targetPath, &state.pendingMu, state.failedTargets) {
 		return nil
 	}
 
@@ -201,9 +221,12 @@ func (s *Service) flushIfTargetCompleted(targetPath, sourcePath string, state *e
 	state.stageMu.Unlock()
 
 	if !ok {
-		output = stagedOutput{entries: map[string]string{}, sourcePath: expectedSourcePath}
+		output = stagedOutput{entries: map[string]string{}, sourcePath: expectedSourcePath, targetLocale: expectedTargetLocale}
 	} else if output.sourcePath == "" {
 		output.sourcePath = expectedSourcePath
+	}
+	if output.targetLocale == "" {
+		output.targetLocale = expectedTargetLocale
 	}
 
 	return s.flushOutputForTarget(targetPath, output, state.pruneTargets[targetPath])
@@ -213,10 +236,12 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	translated, err := s.translate(ctx, translator.Request{Source: task.SourceText, TargetLanguage: task.TargetLocale, Context: task.EntryKey, ModelProvider: task.Provider, Model: task.Model, Prompt: task.Prompt})
 	if err != nil {
 		recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)
+		markTargetFailed(task.TargetPath, &state.pendingMu, state.failedTargets)
 		return false
 	}
-	if err := stageTaskOutput(state.staged, task.TargetPath, task.SourcePath, task.EntryKey, translated, &state.stageMu); err != nil {
+	if err := stageTaskOutput(state.staged, task.TargetPath, task.SourcePath, task.TargetLocale, task.EntryKey, translated, &state.stageMu); err != nil {
 		recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)
+		markTargetFailed(task.TargetPath, &state.pendingMu, state.failedTargets)
 		return false
 	}
 
@@ -255,16 +280,18 @@ func recordTaskFailure(report *executionReport, reportMu *sync.Mutex, total int,
 	emitter.emit(Event{Kind: EventTaskDone, TaskSucceeded: false, TargetPath: task.TargetPath, EntryKey: task.EntryKey, FailureReason: err.Error(), Succeeded: succeeded, Failed: failed, ExecutableTotal: total})
 }
 
-func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, entryKey, value string, stageMu *sync.Mutex) error {
+func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, targetLocale, entryKey, value string, stageMu *sync.Mutex) error {
 	stageMu.Lock()
 	defer stageMu.Unlock()
 
 	bucket, ok := staged[targetPath]
 	if !ok {
-		bucket = stagedOutput{entries: map[string]string{}, sourcePath: sourcePath}
+		bucket = stagedOutput{entries: map[string]string{}, sourcePath: sourcePath, targetLocale: targetLocale}
 		staged[targetPath] = bucket
 	} else if bucket.sourcePath != sourcePath {
 		return fmt.Errorf("output staging conflict: %s has conflicting source paths", targetPath)
+	} else if bucket.targetLocale != "" && bucket.targetLocale != targetLocale {
+		return fmt.Errorf("output staging conflict: %s has conflicting target locales", targetPath)
 	}
 
 	if existing, exists := bucket.entries[entryKey]; exists && existing != value {
@@ -272,5 +299,51 @@ func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, ent
 	}
 	bucket.entries[entryKey] = value
 	staged[targetPath] = bucket
+	return nil
+}
+
+func markTargetFailed(targetPath string, mu *sync.Mutex, failedTargets map[string]struct{}) {
+	mu.Lock()
+	failedTargets[targetPath] = struct{}{}
+	mu.Unlock()
+}
+
+func isTargetFailed(targetPath string, mu *sync.Mutex, failedTargets map[string]struct{}) bool {
+	mu.Lock()
+	_, failed := failedTargets[targetPath]
+	mu.Unlock()
+	return failed
+}
+
+func (s *Service) rollbackLockForTarget(lockState *lockfile.File, lockPath, targetPath string, state *executorState, emitter *eventEmitter) error {
+	ids := state.idsByTarget[targetPath]
+	if len(ids) == 0 {
+		return nil
+	}
+
+	removed := 0
+	for _, id := range ids {
+		if _, ok := lockState.RunCompleted[id]; ok {
+			delete(lockState.RunCompleted, id)
+			removed++
+		}
+	}
+	if removed == 0 {
+		return nil
+	}
+	if err := s.saveLock(lockPath, *lockState); err != nil {
+		return fmt.Errorf("persist lock rollback for %q: %w", targetPath, err)
+	}
+
+	state.reportMu.Lock()
+	state.report.PersistedToLock -= removed
+	if state.report.PersistedToLock < 0 {
+		state.report.PersistedToLock = 0
+	}
+	persisted := state.report.PersistedToLock
+	succeeded := state.report.Succeeded
+	failed := state.report.Failed
+	state.reportMu.Unlock()
+	emitter.emit(Event{Kind: EventPersisted, PersistedToLock: persisted, Succeeded: succeeded, Failed: failed})
 	return nil
 }

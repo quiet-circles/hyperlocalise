@@ -129,6 +129,20 @@ func TestResponseText(t *testing.T) {
 			want: "bonjour",
 		},
 		{
+			name: "strips trailing model control marker",
+			resp: &api.Response{Content: []api.ContentBlock{
+				&api.TextBlock{Text: "bonjour <|END_RESPONSE|>"},
+			}},
+			want: "bonjour",
+		},
+		{
+			name: "strips embedded model control marker",
+			resp: &api.Response{Content: []api.ContentBlock{
+				&api.TextBlock{Text: "bon<|END_RESPONSE|>jour"},
+			}},
+			want: "bonjour",
+		},
+		{
 			name:    "empty content",
 			resp:    &api.Response{},
 			want:    "",

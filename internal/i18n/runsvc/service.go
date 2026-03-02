@@ -27,7 +27,9 @@ const (
 type Input struct {
 	ConfigPath string
 	Bucket     string
+	Group      string
 	DryRun     bool
+	Force      bool
 	Prune      bool
 	PruneLimit int
 	PruneForce bool
@@ -142,20 +144,29 @@ func Run(ctx context.Context, in Input) (Report, error) {
 	return New().Run(ctx, in)
 }
 
-func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket string) ([]Task, error) {
+func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string) ([]Task, error) {
 	parser := s.newParser()
 	groups := sortedGroupNames(cfg.Groups)
 	buckets := sortedBucketNames(cfg.Buckets)
 	filteredBucket := strings.TrimSpace(onlyBucket)
+	filteredGroup := strings.TrimSpace(onlyGroup)
 	if filteredBucket != "" {
 		if _, ok := cfg.Buckets[filteredBucket]; !ok {
 			return nil, fmt.Errorf("planning tasks: unknown bucket %q", filteredBucket)
+		}
+	}
+	if filteredGroup != "" {
+		if _, ok := cfg.Groups[filteredGroup]; !ok {
+			return nil, fmt.Errorf("planning tasks: unknown group %q", filteredGroup)
 		}
 	}
 
 	tasks := make([]Task, 0)
 
 	for _, groupName := range groups {
+		if filteredGroup != "" && groupName != filteredGroup {
+			continue
+		}
 		group := cfg.Groups[groupName]
 		profileName, profile, err := resolveProfile(cfg, groupName)
 		if err != nil {

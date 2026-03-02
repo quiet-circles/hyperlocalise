@@ -1,0 +1,9 @@
+msgid ""
+msgstr ""
+"Language: en-US\\n"
+
+msgid "common.hello"
+msgstr "你好"
+
+msgid "common.goodbye"
+msgstr "再见"

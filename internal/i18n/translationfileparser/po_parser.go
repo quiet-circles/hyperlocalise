@@ -158,3 +158,76 @@ func parsePOQuoted(raw string) (string, error) {
 	}
 	return unquoted, nil
 }
+
+// MarshalPOFile preserves .po structure while replacing msgstr/msgstr[0] values by msgid key.
+func MarshalPOFile(template []byte, values map[string]string) ([]byte, error) {
+	lines := strings.Split(string(template), "\n")
+
+	currentKey := ""
+	activeField := ""
+	for i, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			activeField = ""
+			continue
+		}
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(trimmed, "msgid "):
+			v, err := parsePOQuoted(strings.TrimPrefix(trimmed, "msgid "))
+			if err != nil {
+				return nil, fmt.Errorf("line %d: parse msgid: %w", i+1, err)
+			}
+			currentKey = v
+			activeField = "msgid"
+		case strings.HasPrefix(trimmed, "msgstr "):
+			activeField = "msgstr"
+			if replacement, ok := values[currentKey]; ok {
+				lines[i] = replacePOQuotedSuffix(raw, "msgstr", replacement)
+			}
+		case strings.HasPrefix(trimmed, "msgstr[0]"):
+			activeField = "msgstr0"
+			if replacement, ok := values[currentKey]; ok {
+				lines[i] = replacePOQuotedSuffix(raw, "msgstr[0]", replacement)
+			}
+		case strings.HasPrefix(trimmed, "msgstr["):
+			activeField = "msgstrN"
+		case strings.HasPrefix(trimmed, "\""):
+			switch activeField {
+			case "msgid":
+				v, err := parsePOQuoted(trimmed)
+				if err != nil {
+					return nil, fmt.Errorf("line %d: parse continued msgid: %w", i+1, err)
+				}
+				currentKey += v
+			case "msgstr", "msgstr0":
+				if _, ok := values[currentKey]; ok {
+					lines[i] = preserveIndent(raw) + `""`
+				}
+			}
+		default:
+			activeField = ""
+		}
+	}
+
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+func replacePOQuotedSuffix(raw, field, value string) string {
+	indent := preserveIndent(raw)
+	return indent + field + " " + strconv.Quote(value)
+}
+
+func preserveIndent(raw string) string {
+	idx := 0
+	for idx < len(raw) {
+		if raw[idx] != ' ' && raw[idx] != '\t' {
+			break
+		}
+		idx++
+	}
+	return raw[:idx]
+}
