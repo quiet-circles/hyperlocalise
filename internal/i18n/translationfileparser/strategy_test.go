@@ -109,6 +109,7 @@ hello,bonjour
 		t.Fatalf("unexpected hello translation: %q", got["hello"])
 	}
 }
+
 func TestStrategyUnsupportedExtension(t *testing.T) {
 	s := NewDefaultStrategy()
 
