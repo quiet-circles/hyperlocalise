@@ -5,9 +5,11 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -199,31 +201,45 @@ func (s *Service) planTasks(cfg *config.I18NConfig) ([]Task, error) {
 			}
 
 			for _, file := range bucket.Files {
-				sourcePath := pathresolver.ResolveSourcePath(file.From, cfg.Locales.Source)
-				if shouldIgnoreSourcePath(sourcePath, cfg.Locales.Targets) {
-					continue
-				}
-				sourceEntries, err := s.loadSourceEntries(parser, sourcePath)
+				sourcePattern := pathresolver.ResolveSourcePath(file.From, cfg.Locales.Source)
+				sources, err := resolveSourcePaths(sourcePattern)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("planning tasks: resolve source paths for %q: %w", sourcePattern, err)
 				}
-				keys := sortedEntryKeys(sourceEntries)
-				for _, target := range targets {
-					targetPath := pathresolver.ResolveTargetPath(file.To, cfg.Locales.Source, target)
-					for _, key := range keys {
-						sourceText := sourceEntries[key]
-						tasks = append(tasks, Task{
-							SourceLocale: cfg.Locales.Source,
-							TargetLocale: target,
-							SourcePath:   sourcePath,
-							TargetPath:   targetPath,
-							EntryKey:     key,
-							SourceText:   sourceText,
-							ProfileName:  profileName,
-							Provider:     profile.Provider,
-							Model:        profile.Model,
-							Prompt:       renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
-						})
+				if len(sources) == 0 {
+					return nil, fmt.Errorf("planning tasks: source pattern %q matched no files", sourcePattern)
+				}
+
+				for _, sourcePath := range sources {
+					if shouldIgnoreSourcePath(sourcePath, cfg.Locales.Targets) {
+						continue
+					}
+					sourceEntries, err := s.loadSourceEntries(parser, sourcePath)
+					if err != nil {
+						return nil, err
+					}
+					keys := sortedEntryKeys(sourceEntries)
+					for _, target := range targets {
+						resolvedTargetPattern := pathresolver.ResolveTargetPath(file.To, cfg.Locales.Source, target)
+						targetPath, err := resolveTargetPath(sourcePattern, resolvedTargetPattern, sourcePath)
+						if err != nil {
+							return nil, fmt.Errorf("planning tasks: resolve target path for source %q: %w", sourcePath, err)
+						}
+						for _, key := range keys {
+							sourceText := sourceEntries[key]
+							tasks = append(tasks, Task{
+								SourceLocale: cfg.Locales.Source,
+								TargetLocale: target,
+								SourcePath:   sourcePath,
+								TargetPath:   targetPath,
+								EntryKey:     key,
+								SourceText:   sourceText,
+								ProfileName:  profileName,
+								Provider:     profile.Provider,
+								Model:        profile.Model,
+								Prompt:       renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
+							})
+						}
 					}
 				}
 			}
@@ -746,6 +762,119 @@ func shouldIgnoreSourcePath(sourcePath string, targetLocales []string) bool {
 		}
 	}
 	return false
+}
+
+func resolveSourcePaths(sourcePattern string) ([]string, error) {
+	if !strings.ContainsAny(sourcePattern, "*?[") {
+		return []string{sourcePattern}, nil
+	}
+
+	if !strings.Contains(sourcePattern, "**") {
+		matches, err := filepath.Glob(sourcePattern)
+		if err != nil {
+			return nil, err
+		}
+		slices.Sort(matches)
+		return matches, nil
+	}
+
+	normalizedPattern := filepath.ToSlash(sourcePattern)
+	re, err := globToRegex(normalizedPattern)
+	if err != nil {
+		return nil, err
+	}
+
+	baseDir := baseDirForDoublestar(sourcePattern)
+	matches := make([]string, 0)
+	err = filepath.WalkDir(baseDir, func(candidate string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		normalizedCandidate := filepath.ToSlash(candidate)
+		if re.MatchString(normalizedCandidate) {
+			matches = append(matches, candidate)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	slices.Sort(matches)
+	return matches, nil
+}
+
+func resolveTargetPath(sourcePattern, targetPattern, sourcePath string) (string, error) {
+	if !strings.ContainsAny(sourcePattern, "*?[") {
+		return targetPattern, nil
+	}
+	if !strings.ContainsAny(targetPattern, "*?[") {
+		return "", fmt.Errorf("target pattern %q must include glob tokens when source pattern %q includes globs", targetPattern, sourcePattern)
+	}
+	sourceBase := globBaseDir(sourcePattern)
+	targetBase := globBaseDir(targetPattern)
+	relative, err := filepath.Rel(sourceBase, sourcePath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(targetBase, relative), nil
+}
+
+func baseDirForDoublestar(pattern string) string {
+	normalized := filepath.ToSlash(pattern)
+	idx := strings.Index(normalized, "**")
+	if idx == -1 {
+		return filepath.Dir(pattern)
+	}
+	prefix := strings.TrimSuffix(normalized[:idx], "/")
+	if prefix == "" {
+		return "."
+	}
+	return filepath.FromSlash(prefix)
+}
+
+func globBaseDir(pattern string) string {
+	idx := strings.IndexAny(filepath.ToSlash(pattern), "*?[")
+	if idx == -1 {
+		return filepath.Dir(pattern)
+	}
+	prefix := filepath.ToSlash(pattern)[:idx]
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		return "."
+	}
+	return filepath.FromSlash(prefix)
+}
+
+func globToRegex(pattern string) (*regexp.Regexp, error) {
+	var b strings.Builder
+	b.WriteString("^")
+	for i := 0; i < len(pattern); {
+		switch pattern[i] {
+		case '*':
+			if i+1 < len(pattern) && pattern[i+1] == '*' {
+				if i+2 < len(pattern) && pattern[i+2] == '/' {
+					b.WriteString("(?:.*/)?")
+					i += 3
+					continue
+				}
+				b.WriteString(".*")
+				i += 2
+				continue
+			}
+			b.WriteString("[^/]*")
+		case '?':
+			b.WriteString("[^/]")
+		default:
+			b.WriteString(regexp.QuoteMeta(pattern[i : i+1]))
+		}
+		i++
+	}
+	b.WriteString("$")
+	return regexp.Compile(b.String())
 }
 
 func renderPrompt(prompt, sourceLocale, targetLocale, sourceText string) string {

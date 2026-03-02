@@ -29,6 +29,18 @@ description: "Use source and target placeholders safely in bucket file mappings.
 }
 ```
 
+
+### Recursive docs mapping with globs
+
+```jsonc
+{
+  "from": "docs/**/*.mdx",
+  "to": "docs/{{localeDir}}/**/*.mdx"
+}
+```
+
+This keeps the source file tree and writes translated files into the same relative paths under each locale folder.
+
 ### Mintlify root-source + locale-output docs
 
 ```jsonc
