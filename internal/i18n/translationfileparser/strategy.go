@@ -21,6 +21,7 @@ func NewDefaultStrategy() *Strategy {
 	s := &Strategy{parsersByExt: map[string]Parser{}}
 	s.Register(".json", JSONParser{})
 	s.Register(".xlf", XLIFFParser{})
+	s.Register(".xlif", XLIFFParser{})
 	s.Register(".xliff", XLIFFParser{})
 	s.Register(".po", POFileParser{})
 	s.Register(".md", MarkdownParser{})

@@ -77,6 +77,47 @@ func TestStrategyParsesXLIFF2(t *testing.T) {
 	}
 }
 
+func TestStrategyResolvesXLIFFAliasesConsistently(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	content := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="2.0" srcLang="en" trgLang="fr" xmlns="urn:oasis:names:tc:xliff:document:2.0">
+  <file id="f1">
+    <unit id="checkout.submit">
+      <segment>
+        <source>Submit</source>
+        <target>Valider</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>`)
+
+	extensions := []string{".xlf", ".xlif", ".xliff"}
+	var baseline map[string]string
+
+	for _, ext := range extensions {
+		got, err := s.Parse("fr"+ext, content)
+		if err != nil {
+			t.Fatalf("parse %s: %v", ext, err)
+		}
+
+		if baseline == nil {
+			baseline = got
+			continue
+		}
+
+		if len(got) != len(baseline) {
+			t.Fatalf("entry count mismatch for %s: got %d want %d", ext, len(got), len(baseline))
+		}
+
+		for key, value := range baseline {
+			if got[key] != value {
+				t.Fatalf("unexpected value for %s in %s: got %q want %q", key, ext, got[key], value)
+			}
+		}
+	}
+}
+
 func TestStrategyParsesAppleStrings(t *testing.T) {
 	s := NewDefaultStrategy()
 
