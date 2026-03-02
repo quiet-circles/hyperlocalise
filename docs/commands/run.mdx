@@ -6,7 +6,7 @@ description: "Plan and execute local translation generation from configured sour
 ## Usage
 
 ```bash
-hyperlocalise run [--config <path>] [--dry-run] [--workers <count>]
+hyperlocalise run [--config <path>] [--bucket <name>] [--dry-run] [--workers <count>]
 ```
 
 ## Behavior
@@ -53,8 +53,20 @@ When writing CSV targets, `run` preserves the existing header and non-target col
 ## Flags
 
 - `--config`: path to config file (default `i18n.jsonc` in current directory)
+- `--bucket`: run only tasks for the given bucket name
 - `--dry-run`: print plan only, do not translate or write files
 - `--workers`: number of parallel translation workers (defaults to CPU cores)
+
+
+## Scope runs to one bucket
+
+Use `--bucket` when you want to run only one configured bucket. This is useful for focused updates, CI partitioning, or validating a single area before a full run.
+
+```bash
+hyperlocalise run --config i18n.jsonc --bucket ui --dry-run
+```
+
+If the bucket does not exist in your config, `run` fails with an `unknown bucket` planning error.
 
 ## Output fields
 
