@@ -39,16 +39,7 @@ description: "Use source and target placeholders safely in bucket file mappings.
 }
 ```
 
-For Mintlify docs trees, this keeps the source file structure and writes translated files into the same relative paths under each locale folder.
-
-### Mintlify root-source + locale-output docs
-
-```jsonc
-{
-  "from": "docs/index.mdx",
-  "to": "docs/{{localeDir}}/index.mdx"
-}
-```
+This keeps the source file structure and writes translated files into the same relative paths under each locale folder.
 
 With `source=en` and targets `fr`, `es`, and `zh`:
 
