@@ -22,7 +22,7 @@ Each file mapping uses:
 - `from`: source path template
 - `to`: target path template
 
-Use `{{source}}` and `{{target}}` in templates.
+Use `{{source}}`, `{{target}}`, and `{{localeDir}}` in templates. `{{localeDir}}` resolves to an empty segment when target equals source, and to the target locale otherwise.
 
 
 ### CSV file mapping patterns

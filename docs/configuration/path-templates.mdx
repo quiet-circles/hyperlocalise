@@ -7,8 +7,11 @@ description: "Use source and target placeholders safely in bucket file mappings.
 
 - `{{source}}`: source locale
 - `{{target}}`: target locale
+- `{{localeDir}}`: empty for source locale output, otherwise target locale
 
-Example:
+## Examples
+
+### JSON locale files
 
 ```jsonc
 {
@@ -16,6 +19,36 @@ Example:
   "to": "apps/web/lang/{{target}}.json"
 }
 ```
+
+### Locale template with `[locale]` token
+
+```jsonc
+{
+  "from": "lang/en.json",
+  "to": "lang/[locale].json"
+}
+```
+
+
+### Mintlify recursive mapping with globs
+
+```jsonc
+{
+  "from": "docs/**/*.mdx",
+  "to": "docs/{{localeDir}}/**/*.mdx"
+}
+```
+
+This keeps the source file structure and writes translated files into the same relative paths under each locale folder.
+
+With `source=en` and targets `fr`, `es`, and `zh`:
+
+- `target=en` resolves `docs/{{localeDir}}/index.mdx` to `docs/index.mdx`
+- `target=fr` resolves `docs/{{localeDir}}/index.mdx` to `docs/fr/index.mdx`
+- `target=es` resolves `docs/{{localeDir}}/index.mdx` to `docs/es/index.mdx`
+- `target=zh` resolves `docs/{{localeDir}}/index.mdx` to `docs/zh/index.mdx`
+
+Use this pattern when your English source pages live directly under `docs/` and translated pages should be written into locale folders.
 
 ## Good patterns
 

@@ -779,3 +779,59 @@ func testConfig(sourcePath, targetPath string) config.I18NConfig {
 		},
 	}
 }
+
+func TestShouldIgnoreSourcePath(t *testing.T) {
+	targets := []string{"fr", "es", "zh"}
+	if !shouldIgnoreSourcePath("docs/fr/index.mdx", targets) {
+		t.Fatalf("expected docs/fr/index.mdx to be ignored")
+	}
+	if !shouldIgnoreSourcePath("docs/es/guides/quickstart.mdx", targets) {
+		t.Fatalf("expected nested locale path to be ignored")
+	}
+	if shouldIgnoreSourcePath("docs/index.mdx", targets) {
+		t.Fatalf("expected root docs source path not to be ignored")
+	}
+}
+
+func TestResolveSourcePathsWithDoublestar(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "docs", "nested"), 0o755); err != nil {
+		t.Fatalf("mkdir nested docs: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "docs", "index.mdx"), []byte("hi"), 0o644); err != nil {
+		t.Fatalf("write root mdx: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "docs", "nested", "guide.mdx"), []byte("hi"), 0o644); err != nil {
+		t.Fatalf("write nested mdx: %v", err)
+	}
+
+	pattern := filepath.Join(dir, "docs", "**", "*.mdx")
+	paths, err := resolveSourcePaths(pattern)
+	if err != nil {
+		t.Fatalf("resolve source paths: %v", err)
+	}
+	if len(paths) != 2 {
+		t.Fatalf("expected 2 paths, got %d (%v)", len(paths), paths)
+	}
+}
+
+func TestResolveTargetPathWithDoublestar(t *testing.T) {
+	sourcePattern := "docs/**/*.mdx"
+	targetPattern := "docs/fr/**/*.mdx"
+	sourcePath := "docs/guides/quickstart.mdx"
+
+	got, err := resolveTargetPath(sourcePattern, targetPattern, sourcePath)
+	if err != nil {
+		t.Fatalf("resolve target path: %v", err)
+	}
+	if want := "docs/fr/guides/quickstart.mdx"; got != want {
+		t.Fatalf("target path = %q, want %q", got, want)
+	}
+}
+
+func TestResolveTargetPathRequiresDoublestarInTargetWhenSourceHasIt(t *testing.T) {
+	_, err := resolveTargetPath("docs/**/*.mdx", "docs/fr/index.mdx", "docs/index.mdx")
+	if err == nil || !strings.Contains(err.Error(), "must include glob tokens") {
+		t.Fatalf("expected doublestar mapping error, got %v", err)
+	}
+}

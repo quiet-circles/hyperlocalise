@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/config"
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/pathresolver"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/storage"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/syncsvc"
 )
-
-const localeToken = "[locale]"
 
 type JSONStore struct {
 	cfg           *config.I18NConfig
@@ -128,7 +127,7 @@ func (s *JSONStore) ApplyPull(_ context.Context, plan syncsvc.ApplyPullPlan) (sy
 }
 
 func (s *JSONStore) localePath(locale string) string {
-	return strings.ReplaceAll(s.localePattern, localeToken, locale)
+	return pathresolver.ResolveTargetPath(s.localePattern, s.cfg.Locales.Source, locale)
 }
 
 func resolveLocalePattern(buckets map[string]config.BucketConfig) (string, string, error) {

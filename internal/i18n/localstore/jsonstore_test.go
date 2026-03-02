@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/quiet-circles/hyperlocalise/internal/config"
@@ -89,6 +90,48 @@ func TestJSONStoreBuildPushSnapshotUsesSameReadPath(t *testing.T) {
 	}
 	if got := snap.Entries[0].Value; got != "bonjour" {
 		t.Fatalf("unexpected value: %q", got)
+	}
+}
+
+func TestJSONStoreLocaleDirTemplateSupportsSourceRoot(t *testing.T) {
+	dir := t.TempDir()
+	docsDir := filepath.Join(dir, "docs")
+	if err := os.MkdirAll(docsDir, 0o755); err != nil {
+		t.Fatalf("mkdir docs dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "index.json"), []byte("{\"hello\":\"Hello\"}\n"), 0o644); err != nil {
+		t.Fatalf("write locale file: %v", err)
+	}
+
+	store := mustNewStore(t, filepath.Join(dir, "docs", "{{localeDir}}", "index.json"))
+	snap, err := store.ReadSnapshot(context.Background(), syncsvc.LocalReadRequest{Locales: []string{"en"}})
+	if err != nil {
+		t.Fatalf("read snapshot: %v", err)
+	}
+	if got := len(snap.Entries); got != 1 {
+		t.Fatalf("expected 1 entry, got %d", got)
+	}
+}
+
+func TestJSONStoreLocaleDirTemplateNormalizesSlashes(t *testing.T) {
+	dir := t.TempDir()
+	frDir := filepath.Join(dir, "docs", "fr")
+	if err := os.MkdirAll(frDir, 0o755); err != nil {
+		t.Fatalf("mkdir docs/fr dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(frDir, "index.json"), []byte("{\"hello\":\"bonjour\"}\n"), 0o644); err != nil {
+		t.Fatalf("write locale file: %v", err)
+	}
+
+	pattern := filepath.ToSlash(filepath.Join(dir, "docs", "{{localeDir}}", "index.json"))
+	pattern = strings.Replace(pattern, "/{{localeDir}}/", "/{{localeDir}}//", 1)
+	store := mustNewStore(t, pattern)
+	snap, err := store.ReadSnapshot(context.Background(), syncsvc.LocalReadRequest{Locales: []string{"fr"}})
+	if err != nil {
+		t.Fatalf("read snapshot: %v", err)
+	}
+	if got := len(snap.Entries); got != 1 {
+		t.Fatalf("expected 1 entry, got %d", got)
 	}
 }
 
