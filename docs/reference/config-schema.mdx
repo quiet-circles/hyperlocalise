@@ -40,3 +40,11 @@ description: "Concise reference for i18n.jsonc fields used by hyperlocalise."
 - `config`: adapter-specific fields
 
 For examples, see [i18n config](/configuration/i18n-config).
+
+
+## CSV workflow note
+
+Use `buckets.*.files[].from` and `to` to point at `.csv` files when you run CSV-based localization flows.
+
+- Per-locale files typically use `[locale]` in the `to` path.
+- Shared CSV files can reuse the same `from` and `to` path.

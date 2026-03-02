@@ -29,6 +29,7 @@ For lockfile fields, lifecycle, and reset guidance, see [Lockfile contract](/ref
 - `.md`
 - `.mdx`
 - `.strings`
+- `.csv`
 
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 
@@ -40,6 +41,14 @@ For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and prese
 - JSX/MDX component tags and attribute values
 
 For Apple/Xcode Strings (`.strings`), `run` preserves comments and key/value formatting from the template while replacing value literals with translated text.
+
+
+For CSV (`.csv`), `run` supports two layouts:
+
+- key/value layout (for example: `key,value`)
+- per-locale column layout (for example: `id,en,fr,de`)
+
+When writing CSV targets, `run` preserves the existing header and non-target columns, updates matching keys in place, and appends new keys in deterministic sorted order.
 
 ## Flags
 

@@ -516,6 +516,51 @@ func TestRunWritesAppleStringsUsingSourceTemplateWhenTargetMissing(t *testing.T)
 	}
 }
 
+func TestRunWritesCSVUsingSourceTemplateWhenTargetMissing(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.csv"
+	targetPath := "/tmp/out.csv"
+	source := "key,source,target\nhello,Hello,Hello\n"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "FR(" + req.Source + ")", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "key,source,target") {
+		t.Fatalf("expected csv headers preserved, got %q", out)
+	}
+	if !strings.Contains(out, "hello,Hello,FR(Hello)") {
+		t.Fatalf("expected csv translation written to target column, got %q", out)
+	}
+}
+
 func TestRunReturnsFatalErrorWhenLockWriteFails(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"
