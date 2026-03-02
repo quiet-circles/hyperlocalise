@@ -28,6 +28,7 @@ func NewDefaultStrategy() *Strategy {
 	s.Register(".mdx", MarkdownParser{})
 	s.Register(".strings", AppleStringsParser{})
 	s.Register(".stringsdict", AppleStringsdictParser{})
+	s.Register(".xcstrings", XCStringsParser{})
 	s.Register(".csv", CSVParser{})
 	return s
 }

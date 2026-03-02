@@ -711,6 +711,108 @@ func TestRunWritesAppleStringsdictUsingSourceTemplateWhenTargetMissing(t *testin
 	}
 }
 
+func TestRunWritesXCStringsUsingSourceTemplateWhenTargetMissing(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.xcstrings"
+	targetPath := "/tmp/out.xcstrings"
+	source := `{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "greeting" : {
+      "comment" : "Shown on home screen",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hello"
+          }
+        }
+      }
+    },
+    "items_count" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%d item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%d items"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		switch req.Source {
+		case "Hello":
+			return "Bonjour", nil
+		case "%d item":
+			return "%d article", nil
+		case "%d items":
+			return "%d articles", nil
+		default:
+			return req.Source, nil
+		}
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, `"comment": "Shown on home screen"`) {
+		t.Fatalf("expected comment metadata preserved, got %q", out)
+	}
+	if !strings.Contains(out, `"state": "translated"`) {
+		t.Fatalf("expected stringUnit state preserved, got %q", out)
+	}
+	if !strings.Contains(out, `"value": "Bonjour"`) {
+		t.Fatalf("expected greeting translated, got %q", out)
+	}
+	if !strings.Contains(out, `"value": "%d article"`) {
+		t.Fatalf("expected plural one translated, got %q", out)
+	}
+	if !strings.Contains(out, `"value": "%d articles"`) {
+		t.Fatalf("expected plural other translated, got %q", out)
+	}
+}
+
 func TestRunWritesCSVUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.csv"

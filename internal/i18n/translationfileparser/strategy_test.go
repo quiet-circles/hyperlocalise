@@ -171,6 +171,35 @@ func TestStrategyParsesAppleStringsdict(t *testing.T) {
 	}
 }
 
+func TestStrategyParsesXCStrings(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	content := []byte(`{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "greeting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	got, err := s.Parse("fr.xcstrings", content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if got["greeting"] != "Bonjour" {
+		t.Fatalf("unexpected greeting translation: %q", got["greeting"])
+	}
+}
+
 func TestStrategyParsesCSV(t *testing.T) {
 	s := NewDefaultStrategy()
 
