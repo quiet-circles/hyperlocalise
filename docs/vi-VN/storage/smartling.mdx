@@ -1,0 +1,32 @@
+---
+title: "Smartling adapter"
+description: "Configure Smartling for remote translation pull/push synchronization."
+---
+
+##Cấu hình bắt buộc
+```jsonc
+{
+  "storage": {
+    "adapter": "smartling",
+    "config": {
+      "projectID": "your-project-id",
+      "userIdentifier": "your-smartling-user-identifier",
+      "userSecretEnv": "SMARTLING_USER_SECRET"
+    }
+  }
+}
+```
+
+##Bí mật bắt buộc
+```bash
+export SMARTLING_USER_SECRET="your-smartling-user-secret"
+```
+
+`userSecret`Việc nhúng trực tiếp trong cấu hình không được hỗ trợ. Chỉ sử dụng biến môi trường.
+##Các trường cấu hình tùy chọn
+- `targetLanguages`
+- `timeoutSeconds` (mặc định là`30`)
+
+##Các vấn đề thường gặp
+-thiếu bí mật: xuất khẩu`SMARTLING_USER_SECRET`trong cùng một phiên shell-thiếu định danh người dùng: đặt`storage.config.userIdentifier`
+-không khớp ngôn ngữ: căn chỉnh`targetLanguages`với các cài đặt ngôn ngữ dự án của bạn

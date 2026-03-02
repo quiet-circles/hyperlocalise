@@ -1,0 +1,30 @@
+---
+title: "What is hyperlocalise?"
+description: "CLI-first localization workflows for draft generation, curation sync, and status reporting."
+---
+
+`hyperlocalise`giúp bạn tạo bản nháp dịch địa phương, đồng bộ với hệ thống quản lý bản dịch của bạn và theo dõi những gì vẫn cần được xem xét.
+##Dành cho ai
+Sử dụng CLI này nếu bạn:
+-giữ các tệp dịch trong kho lưu trữ của bạn,-muốn AI-bản nháp được tạo làm điểm khởi đầu,-vẫn cần sự tuyển chọn của con người trong POEditor, Lokalise hoặc Crowdin.
+##Quy trình làm việc chính
+|Giai đoạn|Hành động|Tại sao điều này quan trọng|
+| --- | --- | --- |
+|1| [`init`](/commands/init) |Giàn giáo`i18n.jsonc`và các mặc định của bootstrap.|
+|2|Cấu hình[`i18n config`](/configuration/i18n-config) |Định nghĩa các vùng ngôn ngữ, nhóm lưu trữ và cài đặt LLM/lưu trữ.|
+|3| [`run --dry-run`](/commands/run) |Xác nhận kế hoạch và phát hiện các vấn đề trước khi viết bản thảo.|
+|4| [`run`](/commands/run) |Tạo bản dịch thảo local.|
+|5| [`sync push`](/commands/sync-push) |Tải lên các thay đổi cục bộ lên hệ thống quản lý dịch của bạn.|
+|6|Quản lý trong TMS|Xem xét và chỉnh sửa của con người trên nền tảng dịch thuật của bạn.|
+|7| [`sync pull`](/commands/sync-pull) |Đưa các bản dịch được chọn lọc trở lại kho lưu trữ.|
+|8| [`status`](/commands/status) |Đo lường tiến độ hoàn thành và công việc chưa giải quyết.|
+
+##Bắt đầu trong 10 phút
+1.[Cài đặt](/getting-started/install).
+2.[Chạy hướng dẫn nhanh](/getting-started/quickstart).
+3.[Thiết lập cấu hình i18n của bạn](/configuration/i18n-config).
+
+##Các bước tiếp theo phổ biến
+-Tìm hiểu cách hoạt động của lệnh trong[tổng quan về các lệnh](/commands/overview).
+-Cấu hình thông tin đăng nhập nhà cung cấp trong[chứng nhận nhà cung cấp](/configuration/provider-credentials).
+-Hiểu hành vi đồng bộ trong[tổng quan lưu trữ](/storage/overview).

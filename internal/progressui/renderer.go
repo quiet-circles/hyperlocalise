@@ -134,7 +134,12 @@ func New(w io.Writer, mode Mode, options Options) *Renderer {
 		tick:   tick,
 	}
 
-	program := tea.NewProgram(initial, tea.WithOutput(w), tea.WithInput(nil))
+	program := tea.NewProgram(
+		initial,
+		tea.WithOutput(w),
+		tea.WithInput(os.Stdin),
+		tea.WithoutSignalHandler(),
+	)
 	r.program = program
 	r.doneCh = make(chan struct{})
 

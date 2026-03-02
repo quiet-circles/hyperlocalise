@@ -1,0 +1,82 @@
+---
+title: "eval"
+description: "Run translation quality experiments and compare candidate reports against a baseline."
+---
+
+使用`eval`命令用于在具有代表性的评估集上基准测试翻译质量，并在持续集成中强制执行质量阈值。
+##使用
+```bash
+hyperlocalise eval run --eval-set <path> [flags]
+hyperlocalise eval compare --candidate <path> --baseline <path> [flags]
+```
+
+##评估运行
+在您的评估集上运行一个或多个实验变体。
+###此命令的功能
+1. 从中加载评估数据集`--eval-set`.
+2. 根据您选择的配置文件、提供者、模型和提示覆盖扩展实验变体。3. 针对每个实验变体执行每个案例。4. 当你传递时，编写一个 JSON 报告`--output`.
+5. 打印简洁的每个-实验总结表。
+###标志
+- `--eval-set`: 评估数据集的路径(`.json`, `.jsonc`, `.csv`) (必需)
+- `--profile`: 配置文件名称覆盖(可重复的)
+- `--provider`：提供者覆盖(可重复)
+- `--model`: 模型覆盖(可重复的)
+- `--prompt-file`: 提示文件覆盖- `--prompt`: 内联提示覆盖(与…互斥`--prompt-file`)
+- `--output`: JSON 输出报告路径
+###汇总表字段
+- `score`：实验的加权平均质量得分- `pass_rate`：实验的成功运行次数 / 总运行次数- `placeholder_violations`: 占位符完整性计数困难-失败违规- `latency_ms`: 实验的平均延迟
+###示例
+使用您的配置中的默认设置运行并撰写报告：
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.jsonc \
+  --output ./artifacts/eval-report.json
+```
+
+运行配置文件和提供者/模型覆盖的矩阵：
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.csv \
+  --profile default \
+  --profile fast \
+  --provider openai \
+  --provider anthropic \
+  --model gpt-4.1-mini \
+  --model claude-sonnet-4-5
+```
+
+使用提示文件覆盖运行：
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --prompt-file ./prompts/translation-eval.txt
+```
+
+##评估比较
+将候选报告与基线报告进行比较。
+在 CI 中使用此命令以防止质量回归。
+###旗帜
+- `--candidate`: 候选人报告 JSON 路径(必需)
+- `--baseline`: 基线报告 JSON 路径(必填)
+- `--min-score`：最低候选加权分数- `--max-regression`：从基线到候选的最大允许分数回归
+###CI 行为
+当命令出现以下情况时退出并报错：
+-候选人加权评分低于`--min-score`，或-评分回归超出`--max-regression`.
+
+###示例
+仅比较报告并打印汇总值：
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json
+```
+
+如果候选分数低于，则使 CI 失败`0.82`或倒退超过`0.02`:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json \
+  --min-score 0.82 \
+  --max-regression 0.02
+```

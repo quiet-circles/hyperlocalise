@@ -1,0 +1,35 @@
+---
+title: "Ollama"
+description: "Configure Ollama as an LLM provider for translation generation."
+---
+
+##Giá trị nhà cung cấp
+Sử dụng`ollama`trong`llm.profiles.<name>.provider`.
+
+##Hồ sơ ví dụ
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+##Các biến môi trường bắt buộc
+<CodeGroup>
+```bash Export
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+export OLLAMA_API_KEY="ollama"
+```
+
+```bash .env.local
+OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+OLLAMA_API_KEY="ollama"
+```
+</CodeGroup>

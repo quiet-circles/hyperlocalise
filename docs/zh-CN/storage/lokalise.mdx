@@ -1,0 +1,28 @@
+---
+title: "Lokalise adapter"
+description: "Configure Lokalise API v2 for pull/push synchronization."
+---
+
+##必需配置
+```jsonc
+{
+  "storage": {
+    "adapter": "lokalise",
+    "config": {
+      "projectID": "your-project-id",
+      "apiTokenEnv": "LOKALISE_API_TOKEN"
+    }
+  }
+}
+```
+
+##可选配置字段
+- `targetLanguages`
+- `timeoutSeconds`
+
+##令牌解析
+-默认环境变量：`LOKALISE_API_TOKEN`
+-使用覆盖`apiTokenEnv`
+
+##常见问题
+-未授权错误：令牌缺失或权限不足-语言环境不匹配：使Lokalise语言代码与目标语言环境保持一致-超时错误：增加`timeoutSeconds`对于大型项目

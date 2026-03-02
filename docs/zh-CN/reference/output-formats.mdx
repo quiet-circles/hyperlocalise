@@ -1,0 +1,43 @@
+---
+title: "Output formats"
+description: "Reference for run, status, and sync command output formats."
+---
+
+## `run`输出(`text`)
+
+关键摘要字段：
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+失败行格式：
+```text
+failure target=<path> key=<key> reason=<reason>
+```
+
+## `status`输出(`csv`)
+
+表头列：
+```csv
+key,namespace,locale,status,origin,state
+```
+
+## `sync`输出(`text`或`json`)
+
+文本摘要字段：
+- `action`
+- `creates`
+- `updates`
+- `unchanged`
+- `conflicts`
+- `applied`
+- `skipped`
+- `warnings`
+
+在与 CI 检查集成时使用 JSON 输出。
+
+##CSV翻译文件
+当`run`写入`.csv`翻译目标，新添加的键的输出行顺序是确定性的(按键排序)，且现有行保持其原始顺序。

@@ -1,0 +1,25 @@
+---
+title: "sync pull"
+description: "Pull curated translations from remote storage into local files."
+---
+
+##使用
+```bash
+hyperlocalise sync pull [--config <path>] [flags]
+```
+
+##安全的默认行为
+`sync pull`默认为干燥-运行模式。首先审查报告，然后重新运行，`--dry-run=false`.
+
+##标志
+- `--config`: 配置路径- `--locale`: 目标语言(秒), 可重复- `--dry-run`：仅预览(默认`true`)
+- `--output`: `text`或`json`
+- `--fail-on-conflict`: 检测到冲突时返回错误(默认`true`)
+- `--apply-curated-over-draft`: 允许精选的远程值替换本地草稿值(默认`true`)
+
+##示例
+```bash
+hyperlocalise sync pull --config i18n.jsonc --locale es-ES --output json
+```
+
+参见[冲突处理](/troubleshooting/conflicts)用于解决策略。

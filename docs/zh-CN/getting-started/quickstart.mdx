@@ -1,0 +1,146 @@
+---
+title: "Quickstart"
+description: "Run hyperlocalise end-to-end in about 10 minutes."
+---
+
+##目标
+创建一个`i18n.jsonc`安全地进行翻译规划，生成输出，并审查状态。
+##1. 初始化配置
+```bash
+hyperlocalise init
+```
+
+这写道`i18n.jsonc`在您当前的目录中。
+##2. 配置提供程序凭据
+`hyperlocalise`自动从中读取凭据`.env`和`.env.local`在您当前的项目目录中。导出的 shell 变量仍然优先。
+示例：
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
+OpenAI：
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
+Azure OpenAI：
+<CodeGroup>
+```bash Export
+# Example: https://<resource>.openai.azure.com/openai/v1
+export AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+export AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
+```
+
+```bash .env.local
+# Example: https://<resource>.openai.azure.com/openai/v1
+AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
+```
+</CodeGroup>
+
+双子座：
+<CodeGroup>
+```bash Export
+export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+export GEMINI_API_KEY="your-gemini-api-key"
+```
+
+```bash .env.local
+GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+GEMINI_API_KEY="your-gemini-api-key"
+```
+</CodeGroup>
+
+Anthropic：
+<CodeGroup>
+```bash Export
+export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+```bash .env.local
+ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+</CodeGroup>
+
+LM Studio：
+<CodeGroup>
+```bash Export
+export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+export LM_STUDIO_API_KEY="lm-studio"
+```
+
+```bash .env.local
+LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+LM_STUDIO_API_KEY="lm-studio"
+```
+</CodeGroup>
+
+Ollama:
+<CodeGroup>
+```bash Export
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+export OLLAMA_API_KEY="ollama"
+```
+
+```bash .env.local
+OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+OLLAMA_API_KEY="ollama"
+```
+</CodeGroup>
+
+Groq:
+<CodeGroup>
+```bash Export
+export GROQ_BASE_URL="https://api.groq.com/openai/v1"
+export GROQ_API_KEY="your-groq-api-key"
+```
+
+```bash .env.local
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_API_KEY="your-groq-api-key"
+```
+</CodeGroup>
+
+##3. 干燥-先运行
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+检查`planned_total`, `executable_total`，及所列`tasks`.
+
+##4. 执行生成
+```bash
+hyperlocalise run --config i18n.jsonc
+```
+
+这将编写翻译并进行更新`.hyperlocalise.lock.json`。详情请参见[锁定文件合约](/reference/lockfile-contract).
+
+##5. 审核状态
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+使用`needs_review`行以识别仍需人工策划的条目。
+##6. 在需要时评估翻译质量
+```bash
+hyperlocalise eval run --eval-set ./eval-set.json --output ./eval-report.json
+```
+
+在比较提示/配置文件/提供者选项时或在推广大型翻译更新之前使用此功能。
+##下一步
+-在中调整配置[i18n 配置](/configuration/i18n-config).
+-使用您的TMS进行同步[同步推送](/commands/sync-push)和[同步拉取](/commands/sync-pull).

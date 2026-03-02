@@ -1,0 +1,30 @@
+---
+title: "Storage overview"
+description: "How local files, sidecar metadata, and remote adapters work during sync."
+---
+
+##存储层的功能
+存储连接：
+-本地翻译文件，-sidecar 来源元数据，-远程适配器 API。
+##支持的适配器
+- [Crowdin](/storage/crowdin)
+- [轻声](/storage/lilt)
+- [Lokalise](/storage/lokalise)
+- [短语](/storage/phrase)
+- [POEditor](/storage/poeditor)
+- [Smartling](/storage/smartling)
+
+##条目标识
+每个翻译条目均由以下内容标识：
+- `key`
+- `context`
+- `locale`
+
+##为何存在旁车元数据
+您的用户-面对的文本保留在常规翻译文件中。操作元数据(例如 草稿状态 vs 精选状态)保存在旁车元数据文件中，以保持翻译内容的整洁。
+##拉取和推送生命周期
+1.`run`生成本地草稿(`origin=llm`, `state=draft`).
+2.`sync push`将本地更改发送到远程存储。3. 人工翻译人员在远程翻译管理系统中管理词条。4.`sync pull`本地应用精选更改。
+##冲突规则
+-拉动可以自动-应用精选-超过-启用时草稿。-默认情况下，Push 会保护策划的远程值。- `--fail-on-conflict`防止静默漂移。- `--force-conflicts`是可选项-用于冒险的覆盖路径。
+有关具体冲突决策，请参见[冲突](/troubleshooting/conflicts).

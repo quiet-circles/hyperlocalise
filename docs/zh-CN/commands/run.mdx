@@ -1,0 +1,55 @@
+---
+title: "run"
+description: "Plan and execute local translation generation from configured source files."
+---
+
+##用法
+```bash
+hyperlocalise run [--config <path>] [--dry-run] [--workers <count>]
+```
+
+##行为
+1. 加载并验证配置，2. 从组和存储桶中规划任务，3. 跳过已在中的任务`.hyperlocalise.lock.json`,
+4. 执行剩余任务，5. 将成功的任务持久化到锁定状态。
+有关锁文件字段、生命周期和重置指导，请参见[锁定文件合约](/reference/lockfile-contract).
+
+##支持的本地文件格式
+`run`可以读取具有这些扩展名的源文件和目标文件：
+- `.json`
+- `.xlf`和`.xliff`
+- `.po`
+- `.md`
+- `.mdx`
+- `.strings`
+- `.csv`
+
+对于 Markdown 和 MDX(`.md`, `.mdx`), `run`翻译提取的散文并保留非-可翻译结构：
+-前置部分块(`---`)
+-带围栏的代码块(```` ``` ```` and `~~~`)
+-行内代码段-Markdown 锚点，例如链接目标-MDX`import`和`export`行数-JSX/MDX 组件标签和属性值
+适用于 Apple/Xcode 字符串(`.strings`), `run`在替换值文本为翻译文本的同时，保留模板中的注释和键/值格式。
+
+对于CSV(`.csv`), `run`支持两种布局：
+-键/值布局(例如：`key,value`)
+-每-区域 列 布局(例如：`id,en,fr,de`)
+
+编写 CSV 目标时，`run`保留现有的标题和非-目标列，在原位更新匹配的键，并以确定性的排序顺序追加新键。
+##标志
+- `--config`: 配置文件路径(默认`i18n.jsonc`在当前目录中)
+- `--dry-run`：仅打印计划，不翻译或写入文件- `--workers`：并行翻译工作者数量(默认使用 CPU 核心数)
+
+##输出字段
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+##失败输出
+任务失败时，输出包括`failure target=<...> key=<...> reason=<...>`.
+
+
+##工作人员调校指南
+较低`--workers`当您遇到提供者速率限制或在受限的 CI 环境中运行时。开始于`1`以稳定重试次数，然后逐渐增加。
+提升`--workers`当您的供应商配额和机器资源允许更多吞吐量时，逐步小幅增加，并监控 API 错误率以及本地 CPU 和内存使用情况。

@@ -1,0 +1,35 @@
+---
+title: "Lilt adapter"
+description: "Configure Lilt for remote translation pull/push synchronization."
+---
+
+##Cấu hình bắt buộc
+```jsonc
+{
+  "storage": {
+    "adapter": "lilt",
+    "config": {
+      "projectID": "123",
+      "apiTokenEnv": "LILT_API_TOKEN"
+    }
+  }
+}
+```
+
+##Phân giải token
+1. biến môi trường được đặt tên bởi`storage.config.apiTokenEnv`
+2. dự phòng:`LILT_API_TOKEN`
+
+`apiToken`inline trong cấu hình không được hỗ trợ. Chỉ sử dụng biến môi trường.
+##Các trường cấu hình tùy chọn
+- `targetLanguages`
+- `timeoutSeconds` (mặc định là`30`)
+- `pollIntervalMs` (mặc định là`1000`)
+- `maxPolls` (mặc định là`60`)
+
+##Hành vi kéo
+-bắt đầu một công việc xuất cho mỗi ngôn ngữ khu vực-trạng thái xuất khảo sát cho đến khi công việc hoàn thành-tải xuống các tệp JSON(tệp đơn hoặc ZIP)
+-chuẩn hóa các mục và bỏ qua các hàng khóa/vùng/nguyên giá trống
+##Các vấn đề phổ biến
+-thiếu token: xuất khẩu`LILT_API_TOKEN`trong cùng một phiên shell-thiếu id dự án: đặt`storage.config.projectID`
+-hết thời gian chờ hoặc xuất chậm: tăng lên`timeoutSeconds`, `pollIntervalMs`, hoặc`maxPolls`

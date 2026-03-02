@@ -1,0 +1,59 @@
+---
+title: "i18n config"
+description: "Field-by-field guide for i18n.jsonc used by run, status, and sync commands."
+---
+
+##Tổng quan về file
+`i18n.jsonc`kiểm soát các vùng cài đặt địa phương, ánh xạ tệp, hồ sơ mô hình và lựa chọn quy tắc.
+##Ngôn ngữ địa phương
+- `locales.source`: ngôn ngữ nguồn.- `locales.targets`: danh sách các vùng ngôn ngữ mục tiêu.-tùy chọn`locales.fallbacks`: thứ tự dự phòng theo từng ngôn ngữ.
+##Xô
+`buckets`ánh xạ các tệp nguồn tới các mẫu đầu ra mục tiêu.
+Mỗi ánh xạ tệp sử dụng:
+- `from`: mẫu đường dẫn nguồn- `to`: mẫu đường dẫn đích
+Sử dụng`{{source}}`, `{{target}}`, và`{{localeDir}}`trong các mẫu.`{{localeDir}}`được giải quyết thành một đoạn trống khi điểm đến bằng nguồn, và thành ngôn ngữ điểm đến trong trường hợp khác.
+
+###Mẫu ánh xạ tệp CSV
+Sử dụng ánh xạ tệp bucket để mô hình hóa quy trình làm việc CSV.
+Theo-tệp ngôn ngữ:
+```json
+{
+  "from": "translations/en.csv",
+  "to": "translations/[locale].csv"
+}
+```
+
+Chia sẻ đa dạng-tệp ngôn ngữ:
+```json
+{
+  "from": "translations/catalog.csv",
+  "to": "translations/catalog.csv"
+}
+```
+
+Đối với đa chia sẻ-tệp CSV ngôn ngữ, giữ lại một cột khóa và một cột ngôn ngữ đích mà`run`có thể cập nhật một cách nhất quán.
+##Nhóm
+`groups.<name>`xác định những gì cần xử lý cùng nhau.
+- `targets`: tập con của`locales.targets`
+- `buckets`: danh sách tên các bucket
+##Hồ sơ LLM
+`llm.profiles.<name>`các trường:
+- `provider`: `openai`, `azure_openai`, `anthropic`, `gemini`, `bedrock`, `lmstudio`, `groq`, hoặc`ollama`
+- `model`: id mô hình nhà cung cấp- `prompt`: mẫu câu dịch
+Biến số nhắc nhở:
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`
+
+##Quy tắc
+`llm.rules`chọn hồ sơ cho mỗi nhóm.
+- `priority`: cao hơn thắng- `group`: tên nhóm- `profile`: tên hồ sơ
+##Cấu hình khởi động
+```bash
+hyperlocalise init
+```
+
+Sau đó chỉnh sửa nội dung đã tạo ra`i18n.jsonc`cho dự án của bạn.
+##Mẹo xác thực
+-Giữ mục tiêu nhóm bên trong`locales.targets`.
+-Giữ các nhóm bucket căn chỉnh với`buckets`phím.-Giữ tên hồ sơ nhất quán giữa`profiles`và`rules`.

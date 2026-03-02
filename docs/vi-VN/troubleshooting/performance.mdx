@@ -1,0 +1,15 @@
+---
+title: "Performance"
+description: "Improve runtime and stability on large localization projects."
+---
+
+##Giảm công việc có thể tránh được
+-dựa vào khóa-bỏ qua tệp trong`run`
+-chia các ánh xạ rất lớn thành các nhóm nhỏ hơn-giới hạn phạm vi cục bộ với lặp lại`--locale`
+
+##Cải thiện độ tin cậy đồng bộ hóa
+-đặt bộ điều hợp`timeoutSeconds`khi làm việc với các dự án lớn-chạy mỗi-các công việc đồng bộ địa phương thay vì quạt toàn bộ-xuất ra khi cần thiết-sử dụng đầu ra JSON để dễ dàng hơn trong việc lưu đồ thử lại tự động
+##Chẩn đoán các điểm nóng
+-so sánh`planned_total`so với`executable_total`
+-kiểm tra các lỗi lặp đi lặp lại bởi`target`và`key`
+-kiểm tra giới hạn tốc độ mạng/API từ nhà cung cấp của bạn

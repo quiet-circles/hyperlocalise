@@ -1,0 +1,21 @@
+---
+title: "status"
+description: "Report translation status per key/namespace/locale in CSV format."
+---
+
+##Sử dụng
+```bash
+hyperlocalise status [--config <path>] [flags]
+```
+
+##Cờ
+- `--config`: đường dẫn đến tệp cấu hình- `--locale`: bộ lọc ngôn ngữ mục tiêu(lặp lại được)
+- `--output`: định dạng đầu ra(`csv`)
+- `--group`: lọc theo tên nhóm- `--bucket`: lọc theo tên bucket
+##Giá trị trạng thái
+- `translated`: giá trị không phải là-trống và không được đánh dấu là bản nháp- `needs_review`: nguồn gốc là`origin=llm`và`state=draft`
+- `untranslated`: giá trị trống
+##Ví dụ
+```bash
+hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
+```

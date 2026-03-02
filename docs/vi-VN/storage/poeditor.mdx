@@ -1,0 +1,29 @@
+---
+title: "POEditor adapter"
+description: "Configure POEditor for sync pull and sync push."
+---
+
+##Cấu hình bắt buộc
+```jsonc
+{
+  "storage": {
+    "adapter": "poeditor",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "POEDITOR_API_TOKEN"
+    }
+  }
+}
+```
+
+##Phân giải token
+1. biến môi trường có tên là`storage.config.apiTokenEnv`
+2. dự phòng:`POEDITOR_API_TOKEN`
+
+##Các trường cấu hình tùy chọn
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+##Vấn đề thường gặp
+-mã thông báo không hợp lệ: xác minh biến môi trường đã được xuất trong shell hiện tại-id dự án sai: xác minh ID dự án số từ POEditor-thiếu ngôn ngữ địa phương: đảm bảo`targetLanguages`phù hợp với các mục tiêu cấu hình

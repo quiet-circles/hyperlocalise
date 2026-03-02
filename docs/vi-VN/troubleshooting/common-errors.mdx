@@ -1,0 +1,34 @@
+---
+title: "Common errors"
+description: "Troubleshoot frequent setup, config, provider, and sync failures."
+---
+
+## `i18n.jsonc already exists; use --force to overwrite`
+
+Nguyên nhân: đang chạy`init`nơi cấu hình đã tồn tại.
+Sửa:
+```bash
+hyperlocalise init --force
+```
+
+## `storage config is required`
+
+Nguyên nhân:`sync`lệnh được sử dụng mà không có top-cấp độ`storage`cấu hình.
+Sửa: thêm`storage.adapter`và`storage.config`trong`i18n.jsonc`.
+
+## `unsupported output format`
+
+Nguyên nhân: sai`--output`giá trị.
+Sửa lỗi:
+- `status`: chỉ`csv`
+- `sync`: `text`hoặc`json`
+
+## `unsupported file extension`trong khi`run`
+
+Nguyên nhân: một tệp nguồn hoặc đích được ánh xạ sử dụng phần mở rộng không được trình phân tích cú pháp cục bộ hỗ trợ.
+Sửa lỗi:
+-sử dụng một trong các:`.json`, `.xlf`, `.xliff`, `.po`, `.md`, `.mdx`, `.strings`
+-xác minh bucket`from`và`to`đường dẫn được giải quyết tới các tên tệp tin mong đợi
+##Lỗi xác thực nhà cung cấp
+Nguyên nhân: thiếu hoặc token môi trường không hợp lệ.
+Sửa: re-xuất token trong cùng một phiên shell và chạy lại.

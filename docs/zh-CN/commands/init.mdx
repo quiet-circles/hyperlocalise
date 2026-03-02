@@ -1,0 +1,21 @@
+---
+title: "init"
+description: "Create or overwrite the i18n.jsonc template in your project."
+---
+
+##用法
+```bash
+hyperlocalise init [--force]
+```
+
+##它的作用
+-写入`i18n.jsonc`从所建造的-在模板中-如果文件已存在，则失败(除非`--force`)
+
+##旗帜
+- `--force`: 覆盖现有的`i18n.jsonc`
+
+##典型流程
+```bash
+hyperlocalise init
+hyperlocalise run --dry-run
+```

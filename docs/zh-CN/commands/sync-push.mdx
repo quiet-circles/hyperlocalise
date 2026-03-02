@@ -1,0 +1,24 @@
+---
+title: "sync push"
+description: "Push local translation changes to remote storage adapters."
+---
+
+##使用
+```bash
+hyperlocalise sync push [--config <path>] [flags]
+```
+
+##安全的默认行为
+`sync push`默认干燥-运行模式和冲突失败。
+##标志
+- `--config`: 配置路径- `--locale`: 目标语言(s)，可重复- `--dry-run`：仅预览(默认`true`)
+- `--output`: `text`或`json`
+- `--fail-on-conflict`: 检测到冲突时返回错误(默认`true`)
+- `--force-conflicts`：允许在策略允许的情况下覆盖不匹配的情况(默认`false`)
+
+##示例
+```bash
+hyperlocalise sync push --config i18n.jsonc --locale es-ES --dry-run=false
+```
+
+参见[冲突处理](/troubleshooting/conflicts)使用前`--force-conflicts`.

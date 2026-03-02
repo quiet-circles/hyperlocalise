@@ -1,0 +1,21 @@
+---
+title: "init"
+description: "Create or overwrite the i18n.jsonc template in your project."
+---
+
+##Sử dụng
+```bash
+hyperlocalise init [--force]
+```
+
+##Nó thực hiện những gì
+-viết`i18n.jsonc`từ được xây dựng-trong mẫu-thất bại nếu tệp đã tồn tại(trừ khi`--force`)
+
+##Cờ
+- `--force`: ghi đè một mục đã tồn tại`i18n.jsonc`
+
+##Luồng điển hình
+```bash
+hyperlocalise init
+hyperlocalise run --dry-run
+```

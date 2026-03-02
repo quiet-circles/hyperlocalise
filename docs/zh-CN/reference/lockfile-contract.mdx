@@ -1,0 +1,61 @@
+---
+title: "Lockfile contract"
+description: "Understand what `.hyperlocalise.lock.json` stores, when to reset it, and why it is advisory."
+---
+
+##规范文件名
+锁文件名称已固定为`.hyperlocalise.lock.json`.
+
+`hyperlocalise`当前不支持读取`i18n.lock`或其他别名。
+将文件保存在您的项目根目录中，因此`run`和同步命令共享相同的检查点状态。
+##锁文件的用途
+将锁文件视为一个**咨询检查点**，而非你的真实信息来源。
+-可翻译内容的真实来源是您的源文件。-生成输出的真实来源是您的目标文件。-同步的远程状态的真实来源是您的TMS加上本地工件。
+锁文件只记录命令行界面已尝试或完成的操作，以便跳过重复工作。
+##模式
+当前形状：
+```json
+{
+  "adapter": "crowdin",
+  "project_id": "12345",
+  "last_pull_at": "2026-01-15T12:34:56Z",
+  "locale_states": {
+    "es-ES": {
+      "revision": "rev_abc123",
+      "updated_at": "2026-01-15T12:00:00Z"
+    }
+  },
+  "run_completed": {
+    "apps/web/lang/es-ES.json::checkout.submit": {
+      "completed_at": "2026-01-15T12:10:00Z",
+      "source_hash": "7f4f7d..."
+    }
+  }
+}
+```
+
+字段含义：
+- `adapter`: 活动的 TMS 适配器名称。- `project_id`：适配器-特定项目标识符。- `last_pull_at`：最近一次成功同步拉取的时间戳。- `locale_states`: 每-本地检查点地图。  - `revision`: 适配器版本或用于增量拉取逻辑的光标。  - `updated_at`：本地检查点上次刷新的时间。- `run_completed`: 每-任务完成地图由…使用`run`用于跳过决策。  - `completed_at`：任务上次完成的时间。  - `source_hash`: 源指纹在完成时间捕获。
+##通过命令进行生命周期管理
+### `hyperlocalise run`
+
+-读取`.hyperlocalise.lock.json`在计划任务时。-跳过已标记为完成的工作`run_completed`.
+-将成功的任务持久保存回`run_completed`.
+
+### `hyperlocalise sync pull`
+
+-读取现有适配器和本地检查点元数据。-更新`adapter`, `project_id`, `last_pull_at`，以及`locale_states`拉取成功后。
+### `hyperlocalise sync push`
+
+-可能从锁文件中读取适配器/项目上下文。-不替代源/目标内容权威。
+##安全重置指南
+当检查点状态过时或不再可信时，重置锁文件。
+常见重置情况：
+-你大幅更改了源文本结构-你更改了存储桶映射或文件路径模板-你切换了适配器或项目-您怀疑检查点条目已损坏或被手动编辑
+安全重置步骤：
+1. 确保您的源文件和生成的文件已提交或备份2. 删除`.hyperlocalise.lock.json`
+3. 运行`hyperlocalise run --dry-run`检查整体计划4. 运行`hyperlocalise run`和/或`hyperlocalise sync pull`重建检查点状态
+重置后预期的副作用：
+- `run`可能会重新-执行先前跳过的任务-下一次同步拉取可能会对本地化进行更广泛的刷新-CLI 运行时可以暂时增加，直到检查点重建完成
+##团队惯例
+-请勿交付-除非调试本地事件，否则不要编辑锁文件字段。-在 CI 脚本中保持对锁文件处理的明确性。-当运行/同步行为异常时，审查拉取请求中的锁文件更改。

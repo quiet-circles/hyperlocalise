@@ -1,0 +1,34 @@
+---
+title: "Common errors"
+description: "Troubleshoot frequent setup, config, provider, and sync failures."
+---
+
+## `i18n.jsonc already exists; use --force to overwrite`
+
+原因：运行`init`配置已存在的地方。
+修复：
+```bash
+hyperlocalise init --force
+```
+
+## `storage config is required`
+
+原因：`sync`使用命令时未使用 top-等级`storage`配置。
+修复：添加`storage.adapter`和`storage.config`在`i18n.jsonc`.
+
+## `unsupported output format`
+
+原因：错误`--output`值。
+修复：
+- `status`: only`csv`
+- `sync`: `text`或`json`
+
+## `unsupported file extension`在……期间`run`
+
+原因：映射的源文件或目标文件使用了本地解析器不支持的扩展名。
+修复：
+-使用以下之一：`.json`, `.xlf`, `.xliff`, `.po`, `.md`, `.mdx`, `.strings`
+-验证存储桶`from`和`to`路径解析到预期的文件名
+##提供者身份验证失败
+原因：缺失/无效的环境令牌。
+修复：重新-在同一个 shell 会话中导出 token 并重新运行。

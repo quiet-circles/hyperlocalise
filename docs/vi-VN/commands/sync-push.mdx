@@ -1,0 +1,24 @@
+---
+title: "sync push"
+description: "Push local translation changes to remote storage adapters."
+---
+
+##Sử dụng
+```bash
+hyperlocalise sync push [--config <path>] [flags]
+```
+
+##Hành vi mặc định an toàn
+`sync push`mặc định là khô-chế độ chạy và lỗi xung đột.
+##Cờ
+- `--config`: đường dẫn cấu hình- `--locale`: ngôn ngữ đích(s), có thể lặp lại được- `--dry-run`: chỉ xem trước(mặc định`true`)
+- `--output`: `text`hoặc`json`
+- `--fail-on-conflict`: trả về lỗi khi phát hiện xung đột(mặc định`true`)
+- `--force-conflicts`: cho phép ghi đè trong các trường hợp không khớp khi chính sách cho phép(mặc định`false`)
+
+##Ví dụ
+```bash
+hyperlocalise sync push --config i18n.jsonc --locale es-ES --dry-run=false
+```
+
+Xem[xử lý xung đột](/troubleshooting/conflicts)trước khi sử dụng`--force-conflicts`.

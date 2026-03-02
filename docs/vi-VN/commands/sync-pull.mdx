@@ -1,0 +1,25 @@
+---
+title: "sync pull"
+description: "Pull curated translations from remote storage into local files."
+---
+
+##Sử dụng
+```bash
+hyperlocalise sync pull [--config <path>] [flags]
+```
+
+##Hành vi mặc định an toàn
+`sync pull`mặc định là khô-chế độ chạy. Bắt đầu bằng cách xem lại báo cáo, sau đó chạy lại với`--dry-run=false`.
+
+##Cờ
+- `--config`: đường dẫn cấu hình- `--locale`: ngôn ngữ mục tiêu(s), có thể lặp lại- `--dry-run`: chỉ xem trước(mặc định`true`)
+- `--output`: `text`hoặc`json`
+- `--fail-on-conflict`: trả về lỗi khi phát hiện xung đột(mặc định`true`)
+- `--apply-curated-over-draft`: cho phép các giá trị từ xa được tuyển chọn thay thế các giá trị bản thảo cục bộ(mặc định`true`)
+
+##Ví dụ
+```bash
+hyperlocalise sync pull --config i18n.jsonc --locale es-ES --output json
+```
+
+Xem[xử lý xung đột](/troubleshooting/conflicts)cho chiến lược giải quyết.

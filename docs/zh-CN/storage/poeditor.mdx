@@ -1,0 +1,29 @@
+---
+title: "POEditor adapter"
+description: "Configure POEditor for sync pull and sync push."
+---
+
+##必需配置
+```jsonc
+{
+  "storage": {
+    "adapter": "poeditor",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "POEDITOR_API_TOKEN"
+    }
+  }
+}
+```
+
+##令牌解析
+1. 环境变量命名为`storage.config.apiTokenEnv`
+2. 后备：`POEDITOR_API_TOKEN`
+
+##可选配置字段
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+##常见问题
+-无效令牌：请确认环境变量已在当前 shell 中导出-错误的项目ID：请从POEditor验证数字项目ID-缺少区域设置：确保`targetLanguages`与配置目标对齐

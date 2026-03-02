@@ -1,0 +1,30 @@
+---
+title: "What is hyperlocalise?"
+description: "CLI-first localization workflows for draft generation, curation sync, and status reporting."
+---
+
+`hyperlocalise`帮助您生成本地翻译草稿，与您的TMS同步，并跟踪仍需审核的内容。
+##适合人群
+如果您：
+-将翻译文件保存在您的代码库中，-想要人工智能-生成草稿作为起点，-仍然需要在 POEditor、Lokalise 或 Crowdin 中进行人工审核。
+##核心工作流程
+|阶段|行动|为什么这很重要|
+| --- | --- | --- |
+|1| [`init`](/commands/init) |脚手架`i18n.jsonc`和 Bootstrap 默认值。|
+|2|配置[`i18n config`](/configuration/i18n-config) |定义地区、存储桶和大型语言模型/存储设置。|
+|3| [`run --dry-run`](/commands/run) |在撰写草稿之前验证计划并检测问题。|
+|4| [`run`](/commands/run) |生成本地草稿翻译。|
+|5| [`sync push`](/commands/sync-push) |将本地更改上传到您的TMS。|
+|6|在TMS中策划|您翻译平台中的人工审核和纠正。|
+|7| [`sync pull`](/commands/sync-pull) |将精选翻译导回仓库。|
+|8| [`status`](/commands/status) |衡量完成情况和未解决的工作。|
+
+##10分钟后开始
+1.[安装](/getting-started/install).
+2.[运行快速入门](/getting-started/quickstart).
+3.[设置您的国际化配置](/configuration/i18n-config).
+
+##常见的下一步措施
+-了解命令行为[命令概述](/commands/overview).
+-在中配置提供程序凭据[提供者凭证](/configuration/provider-credentials).
+-了解同步行为[存储概览](/storage/overview).

@@ -1,0 +1,37 @@
+---
+title: "LLM providers overview"
+description: "Shared profile fields, prompt variables, and links to each provider-specific configuration page."
+---
+
+使用下面的某个提供者页面进行准确的设置和示例：
+- [OpenAI](/providers/openai)
+- [Azure OpenAI](/providers/azure-openai)
+- [双子座](/providers/gemini)
+- [人类学](/providers/anthropic)
+- [AWS Bedrock](/providers/bedrock)
+- [LM工作室](/providers/lmstudio)
+- [Groq](/providers/groq)
+- [Ollama](/providers/ollama)
+
+##支持的提供商值
+- `openai`
+- `azure_openai`
+- `gemini`
+- `anthropic`
+- `bedrock`
+- `lmstudio`
+- `groq`
+- `ollama`
+
+##必填资料字段
+每个`llm.profiles.<name>`条目要求：
+- `provider`
+- `model`
+- `prompt`
+
+##提示变量
+这些占位符可用於`prompt`:
+
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`

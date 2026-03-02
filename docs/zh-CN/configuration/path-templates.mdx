@@ -1,0 +1,50 @@
+---
+title: "Path templates"
+description: "Use source and target placeholders safely in bucket file mappings."
+---
+
+##支持的占位符
+- `{{source}}`: source locale- `{{target}}`: 目标语言- `{{localeDir}}`如果是源语言，则为空；否则为目标语言
+##示例
+###JSON 本地化文件
+```jsonc
+{
+  "from": "packages/ui/lang/{{source}}.json",
+  "to": "apps/web/lang/{{target}}.json"
+}
+```
+
+###区域模板和`[locale]`令牌
+```jsonc
+{
+  "from": "lang/en.json",
+  "to": "lang/[locale].json"
+}
+```
+
+
+###Mintlify 使用通配符的递归映射
+```jsonc
+{
+  "from": "docs/**/*.mdx",
+  "to": "docs/{{localeDir}}/**/*.mdx"
+}
+```
+
+这保持源文件结构，并将翻译文件写入每个语言文件夹下相同的相对路径。
+使用`source=en`和目标`fr`, `es`，以及`zh`:
+
+- `target=en`解决`docs/{{localeDir}}/index.mdx`至`docs/index.mdx`
+- `target=fr`解决`docs/{{localeDir}}/index.mdx`到`docs/fr/index.mdx`
+- `target=es`解决`docs/{{localeDir}}/index.mdx`到`docs/es/index.mdx`
+- `target=zh`解析 resolves`docs/{{localeDir}}/index.mdx`至`docs/zh/index.mdx`
+
+当您的英文源页面直接位于下方时，请使用此模式`docs/`翻译后的页面应写入本地化文件夹。
+##良好模式
+-保持源树和目标树分开。-按域使用稳定的存储桶名称(`ui`, `marketing`, `emails`).
+-每个文件映射保持一个职责。
+##反-模式
+-写作`to`返回源目录的路径。-为多个桶重用相同的输出路径。-将本地令牌与广告混合-模板外的hoc字符串替换。
+##快速检查
+运行之前：
+1. 确认`from`为源语言解析，2. 确认`to`可以为每个目标区域创建，3. 运行`hyperlocalise run --dry-run`检查计划任务。

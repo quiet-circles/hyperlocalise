@@ -1,0 +1,27 @@
+---
+title: "Release maintenance"
+description: "Maintainer workflow for quality gates and CLI release publishing."
+---
+
+##Kiểm tra chất lượng
+```bash
+make fmt
+make lint
+make test
+make precommit
+```
+
+##Phát hành luồng
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Phát hành các tệp tự động hóa:
+- `.github/workflows/release.yml`
+- `.goreleaser.yml`
+
+##Mục tiêu hiện vật đã xuất bản
+-macOS:`amd64`, `arm64`
+-Linux:`amd64`, `arm64`
+-gói hàng:`.deb`, `.rpm`

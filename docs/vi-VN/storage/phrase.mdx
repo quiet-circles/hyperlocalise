@@ -1,0 +1,31 @@
+---
+title: "Phrase adapter"
+description: "Configure Phrase for remote translation synchronization."
+---
+
+##Cấu hình bắt buộc
+```jsonc
+{
+  "storage": {
+    "adapter": "phrase",
+    "config": {
+      "projectID": "project-uuid",
+      "apiTokenEnv": "PHRASE_API_TOKEN",
+      "mode": "strings"
+    }
+  }
+}
+```
+
+##Các trường cấu hình tùy chọn
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+- `fileFormat` (bắt buộc khi`mode`là`files`)
+
+##Chế độ
+- `strings`: kéo và đẩy sử dụng khóa Phrase và các API dịch thuật.- `files`: kéo và đẩy bằng cách sử dụng các công việc xuất/nhập của Phrase.
+##Các sự cố phổ biến
+-token not found: export`PHRASE_API_TOKEN`
+-lỗi xác nhận chế độ: set`mode`đến`strings`hoặc`files`
+-lỗi nhập chế độ tệp: xác minh`fileFormat`phù hợp với cài đặt dự án của bạn

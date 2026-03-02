@@ -1,0 +1,50 @@
+---
+title: "Development"
+description: "Develop and validate the hyperlocalise CLI in Go."
+---
+
+##先决条件
+-Go 1.26+
+- `git`
+- `make`在你的 shell 中可用
+##克隆仓库
+```bash
+git clone https://github.com/quiet-circles/hyperlocalise.git
+cd hyperlocalise
+```
+
+##Bootstrap 工具和模块
+```bash
+make bootstrap
+```
+
+这会下载 Go 模块并安装固定版本的 lint 工具链。
+##每日开发循环
+```bash
+make fmt
+make lint
+make test
+make check-build
+```
+
+##在本地运行 CLI
+```bash
+make run
+# or
+go run -ldflags "-X main.version=dev" main.go
+```
+
+##安装本地二进制文件
+```bash
+make install
+hyperlocalise version
+```
+
+##键码位置
+- `cmd/`: Cobra 命令、标志和 CLI 输出行为- `internal/config/`: `i18n.jsonc`解析和验证- `internal/i18n/runsvc/`: `run`规划与执行流程- `internal/i18n/syncsvc/`: 同步编排和冲突逻辑- `internal/i18n/storage/`：适配器合同和提供程序集成
+##在打开合并请求之前
+```bash
+make precommit
+```
+
+这将在贡献者使用的相同流程中运行格式化、代码检查、测试和构建检查。

@@ -1,0 +1,18 @@
+---
+title: "Conflict handling"
+description: "Understand pull/push conflicts and apply safe resolution strategies."
+---
+
+##Kéo xung đột
+Trường hợp điển hình: giá trị được tuyển chọn tại chỗ khác với giá trị từ xa.
+Giải pháp an toàn:
+1. chạy`sync pull`với`--output json`
+2. kiểm tra các mục xung đột3. quyết định nguồn sự thật4. chạy lại với trạng thái cục bộ/từ xa được cập nhật
+`--apply-curated-over-draft`chỉ áp dụng khi mục địa phương là bản nháp.
+##Xung đột đẩy
+Trường hợp điển hình: bản nháp cục bộ khác với giá trị được tuyển chọn từ xa.
+Giải pháp an toàn:
+1. kiểm tra báo cáo xung đột trong JSON2. giữ nguyên hành vi thất bại xung đột mặc định3. sử dụng`--force-conflicts`chỉ dành cho các ngoại lệ đã được xem xét
+##Mặc định được đề xuất
+-giữ lại`--fail-on-conflict=true`
+-giữ lại`--dry-run=true`cho đến khi báo cáo được xem xét-lưu trữ báo cáo JSON trong CI cho các bản ghi kiểm toán

@@ -1,0 +1,18 @@
+---
+title: "Conflict handling"
+description: "Understand pull/push conflicts and apply safe resolution strategies."
+---
+
+##拉取冲突
+典型情况：本地整理的值与远程值不同。
+安全分辨率：
+1. 运行`sync pull`与`--output json`
+2. 检查冲突条目3. 决定真实来源4. 使用更新的本地/远程状态重新运行
+`--apply-curated-over-draft`仅当本地条目为草稿时适用。
+##推送冲突
+典型情况：本地草稿与远程策划值不同。
+安全解决方案：
+1. 检查 JSON 格式的冲突报告2. 保持默认冲突失败行为3. 使用`--force-conflicts`仅针对已审核的异常
+##推荐默认设置
+-保持`--fail-on-conflict=true`
+-保持`--dry-run=true`直到报告被审查-在持续集成中归档 JSON 报告以进行审计追踪

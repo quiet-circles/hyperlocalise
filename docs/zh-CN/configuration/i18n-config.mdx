@@ -1,0 +1,59 @@
+---
+title: "i18n config"
+description: "Field-by-field guide for i18n.jsonc used by run, status, and sync commands."
+---
+
+##文件概述
+`i18n.jsonc`控制区域设置、文件映射、模型配置文件和规则选择。
+##语言环境
+- `locales.source`: 源语言。- `locales.targets`: 目标语言列表。-可选`locales.fallbacks`：每个地区的回退顺序。
+##桶
+`buckets`将源文件映射到目标输出模板。
+每个文件映射使用：
+- `from`: source path template- `to`: 目标路径模板
+使用`{{source}}`, `{{target}}`，以及`{{localeDir}}`在模板中。`{{localeDir}}`当目标等于源时解析为空段，否则解析为目标语言环境。
+
+###CSV 文件映射模式
+使用桶文件映射来建模CSV工作流。
+每份-本地化文件：
+```json
+{
+  "from": "translations/en.csv",
+  "to": "translations/[locale].csv"
+}
+```
+
+共享多重-本地化文件：
+```json
+{
+  "from": "translations/catalog.csv",
+  "to": "translations/catalog.csv"
+}
+```
+
+对于共享多重-本地化CSV文件，保留一列关键字段和一列目标本地化字段`run`可以持续更新。
+##组
+`groups.<name>`定义要一起处理的内容。
+- `targets`：的子集`locales.targets`
+- `buckets`: 存储桶名称列表
+##大型语言模型配置文件
+`llm.profiles.<name>`字段：
+- `provider`: `openai`, `azure_openai`, `anthropic`, `gemini`, `bedrock`, `lmstudio`, `groq`，或`ollama`
+- `model`: 提供者模型编号- `prompt`: 翻译提示模板
+提示变量：
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`
+
+##规则
+`llm.rules`每个组选择配置文件。
+- `priority`: 数值越高越好- `group`: 组名- `profile`：配置文件名称
+##入门配置
+```bash
+hyperlocalise init
+```
+
+然后编辑生成的`i18n.jsonc`为您的项目。
+##验证提示
+-将组目标保持在内部`locales.targets`.
+-保持组桶对齐`buckets`键。-保持配置文件名称一致`profiles`和`rules`.

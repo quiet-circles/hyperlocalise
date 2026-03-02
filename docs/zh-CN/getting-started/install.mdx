@@ -1,0 +1,52 @@
+---
+title: "Installation"
+description: "Installation steps for hyperlocalise, including verification and upgrades."
+---
+
+##先决条件
+-macOS 或 Linux-以下之一：安装脚本，预构建二进制文件，`.deb`/`.rpm`软件包，或 Go 工具链
+##使用引导脚本安装
+使用稳定的引导程序 URL：
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | bash
+```
+
+固定特定版本：
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | VERSION=v1.2.3 bash
+```
+
+安装脚本也附加在每个 GitHub 发布中，您可以直接从发布资产中查看或下载带标签的版本。
+##从源代码安装(去)
+
+```bash
+go install github.com/quiet-circles/hyperlocalise@latest
+```
+
+##从仓库构建
+```bash
+make bootstrap
+make install
+```
+
+##验证安装
+```bash
+hyperlocalise version
+hyperlocalise --help
+```
+
+预期输出包括可用命令：`init`, `run`, `status`, `sync`，以及`version`.
+
+##安装 Hyperlocalise 技能(skills.sh)
+
+安装：
+```bash
+npx skills add https://github.com/quiet-circles/hyperlocalise --skill hyperlocalise
+```
+
+这使用了[skills.sh](https://skills.sh)通过安装程序`npx`.
+
+##升级
+回复-运行你的安装方法。
+-安装程序用户：再次运行 bootstrap 命令，可选地加上`VERSION=<tag>`.
+-安装用户：运行`go install ...@latest`再次。-仓库用户：拉取最新更改，然后运行`make install`.

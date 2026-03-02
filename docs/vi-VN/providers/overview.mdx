@@ -1,0 +1,37 @@
+---
+title: "LLM providers overview"
+description: "Shared profile fields, prompt variables, and links to each provider-specific configuration page."
+---
+
+Sử dụng một trang nhà cung cấp bên dưới để thiết lập chính xác và ví dụ:
+- [OpenAI](/providers/openai)
+- [Azure OpenAI](/providers/azure-openai)
+- [Song Tử](/providers/gemini)
+- [Anthropic](/providers/anthropic)
+- [AWS Bedrock](/providers/bedrock)
+- [LM Studio](/providers/lmstudio)
+- [Groq](/providers/groq)
+- [Ollama](/providers/ollama)
+
+##Giá trị nhà cung cấp được hỗ trợ
+- `openai`
+- `azure_openai`
+- `gemini`
+- `anthropic`
+- `bedrock`
+- `lmstudio`
+- `groq`
+- `ollama`
+
+##Các trường hồ sơ bắt buộc
+Mỗi`llm.profiles.<name>`mục nhập yêu cầu:
+- `provider`
+- `model`
+- `prompt`
+
+##Biến số nhắc nhở
+Các trình giữ chỗ này có sẵn trong`prompt`:
+
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`

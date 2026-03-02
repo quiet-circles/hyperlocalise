@@ -1,0 +1,21 @@
+---
+title: "status"
+description: "Report translation status per key/namespace/locale in CSV format."
+---
+
+##用法
+```bash
+hyperlocalise status [--config <path>] [flags]
+```
+
+##标志
+- `--config`: 配置文件路径- `--locale`: 目标语言过滤器(可重复的)
+- `--output`：输出格式(`csv`)
+- `--group`：按组名筛选- `--bucket`：按存储桶名称筛选
+##状态值
+- `translated`: 值为非-为空且未标记为草稿- `needs_review`: 来源是`origin=llm`和`state=draft`
+- `untranslated`: 值为空
+##示例
+```bash
+hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
+```

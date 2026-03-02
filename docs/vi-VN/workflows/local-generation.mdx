@@ -1,0 +1,18 @@
+---
+title: "Local generation workflow"
+description: "Run draft generation safely and make lock-file behavior predictable."
+---
+
+##Vòng lặp được đề xuất
+1.`hyperlocalise run --dry-run`
+2. kiểm tra danh sách công việc và số lượng3.`hyperlocalise run`
+4. xem lại các lỗi và chạy lại nếu cần thiết
+##Khóa-hành vi tệp
+`.hyperlocalise.lock.json`theo dõi các công việc đã hoàn thành để tránh làm việc trùng lặp.
+Khi bạn thay đổi nội dung nguồn hoặc ánh xạ cấu hình, re-chạy và kiểm tra xem có nhiệm vụ mới nào được lên kế hoạch không.
+Sử dụng[Hợp đồng tệp khóa](/reference/lockfile-contract)để biết chi tiết schema và hướng dẫn đặt lại.
+##Thực hành tốt
+-giữ khô ráo-chạy trong CI để tăng khả năng hiển thị-sử dụng ánh xạ tệp xác định trước-tránh chỉnh sửa thủ công trạng thái khóa
+##Markdown trong các quy trình làm việc cục bộ
+Nếu ánh xạ bucket của bạn trỏ đến`.md`hoặc`.mdx`các tệp,`hyperlocalise run --dry-run`vẫn lên kế hoạch các nhiệm vụ từ các nguồn Markdown.
+Khi bạn chạy mà không có`--dry-run`, đầu ra giữ cho bố cục Markdown và MDX ổn định trong khi dịch các nút văn xuôi được trích xuất.

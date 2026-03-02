@@ -1,0 +1,31 @@
+---
+title: "Phrase adapter"
+description: "Configure Phrase for remote translation synchronization."
+---
+
+##必需配置
+```jsonc
+{
+  "storage": {
+    "adapter": "phrase",
+    "config": {
+      "projectID": "project-uuid",
+      "apiTokenEnv": "PHRASE_API_TOKEN",
+      "mode": "strings"
+    }
+  }
+}
+```
+
+##可选配置字段
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+- `fileFormat` (需要时`mode`是`files`)
+
+##模式
+- `strings`：使用 Phrase 密钥和翻译 API 进行拉取和推送。- `files`: 使用 Phrase 导出/导入作业进行拉取和推送。
+##常见问题
+-令牌未找到：导出`PHRASE_API_TOKEN`
+-模式验证错误：设置`mode`至`strings`或者`files`
+-文件模式导入失败：验证`fileFormat`匹配您的项目设置

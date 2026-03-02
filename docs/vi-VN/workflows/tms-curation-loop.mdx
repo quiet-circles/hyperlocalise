@@ -1,0 +1,19 @@
+---
+title: "TMS curation loop"
+description: "Move from local draft generation to human-curated translations and back."
+---
+
+##Kết thúc-để-kết thúc chuỗi
+1. tạo bản nháp cục bộ với`run`
+2. đẩy bản nháp với`sync push --dry-run=false`
+3. các dịch giả tổ chức trong POEditor/Lokalise/Crowdin4. kéo các cập nhật được tuyển chọn với`sync pull --dry-run=false`
+5. xác minh với`status`
+
+##Các điểm quyết định
+-Giữ lại`--fail-on-conflict=true`vì sự an toàn.-Sử dụng`--apply-curated-over-draft`khi kéo dữ liệu, dữ liệu được chọn lọc nên được ưu tiên.-Sử dụng`--force-conflicts`chỉ đẩy sau khi xem xét xung đột.
+##Khả năng kiểm toán
+Sử dụng đầu ra JSON cho máy móc-đánh giá dễ đọc:
+```bash
+hyperlocalise sync pull --output json
+hyperlocalise sync push --output json
+```

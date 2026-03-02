@@ -1,0 +1,28 @@
+---
+title: "Lokalise adapter"
+description: "Configure Lokalise API v2 for pull/push synchronization."
+---
+
+##Cấu hình bắt buộc
+```jsonc
+{
+  "storage": {
+    "adapter": "lokalise",
+    "config": {
+      "projectID": "your-project-id",
+      "apiTokenEnv": "LOKALISE_API_TOKEN"
+    }
+  }
+}
+```
+
+##Các trường cấu hình tùy chọn
+- `targetLanguages`
+- `timeoutSeconds`
+
+##Phân giải token
+-biến môi trường mặc định:`LOKALISE_API_TOKEN`
+-ghi đè bằng`apiTokenEnv`
+
+##Các vấn đề thường gặp
+-lỗi không được ủy quyền: thiếu token hoặc phạm vi không đủ-không khớp ngôn ngữ địa phương: căn chỉnh mã ngôn ngữ Lokalise với các ngôn ngữ đích-lỗi hết thời gian: tăng lên`timeoutSeconds`cho các dự án lớn
