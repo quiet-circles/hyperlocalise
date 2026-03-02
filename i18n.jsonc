@@ -1,0 +1,75 @@
+{
+  // Minimal starter config.
+  // Read this file top-to-bottom: locales -> buckets -> groups -> llm.
+  "locales": {
+    // Source locale: the language your original content is written in.
+    "source": "en-US",
+    // Target locales: one output is generated per locale listed here.
+    // Add more locales as your project grows.
+    "targets": [
+      "zh-CN",
+      "vi-VN"
+    ]
+  },
+  // One bucket defines how files map from source to target.
+  // Use {{source}} and {{target}} placeholders in paths.
+  // Buckets are reusable: multiple groups can reference the same bucket.
+  "buckets": {
+    // Bucket name is arbitrary; choose a name that matches your domain.
+    "docs": {
+      "files": [
+        {
+          // Input path template.
+          // Example:
+          // docs/getting-started/quickstart.mdx
+          "from": "docs/**/*.mdx",
+          // Output path template.
+          // Example with target=es-ES:
+          // docs/es-ES/getting-started/quickstart.mdx
+          "to": "docs/{{localeDir}}/**/*.mdx"
+        }
+      ]
+    }
+  },
+  // One group links the target(s) with the bucket(s).
+  // Think of a group as "what to run" for a subset of locales/files.
+  "groups": {
+    "default": {
+      // Targets in this group.
+      // Must be a subset of locales.targets.
+      "targets": [
+        "zh-CN",
+        "vi-VN"
+      ],
+      // Buckets in this group.
+      // Names must match keys under the top-level "buckets" object.
+      "buckets": [
+        "docs"
+      ]
+    }
+  },
+  "llm": {
+    // Profiles define provider/model/prompt behavior.
+    // A default profile is required.
+    // Supported providers: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, ollama.
+    // Available vars: {{source}}, {{target}}, {{input}}.
+    "profiles": {
+      "default": {
+        // Provider: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, or ollama.
+        "provider": "openai",
+        "model": "gpt-4.1-mini",
+        // Prompt template used for each translation task.
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    },
+    // Rules connect groups to profiles.
+    // If multiple rules match, the highest priority wins.
+    "rules": [
+      {
+        "priority": 100,
+        "group": "default",
+        "profile": "default"
+      }
+    ]
+  }
+}

@@ -10,7 +10,7 @@ import (
 func newRootCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "hyperlocalise",
-		Short: "hyperlocalise CLI demo application",
+		Short: "High-performance localization CLI written in Go",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := envloader.LoadProjectFiles(); err != nil {
 				return fmt.Errorf("load env files: %w", err)
