@@ -50,6 +50,4 @@ func sanitizeGeneratedText(text string) string {
 		trimmed = strings.ReplaceAll(trimmed, marker, "")
 	}
 	return strings.TrimSpace(trimmed)
-
-	return trimmed
 }
