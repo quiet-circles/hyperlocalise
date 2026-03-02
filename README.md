@@ -40,6 +40,22 @@ Pin a specific release:
 curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | VERSION=v1.2.3 bash
 ```
 
+## Install the Hyperlocalise Agent Skill (skills.sh)
+
+Install from this repository (recommended when you already cloned the repo):
+
+```bash
+npx skills add . --skill hyperlocalise
+```
+
+Install directly from GitHub:
+
+```bash
+npx skills add https://github.com/quiet-circles/hyperlocalise --skill hyperlocalise
+```
+
+This uses the [skills.sh](https://skills.sh) installer via `npx`.
+
 # Commands
 
 ```

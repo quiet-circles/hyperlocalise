@@ -7,6 +7,12 @@ description: Guide users to use the Hyperlocalise CLI for AI-powered localizatio
 
 Use this skill to help users operate Hyperlocalise CLI projects safely and efficiently.
 
+## Install with skills.sh
+
+```bash
+npx skills add https://github.com/quiet-circles/hyperlocalise --skill hyperlocalise
+```
+
 ## Work in User-Operations Mode
 
 - Prioritize actionable CLI guidance over implementation details.
