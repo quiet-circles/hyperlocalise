@@ -59,7 +59,7 @@ hyperlocalise eval
 
 - Config errors: check `i18n.jsonc` keys and locale/path mapping first.
 - Auth/provider errors: verify required environment variables and provider selection.
-- File parsing errors: identify the exact file and format (`json`, `strings`, `po`, `xliff`, `md`) and isolate a minimal repro.
+- File parsing errors: identify the exact file and format (`json`, `strings`, `po`, `xliff`, `xlf`, `md`, `mdx`, `csv`) and isolate a minimal repro.
 - Sync mismatches: run `sync pull` first, inspect status, then run `sync push` intentionally.
 - Quality concerns: run `eval` and recommend prompt/provider/config adjustments based on findings.
 
