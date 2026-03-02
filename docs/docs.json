@@ -8,96 +8,305 @@
     "dark": "#0d9488"
   },
   "navigation": {
-    "groups": [
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/quiet-circles/hyperlocalise"
+        },
+        {
+          "anchor": "Issues",
+          "href": "https://github.com/quiet-circles/hyperlocalise/issues"
+        }
+      ]
+    },
+    "languages": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "getting-started/install",
-          "getting-started/quickstart",
-          "getting-started/first-project"
+        "language": "en",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index",
+              "getting-started/install",
+              "getting-started/quickstart",
+              "getting-started/first-project"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/i18n-config",
+              "configuration/path-templates",
+              "configuration/provider-credentials"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "commands/overview",
+              "commands/init",
+              "commands/run",
+              "commands/eval",
+              "commands/status",
+              "commands/sync-pull",
+              "commands/sync-push",
+              "commands/version-and-completion"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "pages": [
+              "workflows/local-generation",
+              "workflows/eval-set-curation",
+              "workflows/tms-curation-loop",
+              "workflows/ci-automation"
+            ]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              "providers/overview",
+              "providers/openai",
+              "providers/azure-openai",
+              "providers/gemini",
+              "providers/anthropic",
+              "providers/bedrock",
+              "providers/lmstudio",
+              "providers/groq",
+              "providers/ollama"
+            ]
+          },
+          {
+            "group": "TMS Adapters",
+            "pages": [
+              "storage/overview",
+              "storage/crowdin",
+              "storage/lilt",
+              "storage/lokalise",
+              "storage/phrase",
+              "storage/poeditor",
+              "storage/smartling"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/common-errors",
+              "troubleshooting/conflicts",
+              "troubleshooting/performance"
+            ]
+          },
+          {
+            "group": "Reference & Concepts",
+            "pages": [
+              "reference/glossary",
+              "reference/config-schema",
+              "reference/output-formats",
+              "reference/lockfile-contract",
+              "reference/creator"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/docs-contributions",
+              "contributing/development",
+              "contributing/release-maintenance"
+            ]
+          }
         ]
       },
       {
-        "group": "Configuration",
-        "pages": [
-          "configuration/i18n-config",
-          "configuration/path-templates",
-          "configuration/provider-credentials"
+        "language": "cn",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "zh-CN/index",
+              "zh-CN/getting-started/install",
+              "zh-CN/getting-started/quickstart",
+              "zh-CN/getting-started/first-project"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "zh-CN/configuration/i18n-config",
+              "zh-CN/configuration/path-templates",
+              "zh-CN/configuration/provider-credentials"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "zh-CN/commands/overview",
+              "zh-CN/commands/init",
+              "zh-CN/commands/run",
+              "zh-CN/commands/eval",
+              "zh-CN/commands/status",
+              "zh-CN/commands/sync-pull",
+              "zh-CN/commands/sync-push",
+              "zh-CN/commands/version-and-completion"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "pages": [
+              "zh-CN/workflows/local-generation",
+              "zh-CN/workflows/eval-set-curation",
+              "zh-CN/workflows/tms-curation-loop",
+              "zh-CN/workflows/ci-automation"
+            ]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              "zh-CN/providers/overview",
+              "zh-CN/providers/openai",
+              "zh-CN/providers/azure-openai",
+              "zh-CN/providers/gemini",
+              "zh-CN/providers/anthropic",
+              "zh-CN/providers/bedrock",
+              "zh-CN/providers/lmstudio",
+              "zh-CN/providers/groq",
+              "zh-CN/providers/ollama"
+            ]
+          },
+          {
+            "group": "TMS Adapters",
+            "pages": [
+              "zh-CN/storage/overview",
+              "zh-CN/storage/crowdin",
+              "zh-CN/storage/lilt",
+              "zh-CN/storage/lokalise",
+              "zh-CN/storage/phrase",
+              "zh-CN/storage/poeditor",
+              "zh-CN/storage/smartling"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "zh-CN/troubleshooting/common-errors",
+              "zh-CN/troubleshooting/conflicts",
+              "zh-CN/troubleshooting/performance"
+            ]
+          },
+          {
+            "group": "Reference & Concepts",
+            "pages": [
+              "zh-CN/reference/glossary",
+              "zh-CN/reference/config-schema",
+              "zh-CN/reference/output-formats",
+              "zh-CN/reference/lockfile-contract",
+              "zh-CN/reference/creator"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "zh-CN/contributing/docs-contributions",
+              "zh-CN/contributing/development",
+              "zh-CN/contributing/release-maintenance"
+            ]
+          }
         ]
       },
       {
-        "group": "Commands",
-        "pages": [
-          "commands/overview",
-          "commands/init",
-          "commands/run",
-          "commands/eval",
-          "commands/status",
-          "commands/sync-pull",
-          "commands/sync-push",
-          "commands/version-and-completion"
-        ]
-      },
-      {
-        "group": "Workflows",
-        "pages": [
-          "workflows/local-generation",
-          "workflows/eval-set-curation",
-          "workflows/tms-curation-loop",
-          "workflows/ci-automation"
-        ]
-      },
-      {
-        "group": "Providers",
-        "pages": [
-          "providers/overview",
-          "providers/openai",
-          "providers/azure-openai",
-          "providers/gemini",
-          "providers/anthropic",
-          "providers/bedrock",
-          "providers/lmstudio",
-          "providers/groq",
-          "providers/ollama"
-        ]
-      },
-      {
-        "group": "TMS Adapters",
-        "pages": [
-          "storage/overview",
-          "storage/crowdin",
-          "storage/lilt",
-          "storage/lokalise",
-          "storage/phrase",
-          "storage/poeditor",
-          "storage/smartling"
-        ]
-      },
-      {
-        "group": "Troubleshooting",
-        "pages": [
-          "troubleshooting/common-errors",
-          "troubleshooting/conflicts",
-          "troubleshooting/performance"
-        ]
-      },
-      {
-        "group": "Reference & Concepts",
-        "pages": [
-          "reference/glossary",
-          "reference/config-schema",
-          "reference/output-formats",
-          "reference/lockfile-contract",
-          "reference/creator"
-        ]
-      },
-      {
-        "group": "Contributing",
-        "pages": [
-          "contributing/docs-contributions",
-          "contributing/development",
-          "contributing/release-maintenance"
+        "language": "vi",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "vi-VN/index",
+              "vi-VN/getting-started/install",
+              "vi-VN/getting-started/quickstart",
+              "vi-VN/getting-started/first-project"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "vi-VN/configuration/i18n-config",
+              "vi-VN/configuration/path-templates",
+              "vi-VN/configuration/provider-credentials"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "vi-VN/commands/overview",
+              "vi-VN/commands/init",
+              "vi-VN/commands/run",
+              "vi-VN/commands/eval",
+              "vi-VN/commands/status",
+              "vi-VN/commands/sync-pull",
+              "vi-VN/commands/sync-push",
+              "vi-VN/commands/version-and-completion"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "pages": [
+              "vi-VN/workflows/local-generation",
+              "vi-VN/workflows/eval-set-curation",
+              "vi-VN/workflows/tms-curation-loop",
+              "vi-VN/workflows/ci-automation"
+            ]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              "vi-VN/providers/overview",
+              "vi-VN/providers/openai",
+              "vi-VN/providers/azure-openai",
+              "vi-VN/providers/gemini",
+              "vi-VN/providers/anthropic",
+              "vi-VN/providers/bedrock",
+              "vi-VN/providers/lmstudio",
+              "vi-VN/providers/groq",
+              "vi-VN/providers/ollama"
+            ]
+          },
+          {
+            "group": "TMS Adapters",
+            "pages": [
+              "vi-VN/storage/overview",
+              "vi-VN/storage/crowdin",
+              "vi-VN/storage/lilt",
+              "vi-VN/storage/lokalise",
+              "vi-VN/storage/phrase",
+              "vi-VN/storage/poeditor",
+              "vi-VN/storage/smartling"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "vi-VN/troubleshooting/common-errors",
+              "vi-VN/troubleshooting/conflicts",
+              "vi-VN/troubleshooting/performance"
+            ]
+          },
+          {
+            "group": "Reference & Concepts",
+            "pages": [
+              "vi-VN/reference/glossary",
+              "vi-VN/reference/config-schema",
+              "vi-VN/reference/output-formats",
+              "vi-VN/reference/lockfile-contract",
+              "vi-VN/reference/creator"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "vi-VN/contributing/docs-contributions",
+              "vi-VN/contributing/development",
+              "vi-VN/contributing/release-maintenance"
+            ]
+          }
         ]
       }
     ]

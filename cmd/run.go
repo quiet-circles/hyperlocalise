@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/runsvc"
+	"github.com/quiet-circles/hyperlocalise/internal/progressui"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,10 @@ type runOptions struct {
 	pruneLimit int
 	pruneForce bool
 	workers    int
+	progress   string
 }
+
+var runFunc = runsvc.Run
 
 func newRunCmd() *cobra.Command {
 	o := runOptions{}
@@ -34,16 +38,40 @@ func newRunCmd() *cobra.Command {
 				return fmt.Errorf("invalid --workers value %d: must be >= 1", workers)
 			}
 
-			report, err := runsvc.Run(backgroundContext(), runsvc.Input{
+			progressMode, err := progressui.ParseMode(o.progress)
+			if err != nil {
+				return err
+			}
+
+			output := cmd.OutOrStdout()
+			var renderer *progressui.Renderer
+			if progressui.IsEnabled(progressMode, output, nil) {
+				renderer = progressui.New(output, progressMode, progressui.Options{Label: "Translating"})
+			}
+			if renderer != nil {
+				defer renderer.Close()
+			}
+
+			input := runsvc.Input{
 				ConfigPath: o.configPath,
 				DryRun:     o.dryRun,
 				Prune:      o.prune,
 				PruneLimit: o.pruneLimit,
 				PruneForce: o.pruneForce,
 				Workers:    workers,
-			})
+			}
+			if renderer != nil {
+				input.OnEvent = func(event runsvc.Event) {
+					applyRunProgressEvent(renderer, event)
+				}
+			}
 
-			if writeErr := writeRunReport(cmd.OutOrStdout(), report, o.dryRun); writeErr != nil {
+			report, err := runFunc(backgroundContext(), input)
+			if renderer != nil {
+				renderer.Complete()
+			}
+
+			if writeErr := writeRunReport(output, report, o.dryRun); writeErr != nil {
 				return fmt.Errorf("write run report: %w", writeErr)
 			}
 
@@ -64,6 +92,7 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().IntVar(&o.pruneLimit, "prune-max-deletions", 100, "maximum stale keys that can be deleted in one run before requiring an explicit override")
 	cmd.Flags().BoolVar(&o.pruneForce, "prune-force", o.pruneForce, "bypass prune deletion safety limit")
 	cmd.Flags().IntVar(&o.workers, "workers", o.workers, "number of parallel translation workers (default: number of CPU cores)")
+	cmd.Flags().StringVar(&o.progress, "progress", string(progressui.ModeAuto), "progress rendering mode: auto|on|off")
 
 	return cmd
 }

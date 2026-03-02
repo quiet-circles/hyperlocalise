@@ -259,6 +259,129 @@ func TestRunDryRunSkipsWrites(t *testing.T) {
 	}
 }
 
+func TestRunEmitsPlannedAndCompletedEventsInDryRun(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	events := make([]Event, 0, 4)
+	report, err := svc.Run(context.Background(), Input{
+		DryRun: true,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if err != nil {
+		t.Fatalf("run dry-run with events: %v", err)
+	}
+	if report.ExecutableTotal != 2 {
+		t.Fatalf("unexpected executable total: %+v", report)
+	}
+	if len(events) < 3 {
+		t.Fatalf("expected at least 3 events, got %d", len(events))
+	}
+	if events[0].Kind != EventPhase || events[0].Phase != PhasePlanning {
+		t.Fatalf("unexpected first event: %+v", events[0])
+	}
+
+	foundPlanned := false
+	foundCompleted := false
+	for _, event := range events {
+		if event.Kind == EventPlanned {
+			foundPlanned = true
+			if event.PlannedTotal != 2 || event.ExecutableTotal != 2 || event.SkippedByLock != 0 {
+				t.Fatalf("unexpected planned event payload: %+v", event)
+			}
+		}
+		if event.Kind == EventCompleted {
+			foundCompleted = true
+		}
+	}
+	if !foundPlanned {
+		t.Fatalf("expected planned event, got %+v", events)
+	}
+	if !foundCompleted {
+		t.Fatalf("expected completed event, got %+v", events)
+	}
+}
+
+func TestRunEmitsTaskDoneEventsForSuccessAndFailure(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"ok":"hello","bad":"boom"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source == "boom" {
+			return "", errors.New("translation failed")
+		}
+		return strings.ToUpper(req.Source), nil
+	}
+
+	events := make([]Event, 0, 8)
+	report, err := svc.Run(context.Background(), Input{
+		Workers: 1,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if err != nil {
+		t.Fatalf("run with events: %v", err)
+	}
+	if report.Succeeded != 1 || report.Failed != 1 {
+		t.Fatalf("unexpected execution report: %+v", report)
+	}
+
+	success := 0
+	failure := 0
+	completedSeen := false
+	for _, event := range events {
+		if event.Kind == EventTaskDone {
+			if event.TaskSucceeded {
+				success++
+			} else {
+				failure++
+			}
+		}
+		if event.Kind == EventCompleted {
+			completedSeen = true
+			if event.Succeeded != 1 || event.Failed != 1 {
+				t.Fatalf("unexpected completed event: %+v", event)
+			}
+		}
+	}
+	if success != 1 || failure != 1 {
+		t.Fatalf("unexpected task done events success=%d failure=%d events=%+v", success, failure, events)
+	}
+	if !completedSeen {
+		t.Fatalf("expected completed event, got %+v", events)
+	}
+}
+
 func TestRunContinueOnErrorReturnsPartialFailureReport(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"

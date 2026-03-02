@@ -37,9 +37,44 @@ type Input struct {
 	PruneForce bool
 	LockPath   string
 	Workers    int
+	OnEvent    func(Event)
 }
 
 const defaultPruneLimit = 100
+
+type EventKind string
+
+const (
+	EventPhase     EventKind = "phase"
+	EventPlanned   EventKind = "planned"
+	EventTaskDone  EventKind = "task_done"
+	EventPersisted EventKind = "persisted"
+	EventCompleted EventKind = "completed"
+)
+
+const (
+	PhasePlanning         = "planning"
+	PhaseScanningPrune    = "scanning_prune"
+	PhaseExecuting        = "executing"
+	PhaseFinalizingOutput = "finalizing_output"
+)
+
+type Event struct {
+	Kind            EventKind `json:"kind"`
+	Phase           string    `json:"phase,omitempty"`
+	PlannedTotal    int       `json:"plannedTotal,omitempty"`
+	SkippedByLock   int       `json:"skippedByLock,omitempty"`
+	ExecutableTotal int       `json:"executableTotal,omitempty"`
+	Succeeded       int       `json:"succeeded,omitempty"`
+	Failed          int       `json:"failed,omitempty"`
+	PersistedToLock int       `json:"persistedToLock,omitempty"`
+	PruneCandidates int       `json:"pruneCandidates,omitempty"`
+	PruneApplied    int       `json:"pruneApplied,omitempty"`
+	TaskSucceeded   bool      `json:"taskSucceeded,omitempty"`
+	TargetPath      string    `json:"targetPath,omitempty"`
+	EntryKey        string    `json:"entryKey,omitempty"`
+	FailureReason   string    `json:"failureReason,omitempty"`
+}
 
 type Task struct {
 	SourceLocale string `json:"sourceLocale"`
@@ -112,6 +147,9 @@ func Run(ctx context.Context, in Input) (Report, error) {
 }
 
 func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
+	emitter := newEventEmitter(in.OnEvent)
+	emitter.emit(Event{Kind: EventPhase, Phase: PhasePlanning})
+
 	cfg, err := s.loadConfig(in.ConfigPath)
 	if err != nil {
 		return Report{}, fmt.Errorf("load config: %w", err)
@@ -132,9 +170,16 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	report, executable := applyLockFilter(planned, state.RunCompleted)
+	emitter.emit(Event{
+		Kind:            EventPlanned,
+		PlannedTotal:    report.PlannedTotal,
+		SkippedByLock:   report.SkippedByLock,
+		ExecutableTotal: report.ExecutableTotal,
+	})
 
 	pruneTargets := map[string]map[string]struct{}{}
 	if in.Prune {
+		emitter.emit(Event{Kind: EventPhase, Phase: PhaseScanningPrune})
 		pruneTargets = buildPlannedTargetKeySet(planned)
 		report.PruneCandidates, err = s.planPruneCandidates(pruneTargets)
 		if err != nil {
@@ -146,25 +191,72 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	if in.DryRun {
+		emitter.emit(Event{
+			Kind:            EventCompleted,
+			PlannedTotal:    report.PlannedTotal,
+			SkippedByLock:   report.SkippedByLock,
+			ExecutableTotal: report.ExecutableTotal,
+			PruneCandidates: len(report.PruneCandidates),
+		})
 		return report, nil
 	}
 	if len(executable) == 0 && len(report.PruneCandidates) == 0 {
+		emitter.emit(Event{
+			Kind:            EventCompleted,
+			PlannedTotal:    report.PlannedTotal,
+			SkippedByLock:   report.SkippedByLock,
+			ExecutableTotal: report.ExecutableTotal,
+			PruneCandidates: len(report.PruneCandidates),
+		})
 		return report, nil
 	}
 
-	staged, execReport, err := s.executePool(ctx, executable, in.LockPath, state, in.Workers)
+	emitter.emit(Event{Kind: EventPhase, Phase: PhaseExecuting})
+	staged, execReport, err := s.executePool(ctx, executable, in.LockPath, state, in.Workers, emitter)
 	report.Succeeded = execReport.Succeeded
 	report.Failed = execReport.Failed
 	report.PersistedToLock = execReport.PersistedToLock
 	report.Failures = append(report.Failures, execReport.Failures...)
 	if err != nil {
+		emitter.emit(Event{
+			Kind:            EventCompleted,
+			PlannedTotal:    report.PlannedTotal,
+			SkippedByLock:   report.SkippedByLock,
+			ExecutableTotal: report.ExecutableTotal,
+			Succeeded:       report.Succeeded,
+			Failed:          report.Failed,
+			PersistedToLock: report.PersistedToLock,
+			PruneCandidates: len(report.PruneCandidates),
+		})
 		return report, err
 	}
 
+	emitter.emit(Event{Kind: EventPhase, Phase: PhaseFinalizingOutput})
 	if err := s.flushOutputs(staged, pruneTargets); err != nil {
+		emitter.emit(Event{
+			Kind:            EventCompleted,
+			PlannedTotal:    report.PlannedTotal,
+			SkippedByLock:   report.SkippedByLock,
+			ExecutableTotal: report.ExecutableTotal,
+			Succeeded:       report.Succeeded,
+			Failed:          report.Failed,
+			PersistedToLock: report.PersistedToLock,
+			PruneCandidates: len(report.PruneCandidates),
+		})
 		return report, err
 	}
 	report.PruneApplied = len(report.PruneCandidates)
+	emitter.emit(Event{
+		Kind:            EventCompleted,
+		PlannedTotal:    report.PlannedTotal,
+		SkippedByLock:   report.SkippedByLock,
+		ExecutableTotal: report.ExecutableTotal,
+		Succeeded:       report.Succeeded,
+		Failed:          report.Failed,
+		PersistedToLock: report.PersistedToLock,
+		PruneCandidates: len(report.PruneCandidates),
+		PruneApplied:    report.PruneApplied,
+	})
 
 	return report, nil
 }
@@ -304,7 +396,30 @@ type stagedOutput struct {
 	sourcePath string
 }
 
-func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string, state *lockfile.File, workers int) (map[string]stagedOutput, executionReport, error) {
+type eventEmitter struct {
+	notify func(Event)
+	mu     sync.Mutex
+}
+
+func newEventEmitter(onEvent func(Event)) *eventEmitter {
+	if onEvent == nil {
+		return nil
+	}
+
+	return &eventEmitter{notify: onEvent}
+}
+
+func (e *eventEmitter) emit(ev Event) {
+	if e == nil {
+		return
+	}
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.notify(ev)
+}
+
+func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string, state *lockfile.File, workers int, emitter *eventEmitter) (map[string]stagedOutput, executionReport, error) {
 	report := executionReport{}
 	staged := map[string]stagedOutput{}
 
@@ -329,12 +444,12 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string
 	defer cancel()
 
 	lockWriterDone := make(chan struct{})
-	go s.runLockWriter(completions, lockWriterDone, state, lockPath, fatalLockErr, cancel, &report, &reportMu)
+	go s.runLockWriter(completions, lockWriterDone, state, lockPath, fatalLockErr, cancel, &report, &reportMu, emitter)
 
 	var wg sync.WaitGroup
 	for range workerCount {
 		wg.Add(1)
-		go s.runWorker(ctx, jobs, completions, staged, &stageMu, &report, &reportMu, &wg)
+		go s.runWorker(ctx, jobs, completions, staged, &stageMu, &report, &reportMu, len(tasks), emitter, &wg)
 	}
 
 	go s.feedJobs(ctx, jobs, tasks)
@@ -361,6 +476,7 @@ func (s *Service) runLockWriter(
 	cancel context.CancelFunc,
 	report *executionReport,
 	reportMu *sync.Mutex,
+	emitter *eventEmitter,
 ) {
 	defer close(lockWriterDone)
 	for completion := range completions {
@@ -375,7 +491,16 @@ func (s *Service) runLockWriter(
 		}
 		reportMu.Lock()
 		report.PersistedToLock++
+		persisted := report.PersistedToLock
+		succeeded := report.Succeeded
+		failed := report.Failed
 		reportMu.Unlock()
+		emitter.emit(Event{
+			Kind:            EventPersisted,
+			PersistedToLock: persisted,
+			Succeeded:       succeeded,
+			Failed:          failed,
+		})
 	}
 }
 
@@ -387,6 +512,8 @@ func (s *Service) runWorker(
 	stageMu *sync.Mutex,
 	report *executionReport,
 	reportMu *sync.Mutex,
+	total int,
+	emitter *eventEmitter,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -398,7 +525,7 @@ func (s *Service) runWorker(
 			if !ok {
 				return
 			}
-			s.processTask(ctx, task, staged, stageMu, completions, report, reportMu)
+			s.processTask(ctx, task, staged, stageMu, completions, report, reportMu, total, emitter)
 		}
 	}
 }
@@ -411,6 +538,8 @@ func (s *Service) processTask(
 	completions chan<- taskCompletion,
 	report *executionReport,
 	reportMu *sync.Mutex,
+	total int,
+	emitter *eventEmitter,
 ) {
 	translated, err := s.translate(ctx, translator.Request{
 		Source:         task.SourceText,
@@ -421,12 +550,12 @@ func (s *Service) processTask(
 		Prompt:         task.Prompt,
 	})
 	if err != nil {
-		recordTaskFailure(report, reportMu, task, err)
+		recordTaskFailure(report, reportMu, total, task, err, emitter)
 		return
 	}
 
 	if err := stageTaskOutput(staged, task.TargetPath, task.SourcePath, task.EntryKey, translated, stageMu); err != nil {
-		recordTaskFailure(report, reportMu, task, err)
+		recordTaskFailure(report, reportMu, total, task, err, emitter)
 		return
 	}
 
@@ -434,7 +563,18 @@ func (s *Service) processTask(
 	case completions <- taskCompletion{identity: taskIdentity(task.TargetPath, task.EntryKey), sourceHash: hashSourceText(task.SourceText)}:
 		reportMu.Lock()
 		report.Succeeded++
+		succeeded := report.Succeeded
+		failed := report.Failed
 		reportMu.Unlock()
+		emitter.emit(Event{
+			Kind:            EventTaskDone,
+			TaskSucceeded:   true,
+			TargetPath:      task.TargetPath,
+			EntryKey:        task.EntryKey,
+			Succeeded:       succeeded,
+			Failed:          failed,
+			ExecutableTotal: total,
+		})
 	case <-ctx.Done():
 		return
 	}
@@ -451,11 +591,24 @@ func (s *Service) feedJobs(ctx context.Context, jobs chan<- Task, tasks []Task) 
 	}
 }
 
-func recordTaskFailure(report *executionReport, reportMu *sync.Mutex, task Task, err error) {
+func recordTaskFailure(report *executionReport, reportMu *sync.Mutex, total int, task Task, err error, emitter *eventEmitter) {
 	reportMu.Lock()
-	defer reportMu.Unlock()
 	report.Failed++
 	report.Failures = append(report.Failures, Failure{TargetPath: task.TargetPath, EntryKey: task.EntryKey, Reason: err.Error()})
+	succeeded := report.Succeeded
+	failed := report.Failed
+	reportMu.Unlock()
+
+	emitter.emit(Event{
+		Kind:            EventTaskDone,
+		TaskSucceeded:   false,
+		TargetPath:      task.TargetPath,
+		EntryKey:        task.EntryKey,
+		FailureReason:   err.Error(),
+		Succeeded:       succeeded,
+		Failed:          failed,
+		ExecutableTotal: total,
+	})
 }
 
 func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, entryKey, value string, stageMu *sync.Mutex) error {

@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/runsvc"
 )
 
 func TestRootHelpIncludesRunCommand(t *testing.T) {
@@ -145,6 +148,89 @@ func TestRunRejectsInvalidWorkersValue(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid --workers value -1: must be >= 1") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRunRejectsInvalidProgressMode(t *testing.T) {
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"run", "--progress", "blob"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected invalid progress mode error")
+	}
+	if !strings.Contains(err.Error(), "invalid --progress value") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRunProgressOffSkipsProgressEvents(t *testing.T) {
+	originalRunFunc := runFunc
+	t.Cleanup(func() { runFunc = originalRunFunc })
+
+	receivedOnEvent := false
+	runFunc = func(_ context.Context, input runsvc.Input) (runsvc.Report, error) {
+		receivedOnEvent = input.OnEvent != nil
+		return runsvc.Report{}, nil
+	}
+
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"run", "--progress", "off"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run with progress off: %v", err)
+	}
+	if receivedOnEvent {
+		t.Fatalf("expected no progress callback when --progress=off")
+	}
+	if strings.Contains(out.String(), "progress ") {
+		t.Fatalf("expected no progress output, got %q", out.String())
+	}
+}
+
+func TestRunProgressAutoNonTTYKeepsPlainOutput(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "i18n.jsonc")
+	sourcePath := filepath.Join(dir, "content", "en", "strings.json")
+	targetPath := filepath.Join(dir, "dist", "fr", "strings.json")
+
+	if err := os.MkdirAll(filepath.Dir(sourcePath), 0o755); err != nil {
+		t.Fatalf("create source dir: %v", err)
+	}
+	if err := os.WriteFile(sourcePath, []byte(`{"hello":"Hello"}`), 0o600); err != nil {
+		t.Fatalf("write source file: %v", err)
+	}
+
+	content := `{
+	  "locales": {"source":"en","targets":["fr"]},
+	  "buckets": {"ui":{"files":[{"from":"` + filepath.ToSlash(sourcePath) + `","to":"` + filepath.ToSlash(targetPath) + `"}]}},
+	  "groups": {"default":{"targets":["fr"],"buckets":["ui"]}},
+	  "llm": {"profiles":{"default":{"provider":"openai","model":"gpt-4.1-mini","prompt":"Translate {{input}}"}}}
+	}`
+	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"run", "--config", configPath, "--dry-run", "--progress", "auto"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run command dry-run with progress auto: %v", err)
+	}
+	if !strings.Contains(out.String(), "dry_run=true") {
+		t.Fatalf("expected dry-run output, got %q", out.String())
+	}
+	if strings.Contains(out.String(), "progress ") {
+		t.Fatalf("expected plain dry-run output without progress lines, got %q", out.String())
 	}
 }
 
