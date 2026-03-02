@@ -1030,3 +1030,157 @@ func TestResolveTargetPathRequiresDoublestarInTargetWhenSourceHasIt(t *testing.T
 		t.Fatalf("expected doublestar mapping error, got %v", err)
 	}
 }
+
+func TestRunCompletedEventParityForEarlyExitAndFatalError(t *testing.T) {
+	t.Run("dry run early exit", func(t *testing.T) {
+		svc := newTestService()
+		sourcePath := "/tmp/source.json"
+		targetPath := "/tmp/out.json"
+		svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+			cfg := testConfig(sourcePath, targetPath)
+			return &cfg, nil
+		}
+		svc.readFile = func(path string) ([]byte, error) {
+			switch path {
+			case sourcePath:
+				return []byte(`{"a":"A"}`), nil
+			default:
+				return nil, filepath.ErrBadPattern
+			}
+		}
+
+		var completed Event
+		report, err := svc.Run(context.Background(), Input{DryRun: true, OnEvent: func(e Event) {
+			if e.Kind == EventCompleted {
+				completed = e
+			}
+		}})
+		if err != nil {
+			t.Fatalf("run dry run: %v", err)
+		}
+		if completed.PlannedTotal != report.PlannedTotal || completed.SkippedByLock != report.SkippedByLock || completed.ExecutableTotal != report.ExecutableTotal {
+			t.Fatalf("completed event mismatch: event=%+v report=%+v", completed, report)
+		}
+	})
+
+	t.Run("fatal error exit", func(t *testing.T) {
+		svc := newTestService()
+		sourcePath := "/tmp/source.json"
+		targetPath := "/tmp/out.json"
+		svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+			cfg := testConfig(sourcePath, targetPath)
+			return &cfg, nil
+		}
+		svc.readFile = func(path string) ([]byte, error) {
+			switch path {
+			case sourcePath:
+				return []byte(`{"a":"A"}`), nil
+			case targetPath:
+				return []byte(`{}`), nil
+			default:
+				return nil, filepath.ErrBadPattern
+			}
+		}
+		svc.saveLock = func(_ string, _ lockfile.File) error {
+			return errors.New("disk full")
+		}
+
+		var completed Event
+		report, err := svc.Run(context.Background(), Input{OnEvent: func(e Event) {
+			if e.Kind == EventCompleted {
+				completed = e
+			}
+		}})
+		if err == nil {
+			t.Fatalf("expected fatal error")
+		}
+		if completed.PlannedTotal != report.PlannedTotal || completed.Succeeded != report.Succeeded || completed.Failed != report.Failed || completed.PersistedToLock != report.PersistedToLock {
+			t.Fatalf("completed event mismatch: event=%+v report=%+v", completed, report)
+		}
+	})
+}
+
+func TestMarshalTargetFileDispatchParity(t *testing.T) {
+	svc := newTestService()
+	sourceTemplate := map[string][]byte{
+		"/tmp/source.md":          []byte("# Hello\n"),
+		"/tmp/source.mdx":         []byte("# Hello\n"),
+		"/tmp/source.strings":     []byte("\"hello\" = \"Hello\";\n"),
+		"/tmp/source.stringsdict": []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?><plist version=\"1.0\"><dict><key>hello</key><string>Hello</string></dict></plist>"),
+		"/tmp/source.csv":         []byte("key,source,target\nhello,Hello,Hello\n"),
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		if b, ok := sourceTemplate[path]; ok {
+			return b, nil
+		}
+		return nil, os.ErrNotExist
+	}
+
+	cases := []struct {
+		target string
+		source string
+	}{
+		{target: "/tmp/out.md", source: "/tmp/source.md"},
+		{target: "/tmp/out.mdx", source: "/tmp/source.mdx"},
+		{target: "/tmp/out.strings", source: "/tmp/source.strings"},
+		{target: "/tmp/out.stringsdict", source: "/tmp/source.stringsdict"},
+		{target: "/tmp/out.csv", source: "/tmp/source.csv"},
+		{target: "/tmp/out.json", source: ""},
+	}
+
+	for _, tc := range cases {
+		content, err := svc.marshalTargetFile(tc.target, tc.source, map[string]string{"hello": "Bonjour"})
+		if err != nil {
+			t.Fatalf("marshal %s: %v", tc.target, err)
+		}
+		if len(content) == 0 {
+			t.Fatalf("marshal %s returned empty content", tc.target)
+		}
+	}
+}
+
+func TestRunFlushesEachTargetOnceWithMixedTaskOutcomes(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"ok":"hello","bad":"boom"}`), nil
+		case targetPath:
+			return []byte(`{"existing":"v"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source == "boom" {
+			return "", errors.New("translation failed")
+		}
+		return strings.ToUpper(req.Source), nil
+	}
+
+	writes := 0
+	svc.writeFile = func(path string, _ []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		writes++
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if report.Succeeded != 1 || report.Failed != 1 {
+		t.Fatalf("unexpected report: %+v", report)
+	}
+	if writes != 1 {
+		t.Fatalf("expected exactly one flush per target, got %d", writes)
+	}
+}
