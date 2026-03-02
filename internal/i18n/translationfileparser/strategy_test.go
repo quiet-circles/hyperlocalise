@@ -96,6 +96,20 @@ func TestStrategyParsesAppleStrings(t *testing.T) {
 	}
 }
 
+func TestStrategyParsesCSV(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	got, err := s.Parse("fr.csv", []byte(`key,value
+hello,bonjour
+`))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if got["hello"] != "bonjour" {
+		t.Fatalf("unexpected hello translation: %q", got["hello"])
+	}
+}
+
 func TestStrategyUnsupportedExtension(t *testing.T) {
 	s := NewDefaultStrategy()
 

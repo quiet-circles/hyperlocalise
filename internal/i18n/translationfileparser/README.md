@@ -9,6 +9,7 @@
 - `.po` via `POFileParser` (GNU gettext)
 - `.md` / `.mdx` via `MarkdownParser`
 - `.strings` via `AppleStringsParser` (Apple/Xcode strings files)
+- `.csv` via `CSVParser` (key/value and per-locale column layouts)
 
 ## Strategy API
 

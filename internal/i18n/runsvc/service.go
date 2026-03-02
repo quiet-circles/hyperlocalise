@@ -594,6 +594,18 @@ func (s *Service) marshalTargetFile(path, sourcePath string, values map[string]s
 		return content, nil
 	}
 
+	if ext == ".csv" {
+		template, err := s.loadTemplateFallback(path, sourcePath)
+		if err != nil {
+			return nil, err
+		}
+		content, err := translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{})
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
+	}
+
 	if ext != ".json" {
 		return nil, fmt.Errorf("flush outputs: unsupported target file extension %q for %q", ext, path)
 	}

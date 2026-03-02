@@ -24,6 +24,31 @@ Each file mapping uses:
 
 Use `{{source}}` and `{{target}}` in templates.
 
+
+### CSV file mapping patterns
+
+Use bucket file mappings to model CSV workflows.
+
+Per-locale files:
+
+```json
+{
+  "from": "translations/en.csv",
+  "to": "translations/[locale].csv"
+}
+```
+
+Shared multi-locale file:
+
+```json
+{
+  "from": "translations/catalog.csv",
+  "to": "translations/catalog.csv"
+}
+```
+
+For shared multi-locale CSV files, keep one key column and one target locale column that `run` can update consistently.
+
 ## Groups
 
 `groups.<name>` defines what to process together.
