@@ -556,7 +556,7 @@ func TestPushBlocksUnbalancedICURegression(t *testing.T) {
 	if got := len(report.Risky); got == 0 {
 		t.Fatalf("expected risky placeholder edit entry")
 	}
-	if report.Risky[0].Code != riskCodePlaceholderEdit {
+	if report.Risky[0].Code != RiskCodePlaceholderEdit {
 		t.Fatalf("unexpected risk code: %q", report.Risky[0].Code)
 	}
 }
@@ -608,7 +608,7 @@ func TestPushFlagsLengthSpikeAsRisk(t *testing.T) {
 	}
 	found := false
 	for _, risk := range report.Risky {
-		if risk.Code == riskCodeLengthSpike {
+		if risk.Code == RiskCodeLengthSpike {
 			found = true
 			if risk.Ratio < defaultLengthSpikeRatio {
 				t.Fatalf("expected length spike ratio >= threshold, got %f", risk.Ratio)

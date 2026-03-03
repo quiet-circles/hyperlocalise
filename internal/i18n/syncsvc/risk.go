@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	riskCodeLengthSpike     = "length_spike"
-	riskCodePlaceholderEdit = "placeholder_edit"
+	RiskCodeLengthSpike     = "length_spike"
+	RiskCodePlaceholderEdit = "placeholder_edit"
 
 	defaultLengthSpikeRatio = 1.8
 	minBaselineLength       = 8
@@ -31,7 +31,7 @@ func detectRiskyChanges(id storage.EntryID, baseline, candidate string, invarian
 	if hasPlaceholderEdit(invariantDiags) {
 		risky = append(risky, RiskChange{
 			ID:      id,
-			Code:    riskCodePlaceholderEdit,
+			Code:    RiskCodePlaceholderEdit,
 			Message: "placeholder or ICU structure edited",
 		})
 	}
@@ -41,7 +41,7 @@ func detectRiskyChanges(id storage.EntryID, baseline, candidate string, invarian
 	if spike, ratio := isLengthSpike(candidateLen, baselineLen, defaultLengthSpikeRatio); spike {
 		risky = append(risky, RiskChange{
 			ID:              id,
-			Code:            riskCodeLengthSpike,
+			Code:            RiskCodeLengthSpike,
 			Message:         "candidate value length increased sharply",
 			BaselineLength:  baselineLen,
 			CandidateLength: candidateLen,

@@ -149,7 +149,7 @@ func writeSyncMarkdown(w io.Writer, report syncsvc.Report) error {
 		b.WriteString("| --- | --- | --- | --- |\n")
 		for _, risk := range report.Risky {
 			detail := risk.Message
-			if risk.Code == "length_spike" {
+			if risk.Code == syncsvc.RiskCodeLengthSpike {
 				detail = fmt.Sprintf("%s (%d -> %d, x%.2f)", risk.Message, risk.BaselineLength, risk.CandidateLength, risk.Ratio)
 			}
 			fmt.Fprintf(&b, "| `%s` | `%s` | `%s` | %s |\n", risk.ID.Locale, formatKeyWithContext(risk.ID.Key, risk.ID.Context), risk.Code, detail)
