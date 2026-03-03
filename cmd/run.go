@@ -17,17 +17,20 @@ import (
 )
 
 type runOptions struct {
-	configPath string
-	dryRun     bool
-	force      bool
-	prune      bool
-	pruneLimit int
-	pruneForce bool
-	workers    int
-	progress   string
-	bucket     string
-	group      string
-	outputPath string
+	configPath                string
+	dryRun                    bool
+	force                     bool
+	prune                     bool
+	pruneLimit                int
+	pruneForce                bool
+	workers                   int
+	progress                  string
+	bucket                    string
+	group                     string
+	outputPath                string
+	experimentalContextMemory bool
+	contextMemoryScope        string
+	contextMemoryMaxChars     int
 }
 
 var runFunc = runsvc.Run
@@ -46,6 +49,15 @@ func newRunCmd() *cobra.Command {
 			}
 			if workers < 1 {
 				return fmt.Errorf("invalid --workers value %d: must be >= 1", workers)
+			}
+			contextMemoryScope := strings.ToLower(strings.TrimSpace(o.contextMemoryScope))
+			if contextMemoryScope == "" {
+				contextMemoryScope = runsvc.ContextMemoryScopeFile
+			}
+			switch contextMemoryScope {
+			case runsvc.ContextMemoryScopeFile, runsvc.ContextMemoryScopeBucket, runsvc.ContextMemoryScopeGroup:
+			default:
+				return fmt.Errorf("invalid --context-memory-scope value %q: must be one of %s|%s|%s", o.contextMemoryScope, runsvc.ContextMemoryScopeFile, runsvc.ContextMemoryScopeBucket, runsvc.ContextMemoryScopeGroup)
 			}
 
 			progressMode, err := progressui.ParseMode(o.progress)
@@ -69,15 +81,18 @@ func newRunCmd() *cobra.Command {
 			}
 
 			input := runsvc.Input{
-				ConfigPath: o.configPath,
-				DryRun:     o.dryRun,
-				Force:      o.force,
-				Prune:      o.prune,
-				PruneLimit: o.pruneLimit,
-				PruneForce: o.pruneForce,
-				Workers:    workers,
-				Bucket:     o.bucket,
-				Group:      o.group,
+				ConfigPath:                o.configPath,
+				DryRun:                    o.dryRun,
+				Force:                     o.force,
+				Prune:                     o.prune,
+				PruneLimit:                o.pruneLimit,
+				PruneForce:                o.pruneForce,
+				Workers:                   workers,
+				Bucket:                    o.bucket,
+				Group:                     o.group,
+				ExperimentalContextMemory: o.experimentalContextMemory,
+				ContextMemoryScope:        contextMemoryScope,
+				ContextMemoryMaxChars:     o.contextMemoryMaxChars,
 			}
 			if renderer != nil {
 				input.OnEvent = func(event runsvc.Event) {
@@ -120,6 +135,9 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().StringVar(&o.bucket, "bucket", "", "only run tasks for the given bucket")
 	cmd.Flags().StringVar(&o.group, "group", "", "only run tasks for the given group")
 	cmd.Flags().StringVar(&o.outputPath, "output", "", "report output JSON path")
+	cmd.Flags().BoolVar(&o.experimentalContextMemory, "experimental-context-memory", o.experimentalContextMemory, "enable experimental two-stage context memory generation before translation")
+	cmd.Flags().StringVar(&o.contextMemoryScope, "context-memory-scope", runsvc.ContextMemoryScopeFile, "scope for experimental context memory: file|bucket|group")
+	cmd.Flags().IntVar(&o.contextMemoryMaxChars, "context-memory-max-chars", 1200, "maximum context memory characters injected into each translation request")
 
 	return cmd
 }
@@ -208,6 +226,18 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 	if _, err := fmt.Fprintf(w, "prompt_tokens=%d completion_tokens=%d total_tokens=%d\n", report.PromptTokens, report.CompletionTokens, report.TotalTokens); err != nil {
 		return err
 	}
+	if report.ContextMemoryEnabled {
+		if _, err := fmt.Fprintf(
+			w,
+			"context_memory_enabled=%t context_memory_scope=%s context_memory_generated=%d context_memory_fallback_groups=%d\n",
+			report.ContextMemoryEnabled,
+			report.ContextMemoryScope,
+			report.ContextMemoryGenerated,
+			report.ContextMemoryFallbackGroups,
+		); err != nil {
+			return err
+		}
+	}
 	if len(report.LocaleUsage) > 0 {
 		locales := make([]string, 0, len(report.LocaleUsage))
 		for locale := range report.LocaleUsage {
@@ -224,6 +254,11 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 
 	for _, failure := range report.Failures {
 		if _, err := fmt.Fprintf(w, "failure target=%s key=%s reason=%s\n", failure.TargetPath, failure.EntryKey, failure.Reason); err != nil {
+			return err
+		}
+	}
+	for _, warning := range report.Warnings {
+		if _, err := fmt.Fprintf(w, "warning=%s\n", warning); err != nil {
 			return err
 		}
 	}

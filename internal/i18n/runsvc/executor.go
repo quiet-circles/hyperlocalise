@@ -14,9 +14,12 @@ type executionReport struct {
 	Failed          int
 	PersistedToLock int
 	TokenUsage
-	LocaleUsage map[string]TokenUsage
-	Batches     []BatchUsage
-	Failures    []Failure
+	LocaleUsage                 map[string]TokenUsage
+	Batches                     []BatchUsage
+	Failures                    []Failure
+	ContextMemoryGenerated      int
+	ContextMemoryFallbackGroups int
+	Warnings                    []string
 }
 
 type taskCompletion struct {
@@ -45,14 +48,23 @@ type executorState struct {
 	sourceByTarget  map[string]string
 	localeByTarget  map[string]string
 	pruneTargets    map[string]map[string]struct{}
+	contextPlan     contextMemoryPlan
+	contextSlots    map[string]*contextMemorySlot
 	report          executionReport
 
 	stageMu   sync.Mutex
 	pendingMu sync.Mutex
 	reportMu  sync.Mutex
+	contextMu sync.Mutex
 }
 
-func newExecutorState(tasks []Task, initialStaged map[string]stagedOutput, pruneTargets map[string]map[string]struct{}) (*executorState, error) {
+type contextMemorySlot struct {
+	cond       *sync.Cond
+	generating bool
+	memory     string
+}
+
+func newExecutorState(tasks []Task, initialStaged map[string]stagedOutput, pruneTargets map[string]map[string]struct{}, contextPlan contextMemoryPlan) (*executorState, error) {
 	staged := map[string]stagedOutput{}
 	for targetPath, output := range initialStaged {
 		entries := map[string]string{}
@@ -72,6 +84,8 @@ func newExecutorState(tasks []Task, initialStaged map[string]stagedOutput, prune
 		sourceByTarget:  map[string]string{},
 		localeByTarget:  map[string]string{},
 		pruneTargets:    pruneTargets,
+		contextPlan:     contextPlan,
+		contextSlots:    map[string]*contextMemorySlot{},
 		report:          executionReport{LocaleUsage: map[string]TokenUsage{}},
 	}
 	for _, task := range tasks {
@@ -91,8 +105,13 @@ func newExecutorState(tasks []Task, initialStaged map[string]stagedOutput, prune
 	return state, nil
 }
 
-func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged map[string]stagedOutput, lockPath string, lockState *lockfile.File, workers int, pruneTargets map[string]map[string]struct{}, emitter *eventEmitter) (map[string]stagedOutput, map[string]struct{}, executionReport, error) {
-	state, err := newExecutorState(tasks, initialStaged, pruneTargets)
+func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged map[string]stagedOutput, lockPath string, lockState *lockfile.File, workers int, pruneTargets map[string]map[string]struct{}, contextPlan contextMemoryPlan, emitter *eventEmitter) (map[string]stagedOutput, map[string]struct{}, executionReport, error) {
+	scheduledTasks := tasks
+	if contextPlan.Enabled {
+		scheduledTasks = interleaveTasksByContextKey(tasks)
+	}
+
+	state, err := newExecutorState(scheduledTasks, initialStaged, pruneTargets, contextPlan)
 	if err != nil {
 		return nil, nil, executionReport{}, err
 	}
@@ -122,7 +141,7 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged m
 		go s.runWorker(ctx, jobs, completions, targetFailures, state, emitter, &wg, cancel)
 	}
 
-	go s.feedJobs(ctx, jobs, tasks)
+	go s.feedJobs(ctx, jobs, scheduledTasks)
 
 	wg.Wait()
 	close(completions)
@@ -299,6 +318,9 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	})
 
 	usage := translator.Usage{}
+	if state.contextPlan.Enabled {
+		task.ContextMemory = s.resolveTaskContextMemory(ctx, task, state, emitter)
+	}
 	translated, err := s.translateWithRetry(translator.WithUsageCollector(ctx, &usage), task)
 	if err != nil {
 		recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)

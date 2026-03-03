@@ -2726,3 +2726,313 @@ func TestRunFlushesEachTargetOnceWithMixedTaskOutcomes(t *testing.T) {
 		t.Fatalf("expected exactly one flush per target, got %d", writes)
 	}
 }
+
+func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"welcome":"Welcome","bye":"Goodbye"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	seenTranslationContexts := []string{}
+	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			translator.SetUsage(ctx, translator.Usage{PromptTokens: 3, CompletionTokens: 2, TotalTokens: 5})
+			return "Terminology: keep onboarding terms consistent.", nil
+		}
+		seenTranslationContexts = append(seenTranslationContexts, req.Context)
+		translator.SetUsage(ctx, translator.Usage{PromptTokens: 10, CompletionTokens: 1, TotalTokens: 11})
+		return "FR(" + req.Source + ")", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		ContextMemoryMaxChars:     1200,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	if !report.ContextMemoryEnabled {
+		t.Fatalf("expected context memory report to be enabled")
+	}
+	if report.ContextMemoryGenerated != 1 || report.ContextMemoryFallbackGroups != 0 {
+		t.Fatalf("unexpected context memory counts: generated=%d fallback=%d", report.ContextMemoryGenerated, report.ContextMemoryFallbackGroups)
+	}
+	if report.PromptTokens != 23 || report.CompletionTokens != 4 || report.TotalTokens != 27 {
+		t.Fatalf("unexpected token totals with context memory: %+v", report.TokenUsage)
+	}
+	if len(seenTranslationContexts) != 2 {
+		t.Fatalf("expected 2 translation requests, got %d", len(seenTranslationContexts))
+	}
+	for _, got := range seenTranslationContexts {
+		if !strings.Contains(got, "Shared memory:") {
+			t.Fatalf("expected shared memory in translation context, got %q", got)
+		}
+	}
+}
+
+func TestRunExperimentalContextMemorySummaryFailureFallsBack(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"welcome":"Welcome"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			return "", errors.New("summary unavailable")
+		}
+		if strings.Contains(req.Context, "Shared memory:") {
+			t.Fatalf("did not expect shared memory when summary generation fails, got %q", req.Context)
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		ContextMemoryMaxChars:     1200,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	if report.ContextMemoryGenerated != 0 {
+		t.Fatalf("expected no generated context memory, got %d", report.ContextMemoryGenerated)
+	}
+	if report.ContextMemoryFallbackGroups != 1 {
+		t.Fatalf("expected one context memory fallback group, got %d", report.ContextMemoryFallbackGroups)
+	}
+	if len(report.Warnings) == 0 {
+		t.Fatalf("expected warning for context memory generation failure")
+	}
+	if report.Succeeded != 1 || report.Failed != 0 {
+		t.Fatalf("expected translation to continue despite context summary failure, got %+v", report)
+	}
+}
+
+func TestRunExperimentalContextMemoryRejectsInvalidScope(t *testing.T) {
+	svc := newTestService()
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        "invalid",
+		DryRun:                    true,
+	})
+	if err == nil || !strings.Contains(err.Error(), "invalid context memory scope") {
+		t.Fatalf("expected invalid context memory scope error, got %v", err)
+	}
+}
+
+func TestRunExperimentalContextMemoryEmitsPhaseEvent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			return "Terminology: keep greeting terms consistent.", nil
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	events := make([]Event, 0, 8)
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	foundContextPhase := false
+	for _, event := range events {
+		if event.Kind == EventPhase && event.Phase == PhaseContextMemory {
+			foundContextPhase = true
+			break
+		}
+	}
+	if !foundContextPhase {
+		t.Fatalf("expected %q phase event, got %+v", PhaseContextMemory, events)
+	}
+}
+
+func TestRunExperimentalContextMemoryEmitsProgressEvents(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello","bye":"Bye"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			return "Terminology: keep greeting terms consistent.", nil
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	events := make([]Event, 0, 16)
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	progressEvents := 0
+	seenTotal := false
+	seenCompletion := false
+	seenStart := false
+	seenDone := false
+	seenFileTarget := false
+	for _, event := range events {
+		if event.Kind != EventContextMemory {
+			continue
+		}
+		progressEvents++
+		if event.ContextMemoryTotal > 0 {
+			seenTotal = true
+		}
+		if event.ContextMemoryProcessed == event.ContextMemoryTotal && event.ContextMemoryTotal > 0 {
+			seenCompletion = true
+		}
+		if event.ContextMemoryState == ContextMemoryStateStart {
+			seenStart = true
+			if strings.HasSuffix(event.TargetPath, "source.json") {
+				seenFileTarget = true
+			}
+		}
+		if event.ContextMemoryState == ContextMemoryStateDone {
+			seenDone = true
+		}
+	}
+	if progressEvents == 0 {
+		t.Fatalf("expected context memory progress events, got %+v", events)
+	}
+	if !seenTotal {
+		t.Fatalf("expected context memory progress to include total groups, got %+v", events)
+	}
+	if !seenCompletion {
+		t.Fatalf("expected context memory progress completion event, got %+v", events)
+	}
+	if !seenStart || !seenDone {
+		t.Fatalf("expected context memory start/done events for list UI, got %+v", events)
+	}
+	if !seenFileTarget {
+		t.Fatalf("expected context memory file target in events, got %+v", events)
+	}
+}
+
+func TestRunExperimentalContextMemoryBuildsOneContextPerFile(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello","bye":"Bye"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	contextBuildCalls := 0
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			contextBuildCalls++
+			return "Terminology: keep greeting terms consistent.", nil
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if contextBuildCalls != 1 {
+		t.Fatalf("expected one context-memory build per file, got %d", contextBuildCalls)
+	}
+}
+
+func TestInterleaveTasksByContextKeyAlternatesScopes(t *testing.T) {
+	in := []Task{
+		{EntryKey: "a1", ContextKey: "file-a"},
+		{EntryKey: "a2", ContextKey: "file-a"},
+		{EntryKey: "a3", ContextKey: "file-a"},
+		{EntryKey: "b1", ContextKey: "file-b"},
+		{EntryKey: "b2", ContextKey: "file-b"},
+	}
+	got := interleaveTasksByContextKey(in)
+	keys := make([]string, 0, len(got))
+	for _, task := range got {
+		keys = append(keys, task.EntryKey)
+	}
+	want := []string{"a1", "a2", "b1", "b2", "a3"}
+	if strings.Join(keys, ",") != strings.Join(want, ",") {
+		t.Fatalf("interleaved order = %v, want %v", keys, want)
+	}
+}

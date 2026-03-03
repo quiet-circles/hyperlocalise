@@ -6,7 +6,7 @@ description: "Plan and execute local translation generation from configured sour
 ## Usage
 
 ```bash
-hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--workers <count>] [--output <report.json>]
+hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--workers <count>] [--output <report.json>] [--experimental-context-memory] [--context-memory-scope <file|bucket|group>] [--context-memory-max-chars <count>]
 ```
 
 ## Behavior
@@ -68,6 +68,9 @@ When writing CSV targets, `run` preserves the existing header and non-target col
 - `--workers`: number of parallel translation workers (defaults to CPU cores)
 - `--progress`: progress rendering mode (`auto|on|off`, default: `auto`)
 - `--output`: write machine-readable JSON run report to the given path
+- `--experimental-context-memory`: enable two-stage context memory generation before translating each scope
+- `--context-memory-scope`: context sharing scope (`file|bucket|group`, default `file`)
+- `--context-memory-max-chars`: maximum context memory length injected into each translation request (default `1200`)
 
 ### Progress debug logging (optional)
 
@@ -77,6 +80,34 @@ To troubleshoot progress rendering, you can enable debug logs without changing C
 - `HYPERLOCALISE_PROGRESS_DEBUG_FILE=<path>` overrides log file location.
 
 Default log path when enabled: `.hyperlocalise/logs/run.log`.
+
+## Experimental context memory flow
+
+When `--experimental-context-memory` is enabled, `run` builds shared memory once per scope (default: per source file), then reuses it for all entries in that scope.
+
+If memory generation fails or times out, `run` logs a warning and continues translation without shared memory for that scope.
+
+```mermaid
+flowchart TD
+    A["Plan tasks"] --> B{"Context memory enabled?"}
+    B -- "No" --> T["Translate entry immediately"]
+    B -- "Yes" --> C["Resolve scope key (file/bucket/group)"]
+    C --> D{"Memory already cached for scope?"}
+    D -- "Yes" --> E["Reuse cached memory"]
+    D -- "No" --> F["Build context memory via configured LLM provider"]
+    F --> G{"Success?"}
+    G -- "Yes" --> H["Cache memory for scope"]
+    G -- "No (error/timeout)" --> I["Record warning and fallback"]
+    H --> E
+    E --> T
+    I --> T
+```
+
+### Why it can appear to wait
+
+- First entry in a new scope waits for memory generation to finish.
+- Later entries in the same scope reuse cached memory and proceed without rebuilding.
+- Progress UI now shows context-memory steps in the file list so you can see active scope-level work.
 
 
 ## Scope runs to one group

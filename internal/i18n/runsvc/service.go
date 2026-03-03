@@ -25,70 +25,96 @@ const (
 )
 
 type Input struct {
-	ConfigPath string
-	Bucket     string
-	Group      string
-	DryRun     bool
-	Force      bool
-	Prune      bool
-	PruneLimit int
-	PruneForce bool
-	LockPath   string
-	Workers    int
-	OnEvent    func(Event)
+	ConfigPath                string
+	Bucket                    string
+	Group                     string
+	DryRun                    bool
+	Force                     bool
+	Prune                     bool
+	PruneLimit                int
+	PruneForce                bool
+	LockPath                  string
+	Workers                   int
+	ExperimentalContextMemory bool
+	ContextMemoryScope        string
+	ContextMemoryMaxChars     int
+	OnEvent                   func(Event)
 }
 
-const defaultPruneLimit = 100
+const (
+	defaultPruneLimit         = 100
+	defaultContextMemoryChars = 1200
+	ContextMemoryScopeFile    = "file"
+	ContextMemoryScopeBucket  = "bucket"
+	ContextMemoryScopeGroup   = "group"
+)
 
 type EventKind string
 
 const (
-	EventPhase     EventKind = "phase"
-	EventPlanned   EventKind = "planned"
-	EventTaskStart EventKind = "task_start"
-	EventTaskDone  EventKind = "task_done"
-	EventPersisted EventKind = "persisted"
-	EventCompleted EventKind = "completed"
+	EventPhase         EventKind = "phase"
+	EventPlanned       EventKind = "planned"
+	EventContextMemory EventKind = "context_memory"
+	EventTaskStart     EventKind = "task_start"
+	EventTaskDone      EventKind = "task_done"
+	EventPersisted     EventKind = "persisted"
+	EventCompleted     EventKind = "completed"
+)
+
+const (
+	ContextMemoryStateProgress = "progress"
+	ContextMemoryStateStart    = "start"
+	ContextMemoryStateDone     = "done"
 )
 
 const (
 	PhasePlanning         = "planning"
 	PhaseScanningPrune    = "scanning_prune"
+	PhaseContextMemory    = "building_context_memory"
 	PhaseExecuting        = "executing"
 	PhaseFinalizingOutput = "finalizing_output"
 )
 
 type Event struct {
-	Kind             EventKind `json:"kind"`
-	Phase            string    `json:"phase,omitempty"`
-	PlannedTotal     int       `json:"plannedTotal,omitempty"`
-	SkippedByLock    int       `json:"skippedByLock,omitempty"`
-	ExecutableTotal  int       `json:"executableTotal,omitempty"`
-	Succeeded        int       `json:"succeeded,omitempty"`
-	Failed           int       `json:"failed,omitempty"`
-	PersistedToLock  int       `json:"persistedToLock,omitempty"`
-	PruneCandidates  int       `json:"pruneCandidates,omitempty"`
-	PruneApplied     int       `json:"pruneApplied,omitempty"`
-	PromptTokens     int       `json:"promptTokens,omitempty"`
-	CompletionTokens int       `json:"completionTokens,omitempty"`
-	TotalTokens      int       `json:"totalTokens,omitempty"`
-	TaskSucceeded    bool      `json:"taskSucceeded,omitempty"`
-	TargetPath       string    `json:"targetPath,omitempty"`
-	EntryKey         string    `json:"entryKey,omitempty"`
-	FailureReason    string    `json:"failureReason,omitempty"`
+	Kind                   EventKind `json:"kind"`
+	Phase                  string    `json:"phase,omitempty"`
+	PlannedTotal           int       `json:"plannedTotal,omitempty"`
+	SkippedByLock          int       `json:"skippedByLock,omitempty"`
+	ExecutableTotal        int       `json:"executableTotal,omitempty"`
+	Succeeded              int       `json:"succeeded,omitempty"`
+	Failed                 int       `json:"failed,omitempty"`
+	PersistedToLock        int       `json:"persistedToLock,omitempty"`
+	PruneCandidates        int       `json:"pruneCandidates,omitempty"`
+	PruneApplied           int       `json:"pruneApplied,omitempty"`
+	PromptTokens           int       `json:"promptTokens,omitempty"`
+	CompletionTokens       int       `json:"completionTokens,omitempty"`
+	TotalTokens            int       `json:"totalTokens,omitempty"`
+	TaskSucceeded          bool      `json:"taskSucceeded,omitempty"`
+	TargetPath             string    `json:"targetPath,omitempty"`
+	EntryKey               string    `json:"entryKey,omitempty"`
+	FailureReason          string    `json:"failureReason,omitempty"`
+	Message                string    `json:"message,omitempty"`
+	ContextMemoryTotal     int       `json:"contextMemoryTotal,omitempty"`
+	ContextMemoryProcessed int       `json:"contextMemoryProcessed,omitempty"`
+	ContextMemoryFallbacks int       `json:"contextMemoryFallbacks,omitempty"`
+	ContextMemoryState     string    `json:"contextMemoryState,omitempty"`
 }
 
 type Task struct {
-	SourceLocale string `json:"sourceLocale"`
-	TargetLocale string `json:"targetLocale"`
-	SourcePath   string `json:"sourcePath"`
-	TargetPath   string `json:"targetPath"`
-	EntryKey     string `json:"entryKey"`
-	SourceText   string `json:"sourceText"`
-	ProfileName  string `json:"profileName"`
-	Provider     string `json:"provider"`
-	Model        string `json:"model"`
-	Prompt       string `json:"prompt"`
+	SourceLocale  string `json:"sourceLocale"`
+	TargetLocale  string `json:"targetLocale"`
+	SourcePath    string `json:"sourcePath"`
+	TargetPath    string `json:"targetPath"`
+	EntryKey      string `json:"entryKey"`
+	SourceText    string `json:"sourceText"`
+	ProfileName   string `json:"profileName"`
+	Provider      string `json:"provider"`
+	Model         string `json:"model"`
+	Prompt        string `json:"prompt"`
+	GroupName     string `json:"-"`
+	BucketName    string `json:"-"`
+	ContextKey    string `json:"-"`
+	ContextMemory string `json:"-"`
 }
 
 type Failure struct {
@@ -120,13 +146,18 @@ type Report struct {
 	Failed          int       `json:"failed"`
 	PersistedToLock int       `json:"persistedToLock"`
 	TokenUsage
-	LocaleUsage     map[string]TokenUsage `json:"localeUsage,omitempty"`
-	Batches         []BatchUsage          `json:"batches,omitempty"`
-	Failures        []Failure             `json:"failures,omitempty"`
-	Executable      []Task                `json:"executable,omitempty"`
-	Skipped         []Task                `json:"skipped,omitempty"`
-	PruneCandidates []PruneCandidate      `json:"pruneCandidates,omitempty"`
-	PruneApplied    int                   `json:"pruneApplied"`
+	LocaleUsage                 map[string]TokenUsage `json:"localeUsage,omitempty"`
+	Batches                     []BatchUsage          `json:"batches,omitempty"`
+	Failures                    []Failure             `json:"failures,omitempty"`
+	Executable                  []Task                `json:"executable,omitempty"`
+	Skipped                     []Task                `json:"skipped,omitempty"`
+	PruneCandidates             []PruneCandidate      `json:"pruneCandidates,omitempty"`
+	PruneApplied                int                   `json:"pruneApplied"`
+	ContextMemoryEnabled        bool                  `json:"contextMemoryEnabled,omitempty"`
+	ContextMemoryScope          string                `json:"contextMemoryScope,omitempty"`
+	ContextMemoryGenerated      int                   `json:"contextMemoryGenerated,omitempty"`
+	ContextMemoryFallbackGroups int                   `json:"contextMemoryFallbackGroups,omitempty"`
+	Warnings                    []string              `json:"warnings,omitempty"`
 }
 
 type PruneCandidate struct {
@@ -253,6 +284,8 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 								Provider:     profile.Provider,
 								Model:        profile.Model,
 								Prompt:       renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
+								GroupName:    groupName,
+								BucketName:   bucketName,
 							})
 						}
 					}

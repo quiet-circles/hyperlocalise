@@ -20,9 +20,9 @@ func buildUserPrompt(req Request) string {
 
 	ctx := strings.TrimSpace(req.Context)
 	if ctx != "" {
-		b.WriteString("Context: ")
+		b.WriteString("Shared context guidance (do not translate or repeat this section):\n")
 		b.WriteString(ctx)
-		b.WriteString("\n")
+		b.WriteString("\n\n")
 	}
 
 	b.WriteString("Source text:\n")

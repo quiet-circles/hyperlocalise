@@ -400,6 +400,57 @@ func TestRunForceFlagPlumbedToServiceInput(t *testing.T) {
 	}
 }
 
+func TestRunExperimentalContextMemoryFlagsPlumbedToServiceInput(t *testing.T) {
+	originalRunFunc := runFunc
+	t.Cleanup(func() { runFunc = originalRunFunc })
+
+	var gotInput runsvc.Input
+	runFunc = func(_ context.Context, input runsvc.Input) (runsvc.Report, error) {
+		gotInput = input
+		return runsvc.Report{}, nil
+	}
+
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{
+		"run",
+		"--experimental-context-memory",
+		"--context-memory-scope", "bucket",
+		"--context-memory-max-chars", "900",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run with context memory flags: %v", err)
+	}
+	if !gotInput.ExperimentalContextMemory {
+		t.Fatalf("expected --experimental-context-memory to set runsvc.Input.ExperimentalContextMemory")
+	}
+	if gotInput.ContextMemoryScope != runsvc.ContextMemoryScopeBucket {
+		t.Fatalf("unexpected context memory scope: %q", gotInput.ContextMemoryScope)
+	}
+	if gotInput.ContextMemoryMaxChars != 900 {
+		t.Fatalf("unexpected context memory max chars: %d", gotInput.ContextMemoryMaxChars)
+	}
+}
+
+func TestRunRejectsInvalidContextMemoryScope(t *testing.T) {
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"run", "--context-memory-scope", "invalid"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected invalid context memory scope error")
+	}
+	if !strings.Contains(err.Error(), "invalid --context-memory-scope value") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestRunProgressAutoNonTTYKeepsPlainOutput(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "i18n.jsonc")

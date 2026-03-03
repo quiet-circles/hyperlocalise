@@ -33,6 +33,16 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 	report.GeneratedAt = s.now()
 	report.ConfigPath = in.ConfigPath
+	if in.ExperimentalContextMemory {
+		scope, maxChars, normalizeErr := normalizeContextMemoryOptions(in)
+		if normalizeErr != nil {
+			return report, normalizeErr
+		}
+		report.ContextMemoryEnabled = true
+		report.ContextMemoryScope = scope
+		in.ContextMemoryScope = scope
+		in.ContextMemoryMaxChars = maxChars
+	}
 	emitter.emit(Event{Kind: EventPlanned, PlannedTotal: report.PlannedTotal, SkippedByLock: report.SkippedByLock, ExecutableTotal: report.ExecutableTotal})
 
 	pruneTargets, err := s.collectPruneTargets(in, planned, &report, emitter)
@@ -45,15 +55,24 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 		return report, nil
 	}
 
+	contextPlan := contextMemoryPlan{}
+	if in.ExperimentalContextMemory && len(executable) > 0 {
+		emitter.emit(Event{Kind: EventPhase, Phase: PhaseContextMemory})
+		contextPlan = buildContextMemoryPlan(executable, in.ContextMemoryScope, in.ContextMemoryMaxChars)
+	}
+
 	emitter.emit(Event{Kind: EventPhase, Phase: PhaseExecuting})
-	staged, flushedTargets, execReport, err := s.executePool(ctx, executable, checkpointStaged, in.LockPath, state, in.Workers, pruneTargets, emitter)
+	staged, flushedTargets, execReport, err := s.executePool(ctx, executable, checkpointStaged, in.LockPath, state, in.Workers, pruneTargets, contextPlan, emitter)
 	report.Succeeded = execReport.Succeeded
 	report.Failed = execReport.Failed
 	report.PersistedToLock = execReport.PersistedToLock
-	report.TokenUsage = execReport.TokenUsage
-	report.LocaleUsage = execReport.LocaleUsage
+	report.TokenUsage = addTokenUsage(report.TokenUsage, execReport.TokenUsage)
+	report.LocaleUsage = mergeLocaleUsage(report.LocaleUsage, execReport.LocaleUsage)
 	report.Batches = execReport.Batches
 	report.Failures = append(report.Failures, execReport.Failures...)
+	report.ContextMemoryGenerated = execReport.ContextMemoryGenerated
+	report.ContextMemoryFallbackGroups = execReport.ContextMemoryFallbackGroups
+	report.Warnings = append(report.Warnings, execReport.Warnings...)
 	if err != nil {
 		emitter.emit(completedEvent(report))
 		return report, err

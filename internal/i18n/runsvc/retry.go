@@ -30,15 +30,24 @@ var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
 }
 
 func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, error) {
+	requestContext := strings.TrimSpace(task.EntryKey)
+	if memory := strings.TrimSpace(task.ContextMemory); memory != "" {
+		requestContext = requestContext + "\n\nShared memory:\n" + memory
+	}
+
 	request := translator.Request{
 		Source:         task.SourceText,
 		TargetLanguage: task.TargetLocale,
-		Context:        task.EntryKey,
+		Context:        requestContext,
 		ModelProvider:  task.Provider,
 		Model:          task.Model,
 		Prompt:         task.Prompt,
 	}
 
+	return s.translateRequestWithRetry(ctx, request)
+}
+
+func (s *Service) translateRequestWithRetry(ctx context.Context, request translator.Request) (string, error) {
 	var lastErr error
 	attempt := 0
 	for attempt = range translationRetryMaxAttempts {
