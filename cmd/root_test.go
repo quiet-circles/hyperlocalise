@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 func TestRootCommandOutput(t *testing.T) {
@@ -25,6 +28,13 @@ func TestRootCommandOutput(t *testing.T) {
 
 func TestRootVersionDoesNotRequireConfigFile(t *testing.T) {
 	t.Chdir(t.TempDir())
+	originalFetcher := latestVersionFetcher
+	latestVersionFetcher = func(context.Context) (*semver.Version, error) {
+		return semver.MustParse("1.0.0"), nil
+	}
+	t.Cleanup(func() {
+		latestVersionFetcher = originalFetcher
+	})
 
 	cmd := newRootCmd("v1.0.0")
 	b := bytes.NewBufferString("")

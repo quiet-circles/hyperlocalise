@@ -18,6 +18,9 @@ func newRootCmd(version string) *cobra.Command {
 
 			return nil
 		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			notifyIfUpdateAvailable(cmd, version)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
