@@ -24,17 +24,6 @@ type markdownKeyContext struct {
 	nextLiteral string
 }
 
-func (d markdownDocument) keySourcesInOrder() []string {
-	out := make([]string, 0)
-	for _, part := range d.parts {
-		if part.key == "" {
-			continue
-		}
-		out = append(out, part.source)
-	}
-	return out
-}
-
 func (d markdownDocument) keyContexts() []markdownKeyContext {
 	out := make([]markdownKeyContext, 0)
 	for i, part := range d.parts {
