@@ -63,7 +63,11 @@ func fetchLatestVersion(ctx context.Context) (*semver.Version, error) {
 	if err != nil {
 		return nil, fmt.Errorf("request latest release: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			// Response body has already been consumed; close errors are non-fatal here.
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("latest release returned status %d", resp.StatusCode)
@@ -93,9 +97,7 @@ func normalizeSemver(version string) (*semver.Version, bool) {
 		return nil, false
 	}
 
-	if strings.HasPrefix(trimmed, "v") {
-		trimmed = strings.TrimPrefix(trimmed, "v")
-	}
+	trimmed = strings.TrimPrefix(trimmed, "v")
 
 	parsed, err := semver.NewVersion(trimmed)
 	if err != nil {
