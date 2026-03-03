@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -514,5 +515,52 @@ func TestRunReturnsErrorOnPartialFailures(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "failed=1") {
 		t.Fatalf("expected failed count in output, got %q", out.String())
+	}
+}
+
+func TestRunWritesMachineReadableArtifact(t *testing.T) {
+	originalRunFunc := runFunc
+	t.Cleanup(func() { runFunc = originalRunFunc })
+
+	dir := t.TempDir()
+	reportPath := filepath.Join(dir, "reports", "run-report.json")
+	runFunc = func(_ context.Context, _ runsvc.Input) (runsvc.Report, error) {
+		return runsvc.Report{
+			PlannedTotal:    2,
+			ExecutableTotal: 2,
+			Succeeded:       2,
+			TokenUsage:      runsvc.TokenUsage{PromptTokens: 123, CompletionTokens: 45, TotalTokens: 168},
+			LocaleUsage:     map[string]runsvc.TokenUsage{"fr": {PromptTokens: 100, CompletionTokens: 30, TotalTokens: 130}},
+			Batches:         []runsvc.BatchUsage{{TargetLocale: "fr", TargetPath: "dist/fr/strings.json", EntryKey: "hello", TokenUsage: runsvc.TokenUsage{PromptTokens: 100, CompletionTokens: 30, TotalTokens: 130}}},
+		}, nil
+	}
+
+	cmd := newRootCmd("")
+	out := bytes.NewBuffer(nil)
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"run", "--output", reportPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run with output artifact: %v", err)
+	}
+
+	content, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatalf("read report artifact: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(content, &payload); err != nil {
+		t.Fatalf("decode report artifact: %v", err)
+	}
+	if payload["totalTokens"] != float64(168) {
+		t.Fatalf("expected totalTokens in report artifact, got %+v", payload)
+	}
+	localeUsage, ok := payload["localeUsage"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected localeUsage object, got %+v", payload["localeUsage"])
+	}
+	if _, ok := localeUsage["fr"]; !ok {
+		t.Fatalf("expected fr locale usage in report artifact, got %+v", localeUsage)
 	}
 }

@@ -13,7 +13,10 @@ type executionReport struct {
 	Succeeded       int
 	Failed          int
 	PersistedToLock int
-	Failures        []Failure
+	TokenUsage
+	LocaleUsage map[string]TokenUsage
+	Batches     []BatchUsage
+	Failures    []Failure
 }
 
 type taskCompletion struct {
@@ -57,6 +60,7 @@ func newExecutorState(tasks []Task, pruneTargets map[string]map[string]struct{})
 		sourceByTarget:  map[string]string{},
 		localeByTarget:  map[string]string{},
 		pruneTargets:    pruneTargets,
+		report:          executionReport{LocaleUsage: map[string]TokenUsage{}},
 	}
 	for _, task := range tasks {
 		state.pendingByTarget[task.TargetPath]++
@@ -273,7 +277,8 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 		ExecutableTotal: state.total,
 	})
 
-	translated, err := s.translate(ctx, translator.Request{Source: task.SourceText, TargetLanguage: task.TargetLocale, Context: task.EntryKey, ModelProvider: task.Provider, Model: task.Model, Prompt: task.Prompt})
+	usage := translator.Usage{}
+	translated, err := s.translate(translator.WithUsageCollector(ctx, &usage), translator.Request{Source: task.SourceText, TargetLanguage: task.TargetLocale, Context: task.EntryKey, ModelProvider: task.Provider, Model: task.Model, Prompt: task.Prompt})
 	if err != nil {
 		recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)
 		markTargetFailed(task.TargetPath, &state.pendingMu, state.failedTargets, targetFailures, ctx)
@@ -289,6 +294,15 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	case completions <- taskCompletion{identity: taskIdentity(task.TargetPath, task.EntryKey), sourceHash: hashSourceText(task.SourceText), targetPath: task.TargetPath, sourcePath: task.SourcePath}:
 		state.reportMu.Lock()
 		state.report.Succeeded++
+		state.report.TokenUsage = addTokenUsage(state.report.TokenUsage, toRunTokenUsage(usage))
+		localeUsage := state.report.LocaleUsage[task.TargetLocale]
+		state.report.LocaleUsage[task.TargetLocale] = addTokenUsage(localeUsage, toRunTokenUsage(usage))
+		state.report.Batches = append(state.report.Batches, BatchUsage{
+			TargetLocale: task.TargetLocale,
+			TargetPath:   task.TargetPath,
+			EntryKey:     task.EntryKey,
+			TokenUsage:   toRunTokenUsage(usage),
+		})
 		succeeded := state.report.Succeeded
 		failed := state.report.Failed
 		state.reportMu.Unlock()
@@ -297,6 +311,21 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	case <-ctx.Done():
 		return false
 	}
+}
+
+func toRunTokenUsage(usage translator.Usage) TokenUsage {
+	return TokenUsage{
+		PromptTokens:     usage.PromptTokens,
+		CompletionTokens: usage.CompletionTokens,
+		TotalTokens:      usage.TotalTokens,
+	}
+}
+
+func addTokenUsage(current TokenUsage, delta TokenUsage) TokenUsage {
+	current.PromptTokens += delta.PromptTokens
+	current.CompletionTokens += delta.CompletionTokens
+	current.TotalTokens += delta.TotalTokens
+	return current
 }
 
 func (s *Service) feedJobs(ctx context.Context, jobs chan<- Task, tasks []Task) {

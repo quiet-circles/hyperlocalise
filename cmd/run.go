@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/runsvc"
 	"github.com/quiet-circles/hyperlocalise/internal/progressui"
@@ -23,6 +27,7 @@ type runOptions struct {
 	progress   string
 	bucket     string
 	group      string
+	outputPath string
 }
 
 var runFunc = runsvc.Run
@@ -88,6 +93,9 @@ func newRunCmd() *cobra.Command {
 			if writeErr := writeRunReport(output, report, o.dryRun); writeErr != nil {
 				return fmt.Errorf("write run report: %w", writeErr)
 			}
+			if writeErr := writeRunReportArtifact(o.outputPath, report); writeErr != nil {
+				return fmt.Errorf("write run report artifact: %w", writeErr)
+			}
 
 			if err != nil {
 				return err
@@ -110,8 +118,25 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().StringVar(&o.progress, "progress", string(progressui.ModeAuto), "progress rendering mode: auto|on|off")
 	cmd.Flags().StringVar(&o.bucket, "bucket", "", "only run tasks for the given bucket")
 	cmd.Flags().StringVar(&o.group, "group", "", "only run tasks for the given group")
+	cmd.Flags().StringVar(&o.outputPath, "output", "", "report output JSON path")
 
 	return cmd
+}
+
+func writeRunReportArtifact(path string, report runsvc.Report) error {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(trimmed), 0o755); err != nil {
+		return err
+	}
+	payload, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	payload = append(payload, '\n')
+	return os.WriteFile(trimmed, payload, 0o644)
 }
 
 func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
@@ -178,6 +203,22 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 		report.PersistedToLock,
 	); err != nil {
 		return err
+	}
+	if _, err := fmt.Fprintf(w, "prompt_tokens=%d completion_tokens=%d total_tokens=%d\n", report.PromptTokens, report.CompletionTokens, report.TotalTokens); err != nil {
+		return err
+	}
+	if len(report.LocaleUsage) > 0 {
+		locales := make([]string, 0, len(report.LocaleUsage))
+		for locale := range report.LocaleUsage {
+			locales = append(locales, locale)
+		}
+		sort.Strings(locales)
+		for _, locale := range locales {
+			usage := report.LocaleUsage[locale]
+			if _, err := fmt.Fprintf(w, "locale_usage locale=%s prompt_tokens=%d completion_tokens=%d total_tokens=%d\n", locale, usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens); err != nil {
+				return err
+			}
+		}
 	}
 
 	for _, failure := range report.Failures {

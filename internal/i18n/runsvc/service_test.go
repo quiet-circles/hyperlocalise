@@ -1051,6 +1051,58 @@ func TestRunReturnsErrorForUnknownGroupFilter(t *testing.T) {
 	}
 }
 
+func TestRunAggregatesTokenUsageByLocaleAndBatch(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/fr_out.json"
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case "/tmp/fr_out.json":
+			return []byte(`{}`), nil
+		case "/tmp/es_out.json":
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		cfg.Buckets["ui"] = config.BucketConfig{Files: []config.BucketFileMapping{{From: sourcePath, To: "/tmp/{{target}}_out.json"}}}
+		cfg.Groups["default"] = config.GroupConfig{Targets: []string{"fr", "es"}, Buckets: []string{"ui"}}
+		return &cfg, nil
+	}
+	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
+		if req.TargetLanguage == "fr" {
+			translator.SetUsage(ctx, translator.Usage{PromptTokens: 10, CompletionTokens: 4, TotalTokens: 14})
+			return "Bonjour", nil
+		}
+		translator.SetUsage(ctx, translator.Usage{PromptTokens: 6, CompletionTokens: 3, TotalTokens: 9})
+		return "Hola", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if report.PromptTokens != 16 || report.CompletionTokens != 7 || report.TotalTokens != 23 {
+		t.Fatalf("unexpected token totals: %+v", report.TokenUsage)
+	}
+	if len(report.LocaleUsage) != 2 {
+		t.Fatalf("expected 2 locale usage entries, got %+v", report.LocaleUsage)
+	}
+	if got := report.LocaleUsage["fr"]; got.PromptTokens != 10 || got.CompletionTokens != 4 || got.TotalTokens != 14 {
+		t.Fatalf("unexpected fr token usage: %+v", got)
+	}
+	if got := report.LocaleUsage["es"]; got.PromptTokens != 6 || got.CompletionTokens != 3 || got.TotalTokens != 9 {
+		t.Fatalf("unexpected es token usage: %+v", got)
+	}
+	if len(report.Batches) != 2 {
+		t.Fatalf("expected 2 batch usage entries, got %+v", report.Batches)
+	}
+}
+
 func newTestService() *Service {
 	now := time.Unix(1700000000, 0).UTC()
 	sourcePath := "/tmp/source.json"

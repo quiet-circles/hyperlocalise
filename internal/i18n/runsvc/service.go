@@ -94,18 +94,36 @@ type Failure struct {
 	Reason     string `json:"reason"`
 }
 
+type TokenUsage struct {
+	PromptTokens     int `json:"promptTokens"`
+	CompletionTokens int `json:"completionTokens"`
+	TotalTokens      int `json:"totalTokens"`
+}
+
+type BatchUsage struct {
+	TargetLocale string `json:"targetLocale"`
+	TargetPath   string `json:"targetPath"`
+	EntryKey     string `json:"entryKey"`
+	TokenUsage
+}
+
 type Report struct {
-	PlannedTotal    int              `json:"plannedTotal"`
-	SkippedByLock   int              `json:"skippedByLock"`
-	ExecutableTotal int              `json:"executableTotal"`
-	Succeeded       int              `json:"succeeded"`
-	Failed          int              `json:"failed"`
-	PersistedToLock int              `json:"persistedToLock"`
-	Failures        []Failure        `json:"failures,omitempty"`
-	Executable      []Task           `json:"executable,omitempty"`
-	Skipped         []Task           `json:"skipped,omitempty"`
-	PruneCandidates []PruneCandidate `json:"pruneCandidates,omitempty"`
-	PruneApplied    int              `json:"pruneApplied"`
+	GeneratedAt     time.Time `json:"generatedAt"`
+	ConfigPath      string    `json:"configPath,omitempty"`
+	PlannedTotal    int       `json:"plannedTotal"`
+	SkippedByLock   int       `json:"skippedByLock"`
+	ExecutableTotal int       `json:"executableTotal"`
+	Succeeded       int       `json:"succeeded"`
+	Failed          int       `json:"failed"`
+	PersistedToLock int       `json:"persistedToLock"`
+	TokenUsage
+	LocaleUsage     map[string]TokenUsage `json:"localeUsage,omitempty"`
+	Batches         []BatchUsage          `json:"batches,omitempty"`
+	Failures        []Failure             `json:"failures,omitempty"`
+	Executable      []Task                `json:"executable,omitempty"`
+	Skipped         []Task                `json:"skipped,omitempty"`
+	PruneCandidates []PruneCandidate      `json:"pruneCandidates,omitempty"`
+	PruneApplied    int                   `json:"pruneApplied"`
 }
 
 type PruneCandidate struct {

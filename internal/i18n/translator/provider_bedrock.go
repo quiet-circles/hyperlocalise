@@ -86,10 +86,11 @@ func (p *BedrockProvider) Translate(ctx context.Context, req Request) (string, e
 		return "", fmt.Errorf("bedrock provider: unexpected status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
-	text, err := responseTextFromBedrock(body)
+	text, usage, err := responseTextFromBedrock(body)
 	if err != nil {
 		return "", fmt.Errorf("bedrock provider response: %w", err)
 	}
+	SetUsage(ctx, usage)
 
 	return text, nil
 }
@@ -116,12 +117,19 @@ type bedrockConverseResponse struct {
 			} `json:"content"`
 		} `json:"message"`
 	} `json:"output"`
+	Usage bedrockTokenUsage `json:"usage"`
 }
 
-func responseTextFromBedrock(body []byte) (string, error) {
+type bedrockTokenUsage struct {
+	InputTokens  int `json:"inputTokens"`
+	OutputTokens int `json:"outputTokens"`
+	TotalTokens  int `json:"totalTokens"`
+}
+
+func responseTextFromBedrock(body []byte) (string, Usage, error) {
 	var resp bedrockConverseResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+		return "", Usage{}, fmt.Errorf("decode response: %w", err)
 	}
 
 	builder := strings.Builder{}
@@ -131,10 +139,18 @@ func responseTextFromBedrock(body []byte) (string, error) {
 
 	text := strings.TrimSpace(builder.String())
 	if text == "" {
-		return "", fmt.Errorf("no text generated")
+		return "", Usage{}, fmt.Errorf("no text generated")
+	}
+	usage := Usage{
+		PromptTokens:     resp.Usage.InputTokens,
+		CompletionTokens: resp.Usage.OutputTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+	}
+	if usage.TotalTokens == 0 {
+		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
 
-	return text, nil
+	return text, usage, nil
 }
 
 func signBedrockRequest(

@@ -25,6 +25,11 @@ func TestResponseTextFromBedrock(t *testing.T) {
 							{"text": "bonjour"}
 						]
 					}
+				},
+				"usage": {
+					"inputTokens": 11,
+					"outputTokens": 7,
+					"totalTokens": 18
 				}
 			}`,
 			want: "bonjour",
@@ -46,7 +51,7 @@ func TestResponseTextFromBedrock(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := responseTextFromBedrock([]byte(tc.body))
+			got, _, err := responseTextFromBedrock([]byte(tc.body))
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("expected error")

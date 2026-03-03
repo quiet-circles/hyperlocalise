@@ -28,6 +28,8 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	initializeLockState(state)
 
 	report, executable := applyLockFilter(planned, state.RunCompleted, in.Force)
+	report.GeneratedAt = s.now()
+	report.ConfigPath = in.ConfigPath
 	emitter.emit(Event{Kind: EventPlanned, PlannedTotal: report.PlannedTotal, SkippedByLock: report.SkippedByLock, ExecutableTotal: report.ExecutableTotal})
 
 	pruneTargets, err := s.collectPruneTargets(in, planned, &report, emitter)
@@ -45,6 +47,9 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	report.Succeeded = execReport.Succeeded
 	report.Failed = execReport.Failed
 	report.PersistedToLock = execReport.PersistedToLock
+	report.TokenUsage = execReport.TokenUsage
+	report.LocaleUsage = execReport.LocaleUsage
+	report.Batches = execReport.Batches
 	report.Failures = append(report.Failures, execReport.Failures...)
 	if err != nil {
 		emitter.emit(completedEvent(report))
