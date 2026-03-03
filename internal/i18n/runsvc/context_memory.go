@@ -286,7 +286,8 @@ func normalizeContextMemory(memory string, maxChars int) string {
 		return ""
 	}
 	if maxChars > 0 && len(trimmed) > maxChars {
-		trimmed = strings.TrimSpace(trimmed[:maxChars])
+		trimmed = truncateUTF8(trimmed, maxChars)
+	}
 	}
 	return trimmed
 }
