@@ -20,11 +20,64 @@ func (p JSONParser) Parse(content []byte) (map[string]string, error) {
 	}
 
 	out := make(map[string]string)
+	formatJS, err := parseStrictFormatJSMessages(out, payload)
+	if err != nil {
+		return nil, err
+	}
+	if formatJS {
+		return out, nil
+	}
+
 	if err := flattenJSON(out, "", payload); err != nil {
 		return nil, err
 	}
 
 	return out, nil
+}
+
+func parseStrictFormatJSMessages(out map[string]string, payload map[string]any) (bool, error) {
+	formatJS, err := isStrictFormatJSRoot(payload)
+	if err != nil {
+		return false, err
+	}
+	if !formatJS {
+		return false, nil
+	}
+
+	keys := make([]string, 0, len(payload))
+	for key := range payload {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		message := payload[key].(map[string]any)
+		out[key] = message["defaultMessage"].(string)
+	}
+
+	return true, nil
+}
+
+func isStrictFormatJSRoot(payload map[string]any) (bool, error) {
+	if len(payload) == 0 {
+		return false, nil
+	}
+
+	for key, value := range payload {
+		message, ok := value.(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		raw, ok := message["defaultMessage"]
+		if !ok {
+			return false, nil
+		}
+		if _, ok := raw.(string); !ok {
+			return false, fmt.Errorf("json key %q field %q must be string, got %T", key, "defaultMessage", raw)
+		}
+	}
+
+	return true, nil
 }
 
 func flattenJSON(out map[string]string, prefix string, input map[string]any) error {

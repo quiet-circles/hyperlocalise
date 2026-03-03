@@ -1,0 +1,10 @@
+{
+  "checkout.submit": {
+    "defaultMessage": "Đặt hàng",
+    "description": "Checkout submit button"
+  },
+  "home.title": {
+    "defaultMessage": "Chào mừng",
+    "description": "Homepage title"
+  }
+}

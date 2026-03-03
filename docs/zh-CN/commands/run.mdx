@@ -31,6 +31,14 @@ hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-ru
 - `.strings`
 - `.csv`
 
+对于 JSON (`.json`), `run` 支持：
+
+- 标准嵌套键/值 JSON 对象
+- 当根严格匹配时，对 FormatJS 消息 JSON 进行格式化：
+  `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
+
+在 FormatJS 模式下，仅 `defaultMessage` 已翻译。键 (消息 ID), `description`，以及其他非-消息元数据将被保留。
+
 对于 Markdown 和 MDX (`.md`, `.mdx`), `run` 翻译提取的散文并保留非-可翻译结构：
 
 - 前置块 (`---`)
@@ -59,7 +67,7 @@ hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-ru
 - `--force`: 重新运行所有计划任务，忽略锁文件跳过状态
 - `--workers`：并行翻译工作者数量 (默认为 CPU 内核数)
 - `--progress`: 进度渲染模式 (`auto|on|off`，默认： `auto`)
-- `--output`: 将机器可读的 JSON 运行报告写入给定路径
+- `--output`：写入机器-将可读的 JSON 运行报告写入指定路径
 
 ### 进度调试日志记录 (可选)
 
@@ -111,9 +119,9 @@ hyperlocalise run --config i18n.jsonc --group tests --force
 - `completion_tokens`
 - `total_tokens`
 
-每个语言环境的 token 使用会输出为：`locale_usage locale=<locale> prompt_tokens=<...> completion_tokens=<...> total_tokens=<...>`。
+每-语言区域令牌使用情况打印为： `locale_usage locale=<locale> prompt_tokens=<...> completion_tokens=<...> total_tokens=<...>`.
 
-传入 `--output` 时，JSON 报告包含运行元数据（`generatedAt`、`configPath`）、聚合 token 使用、按语言环境统计的使用量，以及按条目的批次使用量。
+当你传递 `--output`，JSON 报告包含运行元数据 (`generatedAt`, `configPath`)，汇总令牌使用量，按-区域设置用法，以及按-批量使用条目。
 
 ## 失败输出
 

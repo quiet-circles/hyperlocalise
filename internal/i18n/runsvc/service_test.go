@@ -633,6 +633,91 @@ func TestRunWritesMDXUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	}
 }
 
+func TestRunWritesMarkdownWithInsertedSectionWhenExistingTargetPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.md"
+	targetPath := "/tmp/out.md"
+	source := "# Guide\n\nExisting intro.\n\nNew section added.\n\nExisting outro.\n"
+	target := "# Guide\n\nIntro existant.\n\nConclusion existante.\n"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	sourceEntries, err := (translationfileparser.MarkdownParser{}).Parse([]byte(source))
+	if err != nil {
+		t.Fatalf("parse source: %v", err)
+	}
+	var newSectionKey, newSectionText string
+	for key, value := range sourceEntries {
+		if strings.TrimSpace(value) == "New section added." {
+			newSectionKey = key
+			newSectionText = value
+			break
+		}
+	}
+	if newSectionKey == "" {
+		t.Fatalf("expected key for inserted source section")
+	}
+
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		completed := map[string]lockfile.RunCompletion{}
+		for key, value := range sourceEntries {
+			if key == newSectionKey {
+				continue
+			}
+			completed[taskIdentity(targetPath, key)] = lockfile.RunCompletion{
+				CompletedAt: time.Now(),
+				SourceHash:  hashSourceText(value),
+			}
+		}
+		return &lockfile.File{RunCompleted: completed}, nil
+	}
+
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != newSectionText {
+			t.Fatalf("unexpected translation request for skipped entry: %q", req.Source)
+		}
+		return "Nouvelle section ajoutee.", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err = svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "Intro existant.") {
+		t.Fatalf("expected existing translated intro preserved, got %q", out)
+	}
+	if !strings.Contains(out, "Nouvelle section ajoutee.") {
+		t.Fatalf("expected inserted section translated, got %q", out)
+	}
+	if !strings.Contains(out, "Conclusion existante.") {
+		t.Fatalf("expected existing translated outro preserved, got %q", out)
+	}
+}
+
 func TestRunWritesAppleStringsUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.strings"
@@ -1303,6 +1388,7 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		"/tmp/source.strings":     []byte("\"hello\" = \"Hello\";\n"),
 		"/tmp/source.stringsdict": []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?><plist version=\"1.0\"><dict><key>hello</key><string>Hello</string></dict></plist>"),
 		"/tmp/source.csv":         []byte("key,source,target\nhello,Hello,Hello\n"),
+		"/tmp/source.json":        []byte(`{"hello":"Hello"}`),
 	}
 	svc.readFile = func(path string) ([]byte, error) {
 		if b, ok := sourceTemplate[path]; ok {
@@ -1324,11 +1410,11 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		{target: "/tmp/out.strings", source: "/tmp/source.strings"},
 		{target: "/tmp/out.stringsdict", source: "/tmp/source.stringsdict"},
 		{target: "/tmp/out.csv", source: "/tmp/source.csv"},
-		{target: "/tmp/out.json", source: ""},
+		{target: "/tmp/out.json", source: "/tmp/source.json"},
 	}
 
 	for _, tc := range cases {
-		content, err := svc.marshalTargetFile(tc.target, tc.source, "fr", map[string]string{"hello": "Bonjour"})
+		content, err := svc.marshalTargetFile(tc.target, tc.source, "fr", map[string]string{"hello": "Bonjour"}, map[string]string{"hello": "Bonjour"})
 		if err != nil {
 			t.Fatalf("marshal %s: %v", tc.target, err)
 		}
@@ -1395,6 +1481,138 @@ func TestRunContinuesWhenOneTargetFileFailsToFlush(t *testing.T) {
 	}
 	if !strings.Contains(string(goodContent), "\"good\": \"GOOD\"") {
 		t.Fatalf("expected good target content to be written, got %q", string(goodContent))
+	}
+}
+
+func TestRunWritesFormatJSJSONDefaultMessageOnly(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	source := `{
+  "checkout.submit": {
+    "defaultMessage": "Submit order",
+    "description": "Checkout submit button"
+  },
+  "home.title": {
+    "defaultMessage": "Welcome",
+    "description": "Homepage title"
+  }
+}`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "FR(" + req.Source + ")", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	var payload map[string]map[string]any
+	if err := json.Unmarshal(written, &payload); err != nil {
+		t.Fatalf("decode written payload: %v", err)
+	}
+	if payload["checkout.submit"]["defaultMessage"] != "FR(Submit order)" {
+		t.Fatalf("expected translated checkout.submit defaultMessage, got %+v", payload["checkout.submit"])
+	}
+	if payload["checkout.submit"]["description"] != "Checkout submit button" {
+		t.Fatalf("expected checkout.submit description preserved, got %+v", payload["checkout.submit"])
+	}
+	if payload["home.title"]["defaultMessage"] != "FR(Welcome)" {
+		t.Fatalf("expected translated home.title defaultMessage, got %+v", payload["home.title"])
+	}
+	if _, ok := payload["checkout"]; ok {
+		t.Fatalf("unexpected nested key for dotted id in payload: %+v", payload)
+	}
+}
+
+func TestRunMixedDefaultMessageJSONUsesStandardNestedMode(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	source := `{
+  "meta": {
+    "defaultMessage": "Do not treat as FormatJS root",
+    "note": "This is nested metadata text"
+  },
+  "home": {
+    "title": "Welcome"
+  }
+}`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "FR(" + req.Source + ")", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(written, &payload); err != nil {
+		t.Fatalf("decode written payload: %v", err)
+	}
+
+	meta, ok := payload["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected nested meta object, got %+v", payload["meta"])
+	}
+	home, ok := payload["home"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected nested home object, got %+v", payload["home"])
+	}
+
+	if meta["defaultMessage"] != "FR(Do not treat as FormatJS root)" {
+		t.Fatalf("expected translated meta.defaultMessage, got %+v", meta)
+	}
+	if meta["note"] != "FR(This is nested metadata text)" {
+		t.Fatalf("expected translated meta.note, got %+v", meta)
+	}
+	if home["title"] != "FR(Welcome)" {
+		t.Fatalf("expected translated home.title, got %+v", home)
 	}
 }
 

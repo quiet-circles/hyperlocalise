@@ -31,6 +31,14 @@ hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-ru
 - `.strings`
 - `.csv`
 
+Đối với JSON (`.json`), `run` hỗ trợ:
+
+- các đối tượng JSON khóa/giá trị lồng nhau tiêu chuẩn
+- Định dạng JSON thông điệp FormatJS khi phần gốc khớp chính xác:
+  `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
+
+Ở chế độ FormatJS, chỉ `defaultMessage` được dịch. Khóa (ID thông báo), `description`, và các yếu tố không khác-siêu dữ liệu của thông báo được giữ nguyên.
+
 Đối với Markdown và MDX (`.md`, `.mdx`), `run` dịch văn bản trích xuất và giữ nguyên các phần không phải văn bản-cấu trúc có thể dịch:
 
 - khối frontmatter (`---`)
@@ -59,7 +67,7 @@ Khi ghi mục tiêu CSV, `run` giữ nguyên tiêu đề hiện có và không-c
 - `--force`: chạy lại tất cả các tác vụ đã lên kế hoạch và bỏ qua trạng thái bỏ qua của tập tin khóa
 - `--workers`: số lượng công nhân dịch song song (mặc định là số lõi CPU)
 - `--progress`: chế độ hiển thị tiến trình (`auto|on|off`, mặc định: `auto`)
-- `--output`: ghi báo cáo chạy JSON dạng máy đọc được vào đường dẫn chỉ định
+- `--output`: máy ghi-xuất báo cáo chạy dạng JSON dễ đọc ra đường dẫn được chỉ định
 
 ### Ghi nhật ký gỡ lỗi tiến trình (tùy chọn)
 
@@ -111,9 +119,9 @@ hyperlocalise run --config i18n.jsonc --group tests --force
 - `completion_tokens`
 - `total_tokens`
 
-Mức sử dụng token theo locale được in theo dạng: `locale_usage locale=<locale> prompt_tokens=<...> completion_tokens=<...> total_tokens=<...>`.
+Per-mức sử dụng token theo ngôn ngữ được in như sau: `locale_usage locale=<locale> prompt_tokens=<...> completion_tokens=<...> total_tokens=<...>`.
 
-Khi truyền `--output`, báo cáo JSON bao gồm metadata lần chạy (`generatedAt`, `configPath`), tổng mức sử dụng token, mức sử dụng theo locale, và mức sử dụng theo từng batch mục nhập.
+Khi bạn truyền `--output`, báo cáo JSON bao gồm siêu dữ liệu lần chạy (`generatedAt`, `configPath`), tổng hợp mức sử dụng token, theo-cách sử dụng ngôn ngữ, và theo-cách sử dụng nhập theo lô.
 
 ## Đầu ra lỗi
 

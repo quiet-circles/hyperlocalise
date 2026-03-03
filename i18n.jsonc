@@ -38,6 +38,14 @@
         }
       ]
     },
+    "tests_formatjs": {
+      "files": [
+        {
+          "from": "tests/formatjs/en-US.json",
+          "to": "tests/formatjs/[locale].json"
+        }
+      ]
+    },
     "tests_xlf": {
       "files": [
         {
@@ -134,6 +142,7 @@
       ],
       "buckets": [
         "tests_json",
+        "tests_formatjs",
         "tests_xlf",
         "tests_xlif",
         "tests_xliff",

@@ -88,6 +88,12 @@ Behavior:
 - Executes remaining tasks in parallel (worker count = CPU core count)
 - Persists each successful task completion to lock state
 
+JSON format support in `run`:
+- Standard nested JSON key/value objects are supported.
+- FormatJS message JSON is also supported when the root strictly matches:
+  `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
+- In FormatJS mode, only `defaultMessage` is translated. Message IDs, `description`, and other metadata are preserved.
+
 Prune workflow recommendation:
 - Run `hyperlocalise run --dry-run --prune` regularly (for example weekly or before releases) to review stale-key candidates.
 - Apply approved cleanup with `hyperlocalise run --prune` in a dedicated change so key deletions are easy to audit.

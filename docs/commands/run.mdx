@@ -31,6 +31,14 @@ For lockfile fields, lifecycle, and reset guidance, see [Lockfile contract](/ref
 - `.strings`
 - `.csv`
 
+For JSON (`.json`), `run` supports:
+
+- standard nested key/value JSON objects
+- FormatJS message JSON when the root strictly matches:
+  `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
+
+In FormatJS mode, only `defaultMessage` is translated. Keys (message IDs), `description`, and other non-message metadata are preserved.
+
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 
 - frontmatter blocks (`---`)

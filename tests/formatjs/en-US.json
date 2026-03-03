@@ -1,0 +1,10 @@
+{
+  "checkout.submit": {
+    "defaultMessage": "Submit order",
+    "description": "Checkout submit button"
+  },
+  "home.title": {
+    "defaultMessage": "Welcome",
+    "description": "Homepage title"
+  }
+}

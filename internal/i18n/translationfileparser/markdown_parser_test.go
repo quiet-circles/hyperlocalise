@@ -240,6 +240,67 @@ func TestMarkdownParserKeysDisambiguateDuplicateSegments(t *testing.T) {
 	}
 }
 
+func TestMarshalMarkdownWithTargetFallbackIncludesInsertedSourceSegments(t *testing.T) {
+	source := []byte("# Guide\n\nExisting intro.\n\nNew section added.\n\nExisting outro.\n")
+	target := []byte("# Guide\n\nIntro existant.\n\nConclusion existante.\n")
+
+	sourceEntries, err := (MarkdownParser{}).Parse(source)
+	if err != nil {
+		t.Fatalf("parse source: %v", err)
+	}
+
+	var newKey string
+	for key, value := range sourceEntries {
+		if strings.TrimSpace(value) == "New section added." {
+			newKey = key
+			break
+		}
+	}
+	if newKey == "" {
+		t.Fatalf("expected key for inserted source segment")
+	}
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{
+		newKey: "Nouvelle section ajoutee.",
+	}))
+
+	if !strings.Contains(output, "Intro existant.") {
+		t.Fatalf("expected existing translated intro preserved, got %q", output)
+	}
+	if !strings.Contains(output, "Nouvelle section ajoutee.") {
+		t.Fatalf("expected new inserted section translated, got %q", output)
+	}
+	if !strings.Contains(output, "Conclusion existante.") {
+		t.Fatalf("expected existing translated outro preserved, got %q", output)
+	}
+}
+
+func TestMarshalMarkdownWithTargetFallbackPreservesInlineCodeSentenceOrder(t *testing.T) {
+	source := []byte("- MDX `import` and `export` lines\n- Next line\n")
+	target := []byte("- MDX `import` va `export` dong\n- Dong tiep theo\n")
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+
+	if !strings.Contains(output, "- MDX `import` va `export` dong") {
+		t.Fatalf("expected inline-code sentence order preserved, got %q", output)
+	}
+	if strings.Contains(output, "MDX `import` MDX `export`") {
+		t.Fatalf("unexpected duplicated/reordered inline-code sentence, got %q", output)
+	}
+}
+
+func TestMarshalMarkdownWithTargetFallbackDoesNotBleedAcrossHeadings(t *testing.T) {
+	source := []byte("When you pass `--output`, report includes metadata.\n\n## Worker tuning guidance\n\nLower `--workers` in constrained CI.\n")
+	target := []byte("Khi truyen `--output`, bao cao gom metadata.\n\n## Huong dan dieu chinh cong nhan\n\nGiam `--workers` trong CI gioi han.\n")
+
+	out := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if !strings.Contains(out, "## Huong dan dieu chinh cong nhan") {
+		t.Fatalf("expected heading translation preserved, got %q", out)
+	}
+	if strings.Contains(out, "`--workers` Huong dan dieu chinh cong nhan") {
+		t.Fatalf("unexpected heading text merged into sentence, got %q", out)
+	}
+}
+
 func mapValues(values map[string]string) []string {
 	out := make([]string, 0, len(values))
 	for _, value := range values {

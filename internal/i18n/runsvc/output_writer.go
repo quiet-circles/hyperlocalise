@@ -46,7 +46,7 @@ func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, k
 	}
 	maps.Copy(values, output.entries)
 
-	content, err := s.marshalTargetFile(targetPath, output.sourcePath, output.targetLocale, values)
+	content, err := s.marshalTargetFile(targetPath, output.sourcePath, output.targetLocale, values, output.entries)
 	if err != nil {
 		return err
 	}
@@ -120,19 +120,27 @@ func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
 	return entries, nil
 }
 
-func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".xlf", ".xlif", ".xliff", ".po", ".md", ".mdx", ".strings", ".stringsdict", ".csv":
-		return s.marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale, values)
+		return s.marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale, values, stagedEntries)
 	case ".json":
-		return marshalJSONTarget(path, values)
+		template, err := s.loadTemplateFallback(path, sourcePath)
+		if err != nil {
+			return nil, err
+		}
+		return marshalJSONTarget(path, template, values)
 	default:
 		return nil, fmt.Errorf("flush outputs: unsupported target file extension %q for %q", ext, path)
 	}
 }
 
-func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, error) {
+	if ext == ".md" || ext == ".mdx" {
+		return s.marshalMarkdownTarget(path, sourcePath, stagedEntries)
+	}
+
 	template, err := s.loadTemplateFallback(path, sourcePath)
 	if err != nil {
 		return nil, err
@@ -151,8 +159,6 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}
 		return content, nil
-	case ".md", ".mdx":
-		return translationfileparser.MarshalMarkdown(template, values), nil
 	case ".strings":
 		content, err := translationfileparser.MarshalAppleStrings(template, values)
 		if err != nil {
@@ -176,16 +182,96 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	}
 }
 
-func marshalJSONTarget(path string, values map[string]string) ([]byte, error) {
-	payload := map[string]any{}
-	for _, key := range sortedEntryKeys(values) {
-		setNestedValue(payload, key, values[key])
+func (s *Service) marshalMarkdownTarget(path, sourcePath string, stagedEntries map[string]string) ([]byte, error) {
+	sourceTemplate, err := s.readFile(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("flush outputs: read template source %q: %w", sourcePath, err)
 	}
+
+	targetTemplate, err := s.readFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return translationfileparser.MarshalMarkdown(sourceTemplate, stagedEntries), nil
+		}
+		return nil, fmt.Errorf("flush outputs: read target file %q: %w", path, err)
+	}
+
+	return translationfileparser.MarshalMarkdownWithTargetFallback(sourceTemplate, targetTemplate, stagedEntries), nil
+}
+
+func marshalJSONTarget(path string, template []byte, values map[string]string) ([]byte, error) {
+	var payload map[string]any
+	if err := json.Unmarshal(template, &payload); err != nil {
+		return nil, fmt.Errorf("flush outputs: decode template %q: %w", path, err)
+	}
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	if isStrictFormatJSTemplate(payload) {
+		applyFormatJSTranslations(payload, values)
+	} else {
+		payload = map[string]any{}
+		for _, key := range sortedEntryKeys(values) {
+			setNestedValue(payload, key, values[key])
+		}
+	}
+
 	content, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 	}
 	return append(content, '\n'), nil
+}
+
+func isStrictFormatJSTemplate(payload map[string]any) bool {
+	if len(payload) == 0 {
+		return false
+	}
+
+	for _, raw := range payload {
+		message, ok := raw.(map[string]any)
+		if !ok {
+			return false
+		}
+		defaultMessage, ok := message["defaultMessage"]
+		if !ok {
+			return false
+		}
+		if _, ok := defaultMessage.(string); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func applyFormatJSTranslations(payload map[string]any, values map[string]string) {
+	for key, raw := range payload {
+		if _, keep := values[key]; keep {
+			continue
+		}
+		message, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		if _, ok := message["defaultMessage"]; ok {
+			delete(payload, key)
+		}
+	}
+
+	for _, key := range sortedEntryKeys(values) {
+		raw, ok := payload[key]
+		if !ok {
+			payload[key] = map[string]any{"defaultMessage": values[key]}
+			continue
+		}
+		message, ok := raw.(map[string]any)
+		if !ok {
+			payload[key] = map[string]any{"defaultMessage": values[key]}
+			continue
+		}
+		message["defaultMessage"] = values[key]
+	}
 }
 
 func (s *Service) loadTemplateFallback(targetPath, sourcePath string) ([]byte, error) {

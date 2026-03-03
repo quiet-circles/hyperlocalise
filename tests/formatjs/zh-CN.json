@@ -1,0 +1,10 @@
+{
+  "checkout.submit": {
+    "defaultMessage": "提交订单",
+    "description": "Checkout submit button"
+  },
+  "home.title": {
+    "defaultMessage": "欢迎",
+    "description": "Homepage title"
+  }
+}

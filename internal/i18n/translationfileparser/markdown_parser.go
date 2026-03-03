@@ -18,6 +18,42 @@ type markdownDocument struct {
 	parts []markdownPart
 }
 
+type markdownKeyContext struct {
+	text        string
+	prevLiteral string
+	nextLiteral string
+}
+
+func (d markdownDocument) keySourcesInOrder() []string {
+	out := make([]string, 0)
+	for _, part := range d.parts {
+		if part.key == "" {
+			continue
+		}
+		out = append(out, part.source)
+	}
+	return out
+}
+
+func (d markdownDocument) keyContexts() []markdownKeyContext {
+	out := make([]markdownKeyContext, 0)
+	for i, part := range d.parts {
+		if part.key == "" {
+			continue
+		}
+		prev := ""
+		if i > 0 && d.parts[i-1].key == "" {
+			prev = d.parts[i-1].literal
+		}
+		next := ""
+		if i+1 < len(d.parts) && d.parts[i+1].key == "" {
+			next = d.parts[i+1].literal
+		}
+		out = append(out, markdownKeyContext{text: part.source, prevLiteral: prev, nextLiteral: next})
+	}
+	return out
+}
+
 func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string) {
 	text := string(content)
 	lines := strings.SplitAfter(text, "\n")
@@ -439,4 +475,88 @@ func (p MarkdownParser) Parse(content []byte) (map[string]string, error) {
 func MarshalMarkdown(template []byte, values map[string]string) []byte {
 	doc, _ := parseMarkdownDocument(template)
 	return doc.render(values)
+}
+
+// MarshalMarkdownWithTargetFallback renders markdown from the source template so new
+// sections are included, while preserving existing target translations for entries
+// not updated in the current run.
+func MarshalMarkdownWithTargetFallback(sourceTemplate, targetTemplate []byte, values map[string]string) []byte {
+	sourceDoc, sourceEntries := parseMarkdownDocument(sourceTemplate)
+	targetDoc, _ := parseMarkdownDocument(targetTemplate)
+	targetContexts := targetDoc.keyContexts()
+	targetUsed := make([]bool, len(targetContexts))
+	targetCursor := 0
+	sourceContexts := sourceDoc.keyContexts()
+	sourceCtxIdx := 0
+
+	takeFallback := func(sourceCtx markdownKeyContext) (string, bool) {
+		for i := targetCursor; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
+				targetUsed[i] = true
+				targetCursor = i + 1
+				return targetContexts[i].text, true
+			}
+		}
+		for i := 0; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
+				targetUsed[i] = true
+				if i >= targetCursor {
+					targetCursor = i + 1
+				}
+				return targetContexts[i].text, true
+			}
+		}
+		for i := targetCursor; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			targetUsed[i] = true
+			targetCursor = i + 1
+			return targetContexts[i].text, true
+		}
+		for i := 0; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			targetUsed[i] = true
+			return targetContexts[i].text, true
+		}
+		return "", false
+	}
+
+	var b strings.Builder
+	for _, part := range sourceDoc.parts {
+		if part.key == "" {
+			b.WriteString(part.literal)
+			continue
+		}
+
+		if v, ok := values[part.key]; ok {
+			b.WriteString(preserveChunkBoundaryWhitespace(part.source, v))
+			sourceCtxIdx++
+			continue
+		}
+
+		// Only consume fallback translations for keys that are part of source extraction.
+		// This avoids injecting fallback text into non-translatable structural segments.
+		if _, ok := sourceEntries[part.key]; ok && sourceCtxIdx < len(sourceContexts) {
+			if fallback, ok := takeFallback(sourceContexts[sourceCtxIdx]); ok {
+				b.WriteString(preserveChunkBoundaryWhitespace(part.source, fallback))
+				sourceCtxIdx++
+				continue
+			}
+		}
+		if sourceCtxIdx < len(sourceContexts) {
+			sourceCtxIdx++
+		}
+		b.WriteString(part.source)
+	}
+
+	return []byte(b.String())
 }
