@@ -373,10 +373,11 @@ func TestRunEmitsTaskDoneEventsForSuccessAndFailure(t *testing.T) {
 			return nil, filepath.ErrBadPattern
 		}
 	}
-	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
 		if req.Source == "boom" {
 			return "", errors.New("translation failed")
 		}
+		translator.SetUsage(ctx, translator.Usage{PromptTokens: 7, CompletionTokens: 2, TotalTokens: 9})
 		return strings.ToUpper(req.Source), nil
 	}
 
@@ -397,18 +398,28 @@ func TestRunEmitsTaskDoneEventsForSuccessAndFailure(t *testing.T) {
 	success := 0
 	failure := 0
 	completedSeen := false
+	maxTotalTokensSeen := 0
 	for _, event := range events {
 		if event.Kind == EventTaskDone {
+			if event.TotalTokens > maxTotalTokensSeen {
+				maxTotalTokensSeen = event.TotalTokens
+			}
 			if event.TaskSucceeded {
 				success++
 			} else {
 				failure++
+				if event.TotalTokens > 9 {
+					t.Fatalf("unexpected cumulative token usage on failure event: %+v", event)
+				}
 			}
 		}
 		if event.Kind == EventCompleted {
 			completedSeen = true
 			if event.Succeeded != 1 || event.Failed != 1 {
 				t.Fatalf("unexpected completed event: %+v", event)
+			}
+			if event.PromptTokens != 7 || event.CompletionTokens != 2 || event.TotalTokens != 9 {
+				t.Fatalf("unexpected token totals on completed event: %+v", event)
 			}
 		}
 	}
@@ -417,6 +428,9 @@ func TestRunEmitsTaskDoneEventsForSuccessAndFailure(t *testing.T) {
 	}
 	if !completedSeen {
 		t.Fatalf("expected completed event, got %+v", events)
+	}
+	if maxTotalTokensSeen != 9 {
+		t.Fatalf("expected cumulative task event tokens to reach 9, got %d events=%+v", maxTotalTokensSeen, events)
 	}
 }
 

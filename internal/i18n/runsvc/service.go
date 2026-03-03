@@ -59,20 +59,23 @@ const (
 )
 
 type Event struct {
-	Kind            EventKind `json:"kind"`
-	Phase           string    `json:"phase,omitempty"`
-	PlannedTotal    int       `json:"plannedTotal,omitempty"`
-	SkippedByLock   int       `json:"skippedByLock,omitempty"`
-	ExecutableTotal int       `json:"executableTotal,omitempty"`
-	Succeeded       int       `json:"succeeded,omitempty"`
-	Failed          int       `json:"failed,omitempty"`
-	PersistedToLock int       `json:"persistedToLock,omitempty"`
-	PruneCandidates int       `json:"pruneCandidates,omitempty"`
-	PruneApplied    int       `json:"pruneApplied,omitempty"`
-	TaskSucceeded   bool      `json:"taskSucceeded,omitempty"`
-	TargetPath      string    `json:"targetPath,omitempty"`
-	EntryKey        string    `json:"entryKey,omitempty"`
-	FailureReason   string    `json:"failureReason,omitempty"`
+	Kind             EventKind `json:"kind"`
+	Phase            string    `json:"phase,omitempty"`
+	PlannedTotal     int       `json:"plannedTotal,omitempty"`
+	SkippedByLock    int       `json:"skippedByLock,omitempty"`
+	ExecutableTotal  int       `json:"executableTotal,omitempty"`
+	Succeeded        int       `json:"succeeded,omitempty"`
+	Failed           int       `json:"failed,omitempty"`
+	PersistedToLock  int       `json:"persistedToLock,omitempty"`
+	PruneCandidates  int       `json:"pruneCandidates,omitempty"`
+	PruneApplied     int       `json:"pruneApplied,omitempty"`
+	PromptTokens     int       `json:"promptTokens,omitempty"`
+	CompletionTokens int       `json:"completionTokens,omitempty"`
+	TotalTokens      int       `json:"totalTokens,omitempty"`
+	TaskSucceeded    bool      `json:"taskSucceeded,omitempty"`
+	TargetPath       string    `json:"targetPath,omitempty"`
+	EntryKey         string    `json:"entryKey,omitempty"`
+	FailureReason    string    `json:"failureReason,omitempty"`
 }
 
 type Task struct {

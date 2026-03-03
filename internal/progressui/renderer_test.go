@@ -63,6 +63,9 @@ func TestModelRendersPhaseAndProgress(t *testing.T) {
 	if !strings.Contains(view, "ok=3") || !strings.Contains(view, "fail=1") {
 		t.Fatalf("expected counters in view, got %q", view)
 	}
+	if !strings.Contains(view, "elapsed=") {
+		t.Fatalf("expected elapsed timer in view, got %q", view)
+	}
 }
 
 func TestModelIndeterminateView(t *testing.T) {
@@ -181,6 +184,23 @@ func TestModelCompleteClearsView(t *testing.T) {
 	}
 	if cmd == nil {
 		t.Fatal("expected quit command")
+	}
+}
+
+func TestModelShowsTokenUsageWhenReported(t *testing.T) {
+	t.Parallel()
+
+	m := newModel("Translating", ModeOn, defaultSpinnerTick, Options{})
+	next, _ := m.Update(tokenUsageMsg{
+		promptTokens:     318,
+		completionTokens: 167,
+		totalTokens:      485,
+	})
+	m, _ = next.(model)
+
+	view := m.View().Content
+	if !strings.Contains(view, "prompt_tokens=318 completion_tokens=167 total_tokens=485") {
+		t.Fatalf("expected token usage line in view, got %q", view)
 	}
 }
 

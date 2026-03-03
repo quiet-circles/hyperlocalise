@@ -87,6 +87,7 @@ func newRunCmd() *cobra.Command {
 
 			report, err := runFunc(runCtx, input)
 			if renderer != nil {
+				renderer.TokenUsage(report.PromptTokens, report.CompletionTokens, report.TotalTokens)
 				renderer.Complete()
 			}
 

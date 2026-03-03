@@ -16,9 +16,10 @@ func applyRunProgressEvent(renderer *progressui.Renderer, event runsvc.Event) {
 	case runsvc.EventTaskDone:
 		renderer.TaskStatus(event.TargetPath, event.EntryKey, event.TaskSucceeded, event.FailureReason)
 		renderer.TaskDone(event.Succeeded, event.Failed, event.ExecutableTotal)
+		renderer.TokenUsage(event.PromptTokens, event.CompletionTokens, event.TotalTokens)
 	case runsvc.EventCompleted:
 		renderer.TaskDone(event.Succeeded, event.Failed, event.ExecutableTotal)
-		renderer.Complete()
+		renderer.TokenUsage(event.PromptTokens, event.CompletionTokens, event.TotalTokens)
 	}
 }
 

@@ -326,8 +326,20 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 		})
 		succeeded := state.report.Succeeded
 		failed := state.report.Failed
+		tokenUsage := state.report.TokenUsage
 		state.reportMu.Unlock()
-		emitter.emit(Event{Kind: EventTaskDone, TaskSucceeded: true, TargetPath: task.TargetPath, EntryKey: task.EntryKey, Succeeded: succeeded, Failed: failed, ExecutableTotal: state.total})
+		emitter.emit(Event{
+			Kind:             EventTaskDone,
+			TaskSucceeded:    true,
+			TargetPath:       task.TargetPath,
+			EntryKey:         task.EntryKey,
+			Succeeded:        succeeded,
+			Failed:           failed,
+			ExecutableTotal:  state.total,
+			PromptTokens:     tokenUsage.PromptTokens,
+			CompletionTokens: tokenUsage.CompletionTokens,
+			TotalTokens:      tokenUsage.TotalTokens,
+		})
 		return true
 	case <-ctx.Done():
 		return false
@@ -366,8 +378,21 @@ func recordTaskFailure(report *executionReport, reportMu *sync.Mutex, total int,
 	report.Failures = append(report.Failures, Failure{TargetPath: task.TargetPath, EntryKey: task.EntryKey, Reason: err.Error()})
 	succeeded := report.Succeeded
 	failed := report.Failed
+	tokenUsage := report.TokenUsage
 	reportMu.Unlock()
-	emitter.emit(Event{Kind: EventTaskDone, TaskSucceeded: false, TargetPath: task.TargetPath, EntryKey: task.EntryKey, FailureReason: err.Error(), Succeeded: succeeded, Failed: failed, ExecutableTotal: total})
+	emitter.emit(Event{
+		Kind:             EventTaskDone,
+		TaskSucceeded:    false,
+		TargetPath:       task.TargetPath,
+		EntryKey:         task.EntryKey,
+		FailureReason:    err.Error(),
+		Succeeded:        succeeded,
+		Failed:           failed,
+		ExecutableTotal:  total,
+		PromptTokens:     tokenUsage.PromptTokens,
+		CompletionTokens: tokenUsage.CompletionTokens,
+		TotalTokens:      tokenUsage.TotalTokens,
+	})
 }
 
 func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, targetLocale, entryKey, value string, stageMu *sync.Mutex) error {

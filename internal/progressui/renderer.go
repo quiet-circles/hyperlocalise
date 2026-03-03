@@ -13,6 +13,7 @@ import (
 
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/stopwatch"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/log"
@@ -106,6 +107,12 @@ type taskStatusMsg struct {
 
 type completeMsg struct{}
 
+type tokenUsageMsg struct {
+	promptTokens     int
+	completionTokens int
+	totalTokens      int
+}
+
 type model struct {
 	label     string
 	phase     string
@@ -118,11 +125,17 @@ type model struct {
 	spin spinner.Model
 	bar  progress.Model
 
+	stopwatch stopwatch.Model
+
 	styles dashboardStyles
 
 	files      map[string]fileStatus
 	fileOrder  []string
 	maxVisible int
+
+	promptTokens     int
+	completionTokens int
+	totalTokens      int
 }
 
 type fileStatus struct {
@@ -361,6 +374,30 @@ func (r *Renderer) Complete() {
 	_, _ = fmt.Fprintf(r.w, "progress done succeeded=%d failed=%d\n", succeeded, failed)
 }
 
+func (r *Renderer) TokenUsage(promptTokens, completionTokens, totalTokens int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.closed {
+		return
+	}
+
+	r.debug(
+		"token usage",
+		"prompt_tokens", promptTokens,
+		"completion_tokens", completionTokens,
+		"total_tokens", totalTokens,
+	)
+
+	if r.interactive {
+		r.program.Send(tokenUsageMsg{
+			promptTokens:     promptTokens,
+			completionTokens: completionTokens,
+			totalTokens:      totalTokens,
+		})
+	}
+}
+
 func (r *Renderer) Close() {
 	r.mu.Lock()
 	if r.closed {
@@ -436,6 +473,7 @@ func newModel(label string, mode Mode, tick time.Duration, options Options) mode
 		modeLabel:  string(mode),
 		spin:       spin,
 		bar:        bar,
+		stopwatch:  stopwatch.New(stopwatch.WithInterval(time.Second)),
 		styles:     styles,
 		files:      map[string]fileStatus{},
 		maxVisible: defaultVisibleFileStatus,
@@ -482,49 +520,57 @@ func newDashboardStyles(theme Theme) dashboardStyles {
 }
 
 func (m model) Init() tea.Cmd {
-	return m.spin.Tick
+	return tea.Batch(m.spin.Tick, m.stopwatch.Init())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var stopwatchCmd tea.Cmd
+	m.stopwatch, stopwatchCmd = m.stopwatch.Update(msg)
+
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
 		if m.done {
-			return m, nil
+			return m, stopwatchCmd
 		}
 		var cmd tea.Cmd
 		m.spin, cmd = m.spin.Update(msg)
-		return m, cmd
+		return m, tea.Batch(stopwatchCmd, cmd)
 	case progress.FrameMsg:
 		bar, cmd := m.bar.Update(msg)
 		m.bar = bar
-		return m, cmd
+		return m, tea.Batch(stopwatchCmd, cmd)
 	case tea.WindowSizeMsg:
 		m.bar.SetWidth(clampBarWidth(msg.Width - defaultBarSidePadding))
-		return m, nil
+		return m, stopwatchCmd
 	case phaseMsg:
 		m.phase = msg.text
-		return m, nil
+		return m, stopwatchCmd
 	case planMsg:
 		m.total = msg.total
-		return m, m.setProgressCmd()
+		return m, tea.Batch(stopwatchCmd, m.setProgressCmd())
 	case taskStartedMsg:
 		m.recordTaskStarted(msg.targetPath, msg.entryKey)
-		return m, nil
+		return m, stopwatchCmd
 	case taskStatusMsg:
 		m.recordTaskFinished(msg.targetPath, msg.entryKey, msg.taskSucceeded, msg.failureReason)
-		return m, nil
+		return m, stopwatchCmd
 	case taskDoneMsg:
 		m.succeeded = msg.succeeded
 		m.failed = msg.failed
 		if msg.total > 0 {
 			m.total = msg.total
 		}
-		return m, m.setProgressCmd()
+		return m, tea.Batch(stopwatchCmd, m.setProgressCmd())
+	case tokenUsageMsg:
+		m.promptTokens = msg.promptTokens
+		m.completionTokens = msg.completionTokens
+		m.totalTokens = msg.totalTokens
+		return m, stopwatchCmd
 	case completeMsg:
 		m.done = true
 		return m, tea.Quit
 	default:
-		return m, nil
+		return m, stopwatchCmd
 	}
 }
 
@@ -561,7 +607,17 @@ func (m model) View() tea.View {
 		m.styles.meta.Render(statusText+" progress="+m.modeLabel),
 	)
 
-	sections := []string{headerLine, progressLine, summaryLine}
+	elapsedLine := m.styles.meta.Render("elapsed=" + formatElapsed(m.stopwatch.Elapsed()))
+	tokenUsageLine := m.styles.meta.Render(
+		fmt.Sprintf(
+			"prompt_tokens=%d completion_tokens=%d total_tokens=%d",
+			m.promptTokens,
+			m.completionTokens,
+			m.totalTokens,
+		),
+	)
+
+	sections := []string{headerLine, progressLine, summaryLine, elapsedLine, tokenUsageLine}
 	if filesBlock := m.fileStatusView(); filesBlock != "" {
 		sections = append(sections, filesBlock)
 	}
@@ -591,6 +647,14 @@ func clampBarWidth(w int) int {
 		return defaultBarMaxWidth
 	}
 	return w
+}
+
+func formatElapsed(elapsed time.Duration) string {
+	totalSeconds := int(elapsed / time.Second)
+	hours := totalSeconds / 3600
+	minutes := (totalSeconds % 3600) / 60
+	seconds := totalSeconds % 60
+	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
 func (m *model) recordTaskStarted(targetPath, entryKey string) {

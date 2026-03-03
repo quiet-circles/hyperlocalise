@@ -141,14 +141,17 @@ func remainingPruneTargets(pruneTargets map[string]map[string]struct{}, flushedT
 
 func completedEvent(report Report) Event {
 	return Event{
-		Kind:            EventCompleted,
-		PlannedTotal:    report.PlannedTotal,
-		SkippedByLock:   report.SkippedByLock,
-		ExecutableTotal: report.ExecutableTotal,
-		Succeeded:       report.Succeeded,
-		Failed:          report.Failed,
-		PersistedToLock: report.PersistedToLock,
-		PruneCandidates: len(report.PruneCandidates),
-		PruneApplied:    report.PruneApplied,
+		Kind:             EventCompleted,
+		PlannedTotal:     report.PlannedTotal,
+		SkippedByLock:    report.SkippedByLock,
+		ExecutableTotal:  report.ExecutableTotal,
+		Succeeded:        report.Succeeded,
+		Failed:           report.Failed,
+		PersistedToLock:  report.PersistedToLock,
+		PruneCandidates:  len(report.PruneCandidates),
+		PruneApplied:     report.PruneApplied,
+		PromptTokens:     report.PromptTokens,
+		CompletionTokens: report.CompletionTokens,
+		TotalTokens:      report.TotalTokens,
 	}
 }
