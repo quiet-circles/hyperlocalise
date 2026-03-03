@@ -1,0 +1,65 @@
+---
+title: "Cài đặt"
+description: "Các bước cài đặt cho hyperlocalise, bao gồm xác minh và nâng cấp."
+---
+
+## Yêu cầu tiên quyết
+
+- macOS hoặc Linux
+- một trong các: script cài đặt, tệp nhị phân dựng sẵn `.deb`/`.rpm` gói, hoặc bộ công cụ Go
+
+## Cài đặt bằng tập lệnh bootstrap
+
+Sử dụng URL bootstrap ổn định:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | bash
+```
+
+Ghim một phiên bản cụ thể:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quiet-circles/hyperlocalise/main/install.sh | VERSION=v1.2.3 bash
+```
+
+Tập lệnh cài đặt cũng được đính kèm với mỗi bản phát hành trên GitHub để bạn có thể xem lại hoặc tải phiên bản đã gắn thẻ trực tiếp từ tài sản phát hành.
+
+## Cài đặt từ nguồn (Đi)
+
+```bash
+go install github.com/quiet-circles/hyperlocalise@latest
+```
+
+## Xây dựng từ kho lưu trữ
+
+```bash
+make bootstrap
+make install
+```
+
+## Xác minh cài đặt
+
+```bash
+hyperlocalise version
+hyperlocalise --help
+```
+
+Đầu ra dự kiến bao gồm các lệnh có sẵn: `init`, `run`, `status`, `sync`, và `version`.
+
+## Cài đặt kỹ năng Hyperlocalise (kỹ_năng.sh)
+
+Cài đặt:
+
+```bash
+npx skills add https://github.com/quiet-circles/hyperlocalise --skill hyperlocalise
+```
+
+Điều này sử dụng [kỹ năng.sh](https://skills.sh) trình cài đặt qua `npx`.
+
+## Nâng cấp
+
+Trả lời-chạy phương thức cài đặt của bạn.
+
+- Người dùng trình cài đặt: chạy lại lệnh bootstrap, tùy chọn với `VERSION=<tag>`.
+- Cài đặt Go người dùng: chạy `go install ...@latest` lại.
+- Người dùng kho lưu trữ: kéo những thay đổi mới nhất, sau đó chạy `make install`.

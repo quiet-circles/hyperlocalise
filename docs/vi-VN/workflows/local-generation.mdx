@@ -1,0 +1,31 @@
+---
+title: "Quy trình tạo nội dung cục bộ"
+description: "Chạy tạo bản nháp một cách an toàn và làm cho hành vi của file khóa trở nên có thể dự đoán."
+---
+
+## Vòng lặp được đề xuất
+
+1. `hyperlocalise run --dry-run`
+2. kiểm tra danh sách công việc và số lượng
+3. `hyperlocalise run`
+4. xem lại các lỗi và chạy lại nếu cần thiết
+
+## Khóa-hành vi tệp
+
+`.hyperlocalise.lock.json` theo dõi các nhiệm vụ đã hoàn thành để tránh làm việc lặp lại.
+
+Khi bạn thay đổi nội dung nguồn hoặc ánh xạ cấu hình, hãy re-chạy và kiểm tra xem có nhiệm vụ mới nào được lên kế hoạch không.
+
+Sử dụng [Hợp đồng tệp khóa](/reference/lockfile-contract) để biết chi tiết về sơ đồ và hướng dẫn đặt lại.
+
+## Thực hành tốt
+
+- giữ khô ráo-chạy trong CI để dễ theo dõi
+- sử dụng ánh xạ tệp định trước
+- tránh chỉnh sửa thủ công trạng thái khóa
+
+## Markdown trong quy trình làm việc cục bộ
+
+Nếu ánh xạ bucket của bạn trỏ đến `.md` hoặc `.mdx` tệp, `hyperlocalise run --dry-run` vẫn lên kế hoạch các nhiệm vụ từ nguồn Markdown.
+
+Khi bạn chạy mà không có `--dry-run`, đầu ra giữ nguyên bố cục Markdown và MDX trong khi dịch các nút văn bản được trích xuất.

@@ -1,0 +1,30 @@
+---
+title: "状态"
+description: "以CSV格式报告每个键/命名空间/语言环境的翻译状态。"
+---
+
+## 使用
+
+```bash
+hyperlocalise status [--config <path>] [flags]
+```
+
+## 标志
+
+- `--config`: 配置文件路径
+- `--locale`: 目标本地化过滤器 (可重复的)
+- `--output`: 输出格式 (`csv`)
+- `--group`：按组名筛选
+- `--bucket`：按存储桶名称筛选
+
+## 状态值
+
+- `translated`: 值为空-为空且未标记为草稿
+- `needs_review`: 来源是 `origin=llm` 和 `state=draft`
+- `untranslated`: 值为空
+
+## 示例
+
+```bash
+hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
+```

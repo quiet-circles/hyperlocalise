@@ -1,0 +1,106 @@
+---
+title: "Hợp đồng khóa tệp"
+description: "Hiểu `.hyperlocalise.lock.json` lưu trữ gì, khi nào cần đặt lại nó, và tại sao nó chỉ mang tính khuyến nghị."
+---
+
+## Tên tệp chuẩn
+
+Tên tệp khóa được cố định thành `.hyperlocalise.lock.json`.
+
+`hyperlocalise` hiện tại không đọc được `i18n.lock` hoặc các tên bí danh khác.
+
+Giữ tệp trong thư mục gốc dự án của bạn để `run` và các lệnh sync chia sẻ cùng trạng thái checkpoint.
+
+## Mục đích của tệp khóa
+
+Đối xử với tệp khóa như một **điểm kiểm tra tư vấn**, không phải nguồn thông tin chính xác của bạn.
+
+- Nguồn dữ liệu chính xác cho nội dung cần dịch là các tệp nguồn của bạn.
+- Nguồn chính xác cho đầu ra được tạo là các tệp đích của bạn.
+- Nguồn dữ liệu chính cho trạng thái từ xa được đồng bộ là TMS của bạn cùng với các tài liệu cục bộ.
+
+Tệp khóa chỉ ghi lại những gì CLI đã cố gắng hoặc hoàn thành để có thể bỏ qua công việc lặp lại.
+
+## Lược đồ
+
+Hình dạng hiện tại:
+
+```json
+{
+  "adapter": "crowdin",
+  "project_id": "12345",
+  "last_pull_at": "2026-01-15T12:34:56Z",
+  "locale_states": {
+    "es-ES": {
+      "revision": "rev_abc123",
+      "updated_at": "2026-01-15T12:00:00Z"
+    }
+  },
+  "run_completed": {
+    "apps/web/lang/es-ES.json::checkout.submit": {
+      "completed_at": "2026-01-15T12:10:00Z",
+      "source_hash": "7f4f7d..."
+    }
+  }
+}
+```
+
+Ý nghĩa trường:
+
+- `adapter`: tên bộ điều hợp TMS đang hoạt động.
+- `project_id`: bộ chuyển đổi-định danh dự án cụ thể.
+- `last_pull_at`: dấu thời gian của lần kéo đồng bộ thành công mới nhất.
+- `locale_states`: mỗi-bản đồ điểm kiểm tra cục bộ.
+  - `revision`: phiên bản bộ điều hợp hoặc con trỏ cho logic kéo tăng dần.
+  - `updated_at`: lần cuối điểm kiểm tra ngôn ngữ đó được làm mới.
+- `run_completed`: theo-bản đồ hoàn thành nhiệm vụ được sử dụng bởi `run` cho các quyết định bỏ qua.
+  - `completed_at`: khi nhiệm vụ được hoàn thành lần cuối.
+  - `source_hash`: dấu vân tay nguồn được ghi lại tại thời điểm hoàn thành.
+
+## Vòng đời theo lệnh
+
+### `hyperlocalise run`
+
+- Đọc `.hyperlocalise.lock.json` khi lập kế hoạch công việc.
+- Bỏ qua công việc đã được đánh dấu là hoàn thành trong `run_completed`.
+- Lưu lại các tác vụ thành công trở lại `run_completed`.
+
+### `hyperlocalise sync pull`
+
+- Đọc metadata điểm kiểm tra adapter và ngôn ngữ hiện có.
+- Cập nhật `adapter`, `project_id`, `last_pull_at`, và `locale_states` sau khi kéo thành công.
+
+### `hyperlocalise sync push`
+
+- Có thể đọc ngữ cảnh adapter/dự án từ file khóa.
+- Không thay thế quyền quản lý nội dung nguồn/đích.
+
+## Hướng dẫn đặt lại an toàn
+
+Đặt lại tệp khóa khi trạng thái điểm kiểm tra đã cũ hoặc không còn đáng tin cậy.
+
+Các trường hợp đặt lại phổ biến:
+
+- bạn đã thay đổi cấu trúc văn bản nguồn rất nhiều
+- bạn đã thay đổi ánh xạ bucket hoặc mẫu đường dẫn tệp
+- bạn đã chuyển đổi bộ chuyển đổi hoặc dự án
+- bạn nghi ngờ các mục điểm kiểm tra bị hỏng hoặc chỉnh sửa thủ công
+
+Các bước đặt lại an toàn:
+
+1. đảm bảo các tệp nguồn và tệp được tạo ra của bạn đã được cam kết hoặc sao lưu
+2. xóa bỏ `.hyperlocalise.lock.json`
+3. chạy `hyperlocalise run --dry-run` để kiểm tra kế hoạch tổng thể
+4. chạy `hyperlocalise run` và/hoặc `hyperlocalise sync pull` để xây dựng lại trạng thái điểm kiểm tra
+
+Các tác dụng phụ dự kiến sau khi đặt lại:
+
+- `run` có thể được-thực hiện các nhiệm vụ đã bị bỏ qua trước đó
+- lần kéo đồng bộ tiếp theo có thể thực hiện làm mới rộng hơn cho các ngôn ngữ địa phương
+- Thời gian chạy CLI có thể tăng tạm thời cho đến khi các điểm kiểm tra được xây dựng lại
+
+## Quy ước nhóm
+
+- Không giao tay-chỉ chỉnh sửa các trường trong lockfile khi gỡ lỗi sự cố cục bộ.
+- Giữ cho việc xử lý lockfile rõ ràng trong các kịch bản CI.
+- Xem xét các thay đổi trong tệp khóa trong các yêu cầu kéo khi hành vi chạy/đồng bộ có vẻ không như mong đợi.

@@ -1,0 +1,38 @@
+---
+title: "LM Studio"
+description: "Cấu hình LM Studio làm nhà cung cấp LLM cho việc tạo bản dịch."
+---
+
+## Giá trị nhà cung cấp
+
+Sử dụng `lmstudio` bên trong `llm.profiles.<name>.provider`.
+
+## Hồ sơ mẫu
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "lmstudio",
+        "model": "qwen2.5-7b-instruct",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## Các biến môi trường bắt buộc
+
+<CodeGroup>
+```bash Export
+export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+export LM_STUDIO_API_KEY="lm-studio"
+```
+
+```bash .env.local
+LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+LM_STUDIO_API_KEY="lm-studio"
+```
+</CodeGroup>

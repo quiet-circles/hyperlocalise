@@ -1,0 +1,38 @@
+---
+title: "Groq"
+description: "Cấu hình Groq làm nhà cung cấp LLM để tạo bản dịch."
+---
+
+## Giá trị nhà cung cấp
+
+Sử dụng `groq` trong `llm.profiles.<name>.provider`.
+
+## Hồ sơ mẫu
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## Các biến môi trường bắt buộc
+
+<CodeGroup>
+```bash Export
+export GROQ_BASE_URL="https://api.groq.com/openai/v1"
+export GROQ_API_KEY="your-groq-api-key"
+```
+
+```bash .env.local
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_API_KEY="your-groq-api-key"
+```
+</CodeGroup>

@@ -1,0 +1,46 @@
+---
+title: "Dự án đầu tiên"
+description: "Thiết lập bố cục dự án tối giản và hiểu các tệp đầu ra dự kiến."
+---
+
+## Bố cục tối giản
+
+<Tree>
+  <Tree.Folder name="apps" defaultOpen>
+    <Tree.Folder name="web" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="es-ES.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+    <Tree.Folder name="lab" />
+  </Tree.Folder>
+  <Tree.Folder name="packages" defaultOpen>
+    <Tree.Folder name="ui" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="en-US.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+  </Tree.Folder>
+  <Tree.File name="i18n.jsonc" />
+</Tree>
+
+## Mẫu cấu hình tối thiểu
+
+Bắt đầu bằng một bucket và một nhóm:
+
+- `locales.source`: ngôn ngữ nguồn của bạn (ví dụ `en-US`)
+- `locales.targets`: một địa phương mục tiêu (ví dụ `es-ES`)
+- `buckets.ui.files`: ánh xạ mẫu đường dẫn nguồn sang mẫu đường dẫn mục tiêu
+- `groups.default`: đính kèm `targets` và `buckets`
+
+Để xem đầy đủ các trường, hãy xem [Cấu hình i18n](/configuration/i18n-config).
+
+Trong thiết lập này, bản dịch được lấy từ `packages/ui/lang` và được tạo thành `apps/web/lang`.
+
+## Tệp sinh ra
+
+Sau `hyperlocalise run`:
+
+- các tệp mục tiêu đã được dịch theo cấu hình của bạn `to` đường dẫn
+- `.hyperlocalise.lock.json` trong thư mục gốc của dự án
+- các tệp siêu dữ liệu sidecar cho nguồn gốc, tùy thuộc vào bố cục cửa hàng của bạn

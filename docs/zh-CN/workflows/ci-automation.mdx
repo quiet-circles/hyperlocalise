@@ -1,0 +1,111 @@
+---
+title: "持续集成自动化"
+description: "用于漂移检查和定时 TMS 拉取/推送同步的安全 CI 模式。"
+---
+
+## CI 密钥注入标准
+
+对于远程适配器，将密钥保存在您的 CI 密钥管理器中，并且仅在调用的作业中注入它们 `hyperlocalise sync`.
+
+- 仅提交 `*Env` 变量名在 `i18n.jsonc`.
+- 通过作业在运行时注入令牌值-级环境变量。
+- 读取时使用单独的凭据-仅检查与写入-启用的同步作业。
+- 避免在流水线步骤中打印环境变量。
+
+## 建议检查事项
+
+### 1. 配置 + 规划冒烟测试
+
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+### 2. 状态快照
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+将 CSV 作为构建产物存储以便趋势跟踪。
+
+### 3. 同步冲突门
+
+`sync pull` 和 `sync push` 默认为 `--dry-run=true`，这是一条安全的持续集成基线。
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+hyperlocalise sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+使用 `--dry-run=false` 仅限明确授权写入本地文件或远程系统的作业。
+
+## 计划同步作业示例
+
+将这些 GitHub Actions 示例用作基线。根据您的 CI 平台调整密钥名称和审批规则。
+
+### 计划拉取同步 (读取-仅限，安全默认)
+
+```yaml
+name: tms-pull-sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  pull-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SMARTLING_USER_SECRET: ${{ secrets.SMARTLING_USER_SECRET }}
+      LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+要在 CI 中将远程更改应用到本地文件，请切换到：
+
+```bash
+go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+```
+
+### 定时推送同步 (写-启用，激活)
+
+```yaml
+name: tms-push-sync
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  push-sync:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      SMARTLING_USER_SECRET: ${{ secrets.SMARTLING_USER_SECRET }}
+      LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+```
+
+对于非-变异验证步骤，使用：
+
+```bash
+go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+写入-启用的作业，优先使用受保护的环境、审批关卡，以及最少-特权服务凭证。

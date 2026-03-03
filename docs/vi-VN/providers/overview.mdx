@@ -1,0 +1,42 @@
+---
+title: "Tổng quan về các nhà cung cấp LLM"
+description: "Các trường hồ sơ chung, biến lời nhắc và liên kết đến từng trang cấu hình riêng cho nhà cung cấp."
+---
+
+Sử dụng một trang nhà cung cấp dưới đây để thiết lập chính xác và các ví dụ:
+
+- [OpenAI](/providers/openai)
+- [Azure OpenAI](/providers/azure-openai)
+- [Gemini](/providers/gemini)
+- [Anthropic](/providers/anthropic)
+- [AWS Bedrock](/providers/bedrock)
+- [LM Studio](/providers/lmstudio)
+- [Groq](/providers/groq)
+- [Ollama](/providers/ollama)
+
+## Giá trị nhà cung cấp được hỗ trợ
+
+- `openai`
+- `azure_openai`
+- `gemini`
+- `anthropic`
+- `bedrock`
+- `lmstudio`
+- `groq`
+- `ollama`
+
+## Các trường hồ sơ bắt buộc
+
+Mỗi `llm.profiles.<name>` mục nhập yêu cầu:
+
+- `provider`
+- `model`
+- `prompt`
+
+## Biến số yêu cầu
+
+Các trình giữ chỗ này có sẵn trong `prompt`:
+
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`

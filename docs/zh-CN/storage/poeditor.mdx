@@ -1,0 +1,35 @@
+---
+title: "POEditor 适配器"
+description: "配置 POEditor 以进行同步拉取和同步推送。"
+---
+
+## 必需的配置
+
+```jsonc
+{
+  "storage": {
+    "adapter": "poeditor",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "POEDITOR_API_TOKEN"
+    }
+  }
+}
+```
+
+## 令牌解析
+
+1. 环境变量命名为 `storage.config.apiTokenEnv`
+2. 后备方案： `POEDITOR_API_TOKEN`
+
+## 可选配置字段
+
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+## 常见问题
+
+- 无效的令牌：请确认环境变量已在当前shell中导出
+- 错误的项目ID：请核实POEditor中的数字项目ID
+- 缺失的本地化：确保 `targetLanguages` 与配置目标一致

@@ -1,0 +1,38 @@
+---
+title: "Anthropic"
+description: "将Anthropic配置为用于翻译生成的语言模型提供商。"
+---
+
+## 提供者价值
+
+使用 `anthropic` 中 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 必需的环境变量
+
+<CodeGroup>
+```bash Export
+export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+```bash .env.local
+ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+</CodeGroup>

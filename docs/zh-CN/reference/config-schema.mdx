@@ -1,0 +1,50 @@
+---
+title: "配置架构"
+description: "hyperlocalise 使用的 i18n.jsonc 字段简明参考。"
+---
+
+## 顶部-级别键
+
+- `locales`
+- `buckets`
+- `groups`
+- `llm`
+- `storage` (所需用于 `sync`)
+
+## `locales`
+
+- `source` (字符串，必填)
+- `targets` (字符串数组，必填)
+- `fallbacks` (对象，可选)
+
+## `buckets`
+
+- 桶名称的映射 -> 桶定义
+- `files` 数组与 `from` 和 `to` 模板
+
+## `groups`
+
+- 组名映射 -> 组定义
+- `targets` 数组
+- `buckets` 数组
+
+## `llm`
+
+- `profiles` 配置文件名称的映射 -> 提供者/模型/提示
+- 支持的提供商： `openai` | `azure_openai` | `anthropic` | `gemini` | `bedrock` | `lmstudio` | `groq` | `ollama`
+- `rules` 数组包含 `priority`, `group`, `profile`
+
+## `storage`
+
+- `adapter`: `poeditor` | `lilt` | `lokalise` | `crowdin` | `phrase` | `smartling`
+- `config`：适配器-特定字段
+
+有关示例，请参阅 [i18n 配置](/configuration/i18n-config).
+
+
+## CSV 工作流程说明
+
+使用 `buckets.*.files[].from` 和 `to` 指向 `.csv` 运行 CSV 时的文件-基于定位的流程。
+
+- 每-语言文件通常使用 `[locale]` 在 `to` 路径。
+- 共享的 CSV 文件可以重复使用相同的 `from` 和 `to` 路径。

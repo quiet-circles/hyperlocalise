@@ -1,0 +1,119 @@
+---
+title: "运行"
+description: "计划并执行从已配置的源文件生成本地翻译。"
+---
+
+## 用法
+
+```bash
+hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--workers <count>]
+```
+
+## 行为
+
+1. 加载并验证配置，
+2. 从组和桶中规划任务，
+3. 跳过已在中的任务 `.hyperlocalise.lock.json`,
+4. 执行剩余任务，
+5. 将成功的任务持久化到锁定状态。
+
+有关锁文件字段、生命周期和重置指南，请参见 [锁定文件合约](/reference/lockfile-contract).
+
+## 支持的本地文件格式
+
+`run` 可以读取具有这些扩展名的源文件和目标文件：
+
+- `.json`
+- `.xlf` 和 `.xliff`
+- `.po`
+- `.md`
+- `.mdx`
+- `.strings`
+- `.csv`
+
+对于 Markdown 和 MDX (`.md`, `.mdx`), `run` 翻译提取的散文并保留非-可翻译结构：
+
+- 前置块 (`---`)
+- 有栅栏的代码块 (```` ``` ```` and `~~~`)
+- 行内代码区间
+- Markdown 锚点，例如链接目标
+- MDX `import` 和 `export` 行
+- JSX/MDX 组件标签和属性值
+
+适用于 Apple/Xcode 字符串 (`.strings`), `run` 保留模板中的注释和键/值格式，同时将值文本替换为翻译后的内容。
+
+
+对于CSV (`.csv`), `run` 支持两种布局：
+
+- 键/值 布局 (例如： `key,value`)
+- 每-本地列布局 (例如： `id,en,fr,de`)
+
+编写CSV目标时， `run` 保留现有的标题和非-目标列，原地更新匹配的键，并以确定的排序顺序追加新键。
+
+## 标志
+
+- `--config`：配置文件路径 (默认 `i18n.jsonc` 在当前目录中)
+- `--group`: 仅运行指定组名的任务
+- `--bucket`：仅运行给定存储桶名称的任务
+- `--dry-run`: 仅打印计划，不翻译或写入文件
+- `--force`: 重新运行所有计划任务，忽略锁文件跳过状态
+- `--workers`：并行翻译工作者数量 (默认为 CPU 内核数)
+- `--progress`: 进度渲染模式 (`auto|on|off`，默认： `auto`)
+
+### 进度调试日志记录 (可选)
+
+要排查进度渲染问题，您可以启用调试日志而无需更改 CLI 标志：
+
+- `HYPERLOCALISE_PROGRESS_DEBUG=1` 启用进度调试日志记录。
+- `HYPERLOCALISE_PROGRESS_DEBUG_FILE=<path>` 覆盖日志文件位置。
+
+启用时的默认日志路径： `.hyperlocalise/logs/run.log`.
+
+
+## 范围限于一个组
+
+使用 `--group` 当您只想运行一个已配置的组时。
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --dry-run
+```
+
+如果该组在您的配置中不存在， `run` 失败，返回一个 `unknown group` 计划错误。
+
+## 范围运行到一个桶
+
+使用 `--bucket` 当你只想运行一个配置的桶时。这对于集中更新、CI 分区或在全面运行前验证单个区域很有用。
+
+```bash
+hyperlocalise run --config i18n.jsonc --bucket ui --dry-run
+```
+
+如果您的配置中不存在该存储桶， `run` 失败，原因是一个 `unknown bucket` 计划错误。
+
+## 强制重新运行所有计划任务
+
+使用 `--force` 忽略锁文件跳过状态并再次执行每个计划任务。
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --force
+```
+
+## 输出字段
+
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+## 失败输出
+
+任务失败时，输出包括 `failure target=<...> key=<...> reason=<...>`.
+
+
+## 工作调优指南
+
+较低 `--workers` 当你遇到提供商速率限制或在受限的CI环境中运行时。从开始进行 `1` 稳定重试次数，然后逐渐增加。
+
+加薪 `--workers` 当您的供应商配额和机器资源允许更高吞吐量时，逐步小幅增加，并监控API错误率以及本地CPU和内存使用情况。

@@ -1,0 +1,52 @@
+---
+title: "AWS Bedrock"
+description: "Cấu hình AWS Bedrock làm nhà cung cấp LLM cho việc tạo bản dịch."
+---
+
+## Giá trị nhà cung cấp
+
+Sử dụng `bedrock` trong `llm.profiles.<name>.provider`.
+
+## Hồ sơ mẫu
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "bedrock",
+        "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## Biến môi trường bắt buộc
+
+<CodeGroup>
+```bash Export
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="your-access-key-id"
+export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+```
+
+```bash .env.local
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+```
+</CodeGroup>
+
+Tùy chọn khi sử dụng thông tin đăng nhập tạm thời:
+
+<CodeGroup>
+```bash Export
+export AWS_SESSION_TOKEN="your-session-token"
+```
+
+```bash .env.local
+AWS_SESSION_TOKEN="your-session-token"
+```
+</CodeGroup>

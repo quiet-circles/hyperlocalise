@@ -1,0 +1,97 @@
+---
+title: "Tại sao nên siêu bản địa hóa cho quy trình làm việc bản địa hóa AI"
+description: "Một CLI bản địa hóa cho việc tạo bản nháp AI, đồng bộ sắp xếp TMS và quy trình dịch thân thiện với Git."
+---
+
+`hyperlocalise` được xây dựng cho các nhóm muốn có chu trình bản địa hóa nhanh hơn mà không từ bỏ quyền kiểm soát của người đánh giá.
+
+Nó kết hợp việc tạo bản nháp cục bộ, các bước đồng bộ TMS rõ ràng và Git-quy trình làm việc thân thiện để các nhóm kỹ thuật và địa phương hóa có thể cộng tác trong một đường dẫn giao hàng duy nhất.
+
+Không giống như TMS-chỉ hoặc tùy chỉnh-các phương pháp script, Hyperlocalise được thiết kế cho các nhóm giữ các tệp dịch trong-kho lưu trữ và cần một bản nháp lặp lại được-để-vòng lặp quản lý với xung đột-đồng bộ nhận biết
+
+## Dành cho ai
+
+Hyperlocalise phù hợp nếu nhóm của bạn:
+
+- lưu các tệp dịch trong kho lưu trữ của bạn,
+- sử dụng bản nháp AI làm điểm khởi đầu thay vì sản phẩm cuối cùng,
+- có thể sử dụng tuyển chọn thủ công cho một số quy trình làm việc nhưng muốn nó là tùy chọn,
+- muốn CI-trạng thái hiển thị và kiểm tra chất lượng xung quanh công việc bản địa hóa.
+
+## Tại sao các nhóm chọn Hyperlocalise
+
+### 1. Tốc độ phát triển với các rào chắn vận hành
+
+CLI được thiết kế xoay quanh kế hoạch-quy trình làm việc đầu tiên. Bạn có thể kiểm tra công việc với `--dry-run`, tạo bản nháp cục bộ và chạy lại tăng dần với tệp khóa-các điểm kiểm tra được sao lưu.
+
+Điều này giảm công việc dịch lặp lại trong khi giữ cho các thay đổi có thể xem xét được trong các khác biệt Git thông thường.
+
+### 2. Việc sắp xếp do con người thực hiện được hỗ trợ, nhưng không bắt buộc
+
+Hyperlocalise không cho rằng kết quả máy móc là sản phẩm cuối cùng-sẵn sàng.
+
+Vòng lặp dự kiến rất đơn giản: tạo bản nháp, đẩy lên TMS của bạn, chọn lọc với người đánh giá, sau đó kéo các giá trị đã chọn lọc trở lại kho lưu trữ. Điều này giữ cho nguồn-của-đưa ra quyết định chính xác với nhóm bản địa hóa của bạn.
+
+Nếu nhóm của bạn cần tốc độ hơn kiểm tra trong các pipeline cụ thể, bạn cũng có thể chạy cục bộ-chỉ đường dẫn và xuất bản mà không đồng bộ TMS.
+
+### 3. Tăng khả năng hiển thị cho các quyết định phát hành
+
+Các nhóm có thể sử dụng `status` báo cáo để theo dõi đã dịch, cần thiết-xem xét và nội dung chưa được dịch theo địa phương. Đối với các thí nghiệm chất lượng, bạn có thể chạy [`eval` (thí nghiệm)](/commands/eval) để so sánh đầu ra của ứng viên với một cơ sở chuẩn theo định dạng có thể lặp lại.
+
+### 4. Linh hoạt về nhà cung cấp và nền tảng
+
+Bạn có thể chạy nhiều nhà cung cấp LLM và tích hợp với các bộ chuyển đổi TMS phổ biến (ví dụ như Crowdin, Lokalise, POEditor, Phrase, Smartling và Lilt) mà không cần thiết kế lại toàn bộ quy trình làm việc của bạn xoay quanh một nhà cung cấp duy nhất.
+
+## Cách nó phù hợp với quy trình làm việc hiện tại của bạn
+
+Một đường dẫn điển hình trông như thế này:
+
+1. Khởi tạo cấu hình với [`init`](/commands/init).
+2. Định nghĩa các cài đặt địa phương, nhóm lưu trữ, và hồ sơ trong [`i18n config`](/configuration/i18n-config).
+3. Tạo bản nháp với [`run`](/commands/run).
+4. Đường dẫn lựa chọn sưu tập: sử dụng [`sync push` (thử nghiệm)](/commands/sync-push), xây dựng nội dung trong TMS, sau đó [`sync pull` (thử nghiệm)](/commands/sync-pull).
+5. Xác minh tiến độ với [`status`](/commands/status) trước khi phát hành.
+
+Để xem trình tự tuyển chọn đầy đủ, hãy tham khảo [Vòng lặp biên tập TMS (thử nghiệm)](/workflows/tms-curation-loop).
+
+## Khi Hyperlocalise không phải là lựa chọn tốt nhất (chưa!)
+
+Hyperlocalise có thể không phải là lựa chọn phù hợp ngày hôm nay nếu bạn:
+
+- cần một nền tảng địa phương hóa được lưu trữ hoàn toàn, không sử dụng CLI,
+- không thể chạy kho lưu trữ-các quy trình làm việc dựa trên trong môi trường nhà phát triển hoặc CI,
+- yêu cầu một quy trình làm việc nơi tất cả các thao tác bản địa hóa được quản lý chỉ bên trong giao diện người dùng TMS được lưu trữ.
+
+## So sánh nhanh
+
+| Phương pháp | Nỗ lực thiết lập | Kiểm soát đánh giá | Quy trình làm việc CI/Git phù hợp | Khoá nhà cung cấp-trong rủi ro |
+| --- | --- | --- | --- | --- |
+| Tập lệnh thủ công | 🟡 Trung bình đến cao (tự xây dựng và duy trì bản thân) | 🟢 Cao (được tùy chỉnh hoàn toàn) | 🟡 Trung bình (phụ thuộc vào chất lượng và tiêu chuẩn của kịch bản) | 🟢 Thấp |
+| Hệ thống quản lý vận tải-chỉ quy trình làm việc | 🟢 Thấp đến trung bình | 🟡 Trung bình đến cao trong TMS, thấp hơn trong Git-đánh giá dựa trên | 🟡 Thấp đến trung bình cho trong-quy trình làm việc repo | 🟠 Trung bình đến cao |
+| Siêu cục bộ hóa | 🟢 Thấp (CLI đơn với cấu hình đơn giản) | 🟢 Cao (Bản nháp AI + vòng lựa chọn con người tùy chọn) | 🟢 Cao (khô rõ ràng-chạy, đồng bộ, luồng trạng thái) | 🟢 Thấp (đa năng-nhà cung cấp và đa nhiệm-hỗ trợ bộ chuyển đổi) |
+
+## Câu hỏi thường gặp
+
+### Hyperlocalise có phải là thay thế cho hệ thống quản lý bản dịch (TMS) của tôi không?
+
+Không. Hyperlocalise được xây dựng để làm việc với TMS của bạn, không phải thay thế nó. Mô hình dự kiến là tạo bản nháp cục bộ cộng với tuyển chọn thủ công trên nền tảng dịch hiện có của bạn.
+
+### Tôi có thể sử dụng Hyperlocalise cùng với Crowdin, Lokalise hoặc POEditor không?
+
+Có. Hyperlocalise hỗ trợ nhiều bộ chuyển đổi TMS, bao gồm Crowdin, Lokalise và POEditor (cộng với Phrase, Smartling và Lilt).
+
+### Điều này có thể chạy trong CI không?
+
+Đúng vậy. Các nhóm thường chạy các lệnh lập kế hoạch, tạo và báo cáo trong CI để giữ cho các thay đổi bản địa hóa luôn hiển thị trong quy trình phát hành tiêu chuẩn.
+
+### Hyperlocalise có xuất bản bản dịch máy trực tiếp lên môi trường sản xuất không?
+
+Vâng, có thể. Việc tuyển chọn TMS là tùy chọn, và các nhóm có thể chọn một giá trị không-con người-xem lại quy trình khi nó phù hợp với khả năng chịu rủi ro và quy trình phát hành của họ.
+
+## Các bước tiếp theo
+
+Đường dẫn người dùng mới: [Cài đặt](/getting-started/install) -> [Bắt đầu nhanh](/getting-started/quickstart) -> [cấu hình i18n](/configuration/i18n-config)
+
+Đường dẫn đánh giá: [Bắt đầu nhanh](/getting-started/quickstart) -> [`eval` (thử nghiệm)](/commands/eval) -> [`status`](/commands/status)
+
+Đường dẫn điều phối TMS: [Tổng quan về lưu trữ](/storage/overview) -> [`sync push` (thí nghiệm)](/commands/sync-push) -> [Vòng lặp quản lý TMS (thử nghiệm)](/workflows/tms-curation-loop) -> [`sync pull` (thử nghiệm)](/commands/sync-pull)

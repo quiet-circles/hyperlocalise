@@ -1,0 +1,40 @@
+---
+title: "什么是 Hyperlocalise？"
+description: "面向命令行的本地化工作流，支持AI草稿生成、可选的TMS内容审核同步及状态报告。"
+---
+
+`hyperlocalise` 帮助您生成本地翻译草稿，可选地与您的TMS同步，并跟踪仍需审查的内容。
+
+## 适用对象
+
+如果您：
+
+- 将翻译文件保存在您的代码库中，
+- 想要人工智能-生成的草稿作为起点，
+- 想在零之间选择-在 POEditor、Lokalise 或 Crowdin 中的人类工作流程和可选的人类策划。
+
+## 核心工作流程
+
+| 阶段 | 操作 | 重要原因 |
+| --- | --- | --- |
+| 1 | [`init`](/commands/init) | 脚手架 `i18n.jsonc` 和 Bootstrap 默认值。 |
+| 2 | 配置 [`i18n config`](/configuration/i18n-config) | 定义区域设置、存储桶和大语言模型/存储设置。 |
+| 3 | [`run --dry-run`](/commands/run) | 在撰写草稿之前验证计划并发现问题。 |
+| 4 | [`run`](/commands/run) | 生成本地草稿翻译。 |
+| 5 | [从本地仓库发布](/commands/run) | 零-当您的流程允许直接从生成的输出发布时的人工作业路径。 |
+| 6 (可选的) | [`sync push` (实验性)](/commands/sync-push) | 将本地更改上传到您的TMS以进行策划工作流程。 |
+| 7 (可选的) | 在TMS中策划 | 在您的翻译平台中进行人工审核和校正。 |
+| 8 (可选) | [`sync pull` (实验性)](/commands/sync-pull) | 将精选翻译导回代码库。 |
+| 9 | [`status`](/commands/status) | 测量任一工作流程路径中的完成情况和未解决的工作。 |
+
+## 10分钟后开始
+
+1. [安装](/getting-started/install).
+2. [运行快速入门](/getting-started/quickstart).
+3. [设置您的国际化配置](/configuration/i18n-config).
+
+## 常见后续步骤
+
+- 学习命令行为 [命令概览](/commands/overview).
+- 在中配置提供程序凭据 [提供者凭证](/configuration/provider-credentials).
+- 了解同步行为 [存储概述](/storage/overview).

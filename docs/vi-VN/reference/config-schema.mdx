@@ -1,0 +1,50 @@
+---
+title: "Sơ đồ cấu hình"
+description: "Tham khảo ngắn gọn cho các trường i18n.jsonc được sử dụng bởi hyperlocalise."
+---
+
+## Trên cùng-phím cấp độ
+
+- `locales`
+- `buckets`
+- `groups`
+- `llm`
+- `storage` (bắt buộc cho `sync`)
+
+## `locales`
+
+- `source` (chuỗi, bắt buộc)
+- `targets` (mảng chuỗi, bắt buộc)
+- `fallbacks` (đối tượng, tùy chọn)
+
+## `buckets`
+
+- bản đồ tên bucket -> định nghĩa bucket
+- `files` mảng với `from` và `to` mẫu
+
+## `groups`
+
+- bản đồ của tên nhóm -> định nghĩa nhóm
+- `targets` mảng
+- `buckets` mảng
+
+## `llm`
+
+- `profiles` bản đồ của tên hồ sơ -> nhà cung cấp/mô hình/lời nhắc
+- nhà cung cấp được hỗ trợ: `openai` | `azure_openai` | `anthropic` | `gemini` | `bedrock` | `lmstudio` | `groq` | `ollama`
+- `rules` mảng với `priority`, `group`, `profile`
+
+## `storage`
+
+- `adapter`: `poeditor` | `lilt` | `lokalise` | `crowdin` | `phrase` | `smartling`
+- `config`: bộ điều hợp-các trường cụ thể
+
+Để xem ví dụ, hãy tham khảo [Cấu hình i18n](/configuration/i18n-config).
+
+
+## Ghi chú quy trình CSV
+
+Sử dụng `buckets.*.files[].from` và `to` chỉ vào `.csv` tệp khi bạn chạy CSV-dựa trên các luồng địa phương hóa.
+
+- Theo-các tệp locale thường sử dụng `[locale]` trong các `to` đường dẫn.
+- Các tệp CSV được chia sẻ có thể tái sử dụng cùng một `from` và `to` đường dẫn.

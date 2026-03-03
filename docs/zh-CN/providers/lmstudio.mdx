@@ -1,0 +1,38 @@
+---
+title: "LM 工作室"
+description: "将 LM Studio 配置为翻译生成的 LLM 提供者。"
+---
+
+## 提供者值
+
+使用 `lmstudio` 在 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "lmstudio",
+        "model": "qwen2.5-7b-instruct",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 必需的环境变量
+
+<CodeGroup>
+```bash Export
+export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+export LM_STUDIO_API_KEY="lm-studio"
+```
+
+```bash .env.local
+LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+LM_STUDIO_API_KEY="lm-studio"
+```
+</CodeGroup>

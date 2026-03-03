@@ -1,0 +1,37 @@
+---
+title: "Bộ điều hợp cụm từ"
+description: "Cấu hình Phrase để đồng bộ hóa dịch từ xa."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "phrase",
+    "config": {
+      "projectID": "project-uuid",
+      "apiTokenEnv": "PHRASE_API_TOKEN",
+      "mode": "strings"
+    }
+  }
+}
+```
+
+## Các trường cấu hình tùy chọn
+
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+- `fileFormat` (bắt buộc khi `mode` là `files`)
+
+## Chế độ
+
+- `strings`: kéo và đẩy sử dụng khóa Phrase và API dịch.
+- `files`: kéo và đẩy bằng cách sử dụng các công việc xuất/nhập khẩu của Phrase.
+
+## Các vấn đề phổ biến
+
+- token không tìm thấy: xuất khẩu `PHRASE_API_TOKEN`
+- lỗi xác thực chế độ: set `mode` để `strings` hoặc `files`
+- lỗi nhập khẩu chế độ tập tin: xác minh `fileFormat` phù hợp với cài đặt dự án của bạn

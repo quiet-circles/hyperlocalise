@@ -1,0 +1,167 @@
+---
+title: "Bắt đầu nhanh"
+description: "Chạy hyperlocalise từ đầu đến cuối trong khoảng 10 phút."
+---
+
+## Mục tiêu
+
+Tạo một `i18n.jsonc`, thực hiện lập kế hoạch dịch một cách an toàn, tạo kết quả đầu ra và kiểm tra trạng thái.
+
+## 1. Khởi tạo cấu hình
+
+```bash
+hyperlocalise init
+```
+
+Điều này ghi lại `i18n.jsonc` trong thư mục hiện tại của bạn.
+
+## 2. Cấu hình thông tin xác thực nhà cung cấp
+
+`hyperlocalise` tự động đọc thông tin đăng nhập từ `.env` và `.env.local` trong thư mục dự án hiện tại của bạn. Biến shell đã xuất vẫn được ưu tiên.
+
+Ví dụ:
+
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
+OpenAI:
+
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
+
+Azure OpenAI:
+
+<CodeGroup>
+```bash Export
+# Example: https://<resource>.openai.azure.com/openai/v1
+export AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+export AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
+```
+
+```bash .env.local
+# Example: https://<resource>.openai.azure.com/openai/v1
+AZURE_OPENAI_BASE_URL="https://<resource>.openai.azure.com/openai/v1"
+AZURE_OPENAI_API_KEY="your-azure-openai-api-key"
+```
+</CodeGroup>
+
+Gemini:
+
+<CodeGroup>
+```bash Export
+export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+export GEMINI_API_KEY="your-gemini-api-key"
+```
+
+```bash .env.local
+GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+GEMINI_API_KEY="your-gemini-api-key"
+```
+</CodeGroup>
+
+Anthropic:
+
+<CodeGroup>
+```bash Export
+export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+```bash .env.local
+ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+</CodeGroup>
+
+LM Studio:
+
+<CodeGroup>
+```bash Export
+export LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+export LM_STUDIO_API_KEY="lm-studio"
+```
+
+```bash .env.local
+LM_STUDIO_BASE_URL="http://127.0.0.1:1234/v1"
+LM_STUDIO_API_KEY="lm-studio"
+```
+</CodeGroup>
+
+Ollama:
+
+<CodeGroup>
+```bash Export
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+export OLLAMA_API_KEY="ollama"
+```
+
+```bash .env.local
+OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+OLLAMA_API_KEY="ollama"
+```
+</CodeGroup>
+
+Groq:
+
+<CodeGroup>
+```bash Export
+export GROQ_BASE_URL="https://api.groq.com/openai/v1"
+export GROQ_API_KEY="your-groq-api-key"
+```
+
+```bash .env.local
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_API_KEY="your-groq-api-key"
+```
+</CodeGroup>
+
+## 3. Khô-chạy trước
+
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+Kiểm tra `planned_total`, `executable_total`, và danh sách `tasks`.
+
+## 4. Thực hiện tạo dữ liệu
+
+```bash
+hyperlocalise run --config i18n.jsonc
+```
+
+Điều này ghi bản dịch và cập nhật `.hyperlocalise.lock.json`. Để biết chi tiết, xem [Hợp đồng khóa tệp](/reference/lockfile-contract).
+
+## 5. Trạng thái đánh giá
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+Sử dụng `needs_review` các hàng để xác định các mục vẫn cần được biên tập thủ công.
+
+## 6. Đánh giá chất lượng bản dịch khi cần thiết
+
+```bash
+hyperlocalise eval run --eval-set ./eval-set.json --output ./eval-report.json
+```
+
+Sử dụng điều này khi so sánh lựa chọn lời nhắc/hồ sơ/nhà cung cấp hoặc trước khi cập nhật bản dịch lớn.
+
+## Tiếp theo
+
+- Điều chỉnh cấu hình trong [cấu hình i18n](/configuration/i18n-config).
+- Đồng bộ với TMS của bạn bằng cách sử dụng [đồng bộ đẩy](/commands/sync-push) và [đồng bộ kéo](/commands/sync-pull).

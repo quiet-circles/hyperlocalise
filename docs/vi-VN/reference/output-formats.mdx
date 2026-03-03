@@ -1,0 +1,49 @@
+---
+title: "Định dạng đầu ra"
+description: "Tham khảo định dạng đầu ra của các lệnh run, status và sync."
+---
+
+## `run` đầu ra (`text`)
+
+Các trường tóm tắt chính:
+
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+Định dạng dòng lỗi:
+
+```text
+failure target=<path> key=<key> reason=<reason>
+```
+
+## `status` đầu ra (`csv`)
+
+Cột tiêu đề:
+
+```csv
+key,namespace,locale,status,origin,state
+```
+
+## `sync` đầu ra (`text` hoặc `json`)
+
+Trường tóm tắt văn bản:
+
+- `action`
+- `creates`
+- `updates`
+- `unchanged`
+- `conflicts`
+- `applied`
+- `skipped`
+- `warnings`
+
+Sử dụng đầu ra JSON khi tích hợp với kiểm tra CI.
+
+
+## Các tệp dịch CSV
+
+Khi `run` viết `.csv` các mục tiêu dịch, thứ tự hàng đầu ra là xác định đối với các khóa mới được thêm vào (được sắp xếp theo khóa), và các hàng hiện có giữ nguyên thứ tự ban đầu của chúng.

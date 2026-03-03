@@ -1,0 +1,33 @@
+---
+title: "Vòng lặp tuyển chọn TMS"
+description: "Thử nghiệm: Chuyển từ tạo bản nháp tại chỗ sang dịch do con người biên tập và ngược lại."
+---
+
+<Note>
+Tính năng này đang thử nghiệm. Các cờ, hình dạng đầu ra và hành vi có thể thay đổi giữa các phiên bản. Sử dụng trong quy trình làm việc kiểm soát và cố định phiên bản trong CI.
+
+Hướng dẫn quy trình làm việc có thể thay đổi khi ngữ nghĩa đồng bộ và chính sách xung đột tiếp tục phát triển.
+</Note>
+
+## Kết thúc-để-kết thúc chuỗi
+
+1. tạo bản thảo cục bộ với `run`
+2. đẩy bản nháp với `sync push --dry-run=false`
+3. các biên dịch viên quản lý trong POEditor/Lokalise/Crowdin
+4. kéo các cập nhật được tuyển chọn với `sync pull --dry-run=false`
+5. xác minh với `status`
+
+## Các điểm quyết định
+
+- Giữ lại `--fail-on-conflict=true` vì lý do an toàn.
+- Sử dụng `--apply-curated-over-draft` khi kéo dữ liệu đã được lựa chọn nên được ưu tiên.
+- Sử dụng `--force-conflicts` chỉ đẩy sau khi xem xét các xung đột.
+
+## Khả năng kiểm toán
+
+Sử dụng đầu ra JSON cho máy móc-đánh giá dễ đọc:
+
+```bash
+hyperlocalise sync pull --output json
+hyperlocalise sync push --output json
+```

@@ -1,0 +1,34 @@
+---
+title: "Lokalise 适配器"
+description: "配置 Lokalise API v2 以进行拉取/推送同步。"
+---
+
+## 必需的配置
+
+```jsonc
+{
+  "storage": {
+    "adapter": "lokalise",
+    "config": {
+      "projectID": "your-project-id",
+      "apiTokenEnv": "LOKALISE_API_TOKEN"
+    }
+  }
+}
+```
+
+## 可选配置字段
+
+- `targetLanguages`
+- `timeoutSeconds`
+
+## 令牌解析
+
+- 默认环境变量： `LOKALISE_API_TOKEN`
+- 覆盖使用 `apiTokenEnv`
+
+## 常见问题
+
+- 未经授权的错误：令牌缺失或权限不足
+- 区域设置不匹配：将Lokalise语言代码与目标区域设置对齐
+- 超时错误：增加 `timeoutSeconds` 用于大型项目

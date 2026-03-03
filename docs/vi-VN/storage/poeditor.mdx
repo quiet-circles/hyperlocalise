@@ -1,0 +1,35 @@
+---
+title: "Trình điều hợp POEditor"
+description: "Cấu hình POEditor để đồng bộ kéo và đồng bộ đẩy."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "poeditor",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "POEDITOR_API_TOKEN"
+    }
+  }
+}
+```
+
+## Giải quyết token
+
+1. biến môi trường có tên là `storage.config.apiTokenEnv`
+2. dự phòng: `POEDITOR_API_TOKEN`
+
+## Các trường cấu hình tùy chọn
+
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+## Các vấn đề thường gặp
+
+- token không hợp lệ: kiểm tra biến môi trường đã được xuất trong shell hiện tại chưa
+- id dự án không đúng: kiểm tra lại ID dự án dạng số từ POEditor
+- thiếu locales: đảm bảo `targetLanguages` phù hợp với các mục tiêu cấu hình

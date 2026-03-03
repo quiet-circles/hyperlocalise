@@ -1,0 +1,36 @@
+---
+title: "OpenAI"
+description: "Cấu hình OpenAI làm nhà cung cấp LLM cho việc tạo bản dịch."
+---
+
+## Giá trị nhà cung cấp
+
+Sử dụng `openai` trong `llm.profiles.<name>.provider`.
+
+## Hồ sơ mẫu
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## Biến môi trường bắt buộc
+
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>

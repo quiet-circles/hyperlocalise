@@ -1,0 +1,52 @@
+---
+title: "AWS Bedrock"
+description: "将 AWS Bedrock 配置为翻译生成的 LLM 提供商。"
+---
+
+## 提供者值
+
+使用 `bedrock` 在 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "bedrock",
+        "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 必需的环境变量
+
+<CodeGroup>
+```bash Export
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="your-access-key-id"
+export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+```
+
+```bash .env.local
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+```
+</CodeGroup>
+
+使用临时凭证时可选：
+
+<CodeGroup>
+```bash Export
+export AWS_SESSION_TOKEN="your-session-token"
+```
+
+```bash .env.local
+AWS_SESSION_TOKEN="your-session-token"
+```
+</CodeGroup>

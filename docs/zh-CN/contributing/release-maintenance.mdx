@@ -1,0 +1,31 @@
+---
+title: "发布维护"
+description: "维护者的工作流程，用于质量关卡和命令行界面发布。"
+---
+
+## 质量检查
+
+```bash
+make fmt
+make lint
+make test
+make precommit
+```
+
+## 发布流程
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+发布自动化文件：
+
+- `.github/workflows/release.yml`
+- `.goreleaser.yml`
+
+## 已发布的工件目标
+
+- macOS： `amd64`, `arm64`
+- Linux： `amd64`, `arm64`
+- 软件包： `.deb`, `.rpm`

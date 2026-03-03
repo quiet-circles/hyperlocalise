@@ -1,0 +1,49 @@
+---
+title: "Tổng quan về lưu trữ"
+description: "Cách các tệp cục bộ, metadata sidecar và các bộ điều hợp từ xa hoạt động trong quá trình đồng bộ."
+---
+
+## Những gì lớp lưu trữ thực hiện
+
+Kết nối lưu trữ:
+
+- các tập tin dịch địa phương,
+- siêu dữ liệu nguồn gốc sidecar,
+- các API bộ chuyển đổi từ xa.
+
+## Bộ chuyển đổi được hỗ trợ
+
+- [Crowdin](/storage/crowdin)
+- [Lilt](/storage/lilt)
+- [Lokalise](/storage/lokalise)
+- [Cụm từ](/storage/phrase)
+- [POEditor](/storage/poeditor)
+- [Smartling](/storage/smartling)
+
+## Nhận dạng mục nhập
+
+Mỗi mục dịch được xác định bởi:
+
+- `key`
+- `context`
+- `locale`
+
+## Tại sao metadata của sidecar tồn tại
+
+Người dùng của bạn-văn bản đối diện nằm trong các tệp dịch bình thường. Dữ liệu vận hành (ví dụ trạng thái nháp so với trạng thái được chọn lọc) được lưu trong các tệp siêu dữ liệu bên cạnh để nội dung bản dịch giữ được sự sạch sẽ.
+
+## Vòng đời kéo và đẩy
+
+1. `run` tạo bản nháp cục bộ (`origin=llm`, `state=draft`).
+2. `sync push` gửi các thay đổi cục bộ lên kho lưu trữ từ xa.
+3. Người dịch quản lý giá trị trong hệ thống quản lý dịch từ xa.
+4. `sync pull` áp dụng các thay đổi được tuyển chọn tại chỗ.
+
+## Quy tắc xung đột
+
+- Kéo có thể tự động-áp dụng được chọn lọc-qua-bản nháp khi được bật.
+- Push mặc định bảo vệ các giá trị từ xa được sắp xếp.
+- `--fail-on-conflict` ngăn ngừa trôi lặng.
+- `--force-conflicts` là tùy chọn-cho các đường dẫn ghi đè rủi ro.
+
+Để biết các quyết định xung đột cụ thể, xem [xung đột](/troubleshooting/conflicts).

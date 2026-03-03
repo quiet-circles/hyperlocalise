@@ -1,0 +1,38 @@
+---
+title: "Anthropic"
+description: "Cấu hình Anthropic làm nhà cung cấp LLM cho việc tạo bản dịch."
+---
+
+## Giá trị nhà cung cấp
+
+Sử dụng `anthropic` trong `llm.profiles.<name>.provider`.
+
+## Hồ sơ mẫu
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## Các biến môi trường bắt buộc
+
+<CodeGroup>
+```bash Export
+export ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+```bash .env.local
+ANTHROPIC_BASE_URL="https://api.anthropic.com/v1"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+</CodeGroup>

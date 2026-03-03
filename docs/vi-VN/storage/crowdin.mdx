@@ -1,0 +1,30 @@
+---
+title: "Bộ chuyển đổi Crowdin"
+description: "Cấu hình Crowdin để đồng bộ hóa bản dịch từ xa."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "crowdin",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "CROWDIN_API_TOKEN"
+    }
+  }
+}
+```
+
+## Các trường cấu hình tùy chọn
+
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+## Các vấn đề thường gặp
+
+- token không tìm thấy: export `CROWDIN_API_TOKEN`
+- lỗi tìm kiếm dự án: kiểm tra ID dự án và quyền tài khoản
+- cập nhật một phần: xem lại báo cáo xung đột với `--output json`

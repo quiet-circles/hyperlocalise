@@ -1,0 +1,26 @@
+---
+title: "khởi tạo"
+description: "Tạo mới hoặc ghi đè mẫu i18n.jsonc trong dự án của bạn."
+---
+
+## Sử dụng
+
+```bash
+hyperlocalise init [--force]
+```
+
+## Nó làm gì
+
+- viết `i18n.jsonc` từ được xây dựng-trong mẫu
+- thất bại nếu tệp đã tồn tại (trừ khi `--force`)
+
+## Cờ
+
+- `--force`: ghi đè lên một nội dung đã tồn tại `i18n.jsonc`
+
+## Lưu đồ điển hình
+
+```bash
+hyperlocalise init
+hyperlocalise run --dry-run
+```

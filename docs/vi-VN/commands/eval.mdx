@@ -1,0 +1,119 @@
+---
+title: "đánh giá"
+description: "Thử nghiệm: Chạy các thử nghiệm chất lượng bản dịch và so sánh các báo cáo ứng viên với đường cơ sở."
+---
+
+<Note>
+Tính năng này đang trong giai đoạn thử nghiệm. Các cờ, hình dạng đầu ra và hành vi có thể thay đổi giữa các bản phát hành. Hãy sử dụng trong các quy trình được kiểm soát và ghim phiên bản trong CI.
+
+Sơ đồ báo cáo và cách đánh giá điểm có thể thay đổi khi quy trình đánh giá phát triển hoàn thiện hơn.
+</Note>
+
+Sử dụng `eval` các lệnh để đánh giá chất lượng bản dịch trên một tập đánh giá đại diện và thực thi ngưỡng chất lượng trong CI.
+
+## Sử dụng
+
+```bash
+hyperlocalise eval run --eval-set <path> [flags]
+hyperlocalise eval compare --candidate <path> --baseline <path> [flags]
+```
+
+## chạy eval
+
+Chạy một hoặc nhiều biến thể thử nghiệm trên tập đánh giá của bạn.
+
+### Lệnh này làm gì
+
+Tải tập dữ liệu đánh giá từ `--eval-set`.
+2. Mở rộng các biến thể thí nghiệm từ các hồ sơ, nhà cung cấp, mô hình và ghi đè lời nhắc bạn đã chọn.
+3. Thực thi mọi trường hợp kiểm thử với mọi biến thể thử nghiệm.
+4. Tạo báo cáo JSON khi bạn truyền `--output`.
+5. In một bản tóm tắt cho mỗi-bảng tóm tắt thí nghiệm.
+
+### Cờ hiệu
+
+- `--eval-set`: đường dẫn đến tập dữ liệu đánh giá (`.json`, `.jsonc`, `.csv`) (bắt buộc)
+- `--profile`ghi đè tên hồ sơ (lặp lại được)
+- `--provider`: ghi đè nhà cung cấp (có thể lặp lại)
+- `--model`ghi đè mô hình (lặp lại được)
+- `--prompt-file`ghi đè tệp lời nhắc
+- `--prompt`: ghi đè nhắc nhở nội tuyến (loại trừ lẫn nhau với `--prompt-file`)
+- `--output`Đường dẫn báo cáo đầu ra JSON
+
+### Các trường trong bảng tóm tắt
+
+- `score`điểm chất lượng trung bình có trọng số cho thí nghiệm
+- `pass_rate`số lần chạy thành công / tổng số lần chạy cho thí nghiệm
+- `placeholder_violations`số lượng tính toàn vẹn của placeholder khó-thất bại vi phạm
+- `latency_ms`độ trễ trung bình cho thí nghiệm
+
+### Ví dụ
+
+Chạy với các thiết lập mặc định từ cấu hình của bạn và viết báo cáo:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.jsonc \
+  --output ./artifacts/eval-report.json
+```
+
+Chạy một ma trận các cấu hình và ghi đè nhà cung cấp/mô hình:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.csv \
+  --profile default \
+  --profile fast \
+  --provider openai \
+  --provider anthropic \
+  --model gpt-4.1-mini \
+  --model claude-sonnet-4-5
+```
+
+Chạy với ghi đè tệp prompt:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --prompt-file ./prompts/translation-eval.txt
+```
+
+## đánh giá so sánh
+
+So sánh một báo cáo ứng viên với một báo cáo cơ sở.
+
+Sử dụng lệnh này trong CI để ngăn ngừa sự suy giảm chất lượng.
+
+### Cờ
+
+- `--candidate`: báo cáo ứng viên đường dẫn JSON (bắt buộc)
+- `--baseline`đường dẫn JSON báo cáo cơ sở (bắt buộc)
+- `--min-score`điểm trọng số ứng viên tối thiểu
+- `--max-regression`: mức giảm điểm tối đa cho phép từ đường cơ sở đến ứng viên
+
+### Hành vi CI
+
+Lệnh thoát với lỗi khi:
+
+- điểm trọng số của ứng viên thấp hơn `--min-score`hoặc
+- điểm hồi quy vượt quá `--max-regression`.
+
+### Ví dụ
+
+So sánh báo cáo và chỉ in các giá trị tóm tắt:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json
+```
+
+Không cho CI vượt qua nếu điểm ứng viên giảm xuống dưới `0.82` hoặc giảm nhiều hơn `0.02`:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json \
+  --min-score 0.82 \
+  --max-regression 0.02
+```

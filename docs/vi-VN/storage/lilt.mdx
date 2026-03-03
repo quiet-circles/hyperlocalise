@@ -1,0 +1,45 @@
+---
+title: "Bộ điều hợp Lilt"
+description: "Cấu hình Lilt để đồng bộ dịch từ xa theo cơ chế kéo/đẩy."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "lilt",
+    "config": {
+      "projectID": "123",
+      "apiTokenEnv": "LILT_API_TOKEN"
+    }
+  }
+}
+```
+
+## Phân giải token
+
+1. biến môi trường có tên là `storage.config.apiTokenEnv`
+2. dự phòng: `LILT_API_TOKEN`
+
+`apiToken` inline trong cấu hình không được hỗ trợ. Chỉ sử dụng biến môi trường.
+
+## Các trường cấu hình tùy chọn
+
+- `targetLanguages`
+- `timeoutSeconds` (mặc định thành `30`)
+- `pollIntervalMs` (mặc định là `1000`)
+- `maxPolls` (mặc định là `60`)
+
+## Hành vi kéo
+
+- bắt đầu một công việc xuất khẩu cho mỗi ngôn ngữ địa phương
+- kiểm tra trạng thái xuất cho đến khi công việc hoàn tất
+- tải xuống các tệp JSON (tệp đơn hoặc ZIP)
+- chuẩn hóa các mục nhập và bỏ qua các hàng khóa/vùng/ngữ cảnh/giá trị trống
+
+## Các vấn đề thường gặp
+
+- thiếu token: export `LILT_API_TOKEN` trong cùng một phiên shell
+- thiếu id dự án: set `storage.config.projectID`
+- timeout hoặc xuất chậm: tăng lên `timeoutSeconds`, `pollIntervalMs`, hoặc `maxPolls`

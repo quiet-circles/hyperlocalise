@@ -1,0 +1,38 @@
+---
+title: "Bộ điều hợp Smartling"
+description: "Cấu hình Smartling để đồng bộ hóa kéo/đẩy bản dịch từ xa."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "smartling",
+    "config": {
+      "projectID": "your-project-id",
+      "userIdentifier": "your-smartling-user-identifier",
+      "userSecretEnv": "SMARTLING_USER_SECRET"
+    }
+  }
+}
+```
+
+## Bí mật bắt buộc
+
+```bash
+export SMARTLING_USER_SECRET="your-smartling-user-secret"
+```
+
+`userSecret` inline trong cấu hình không được hỗ trợ. Chỉ sử dụng biến môi trường.
+
+## Các trường cấu hình tùy chọn
+
+- `targetLanguages`
+- `timeoutSeconds` (mặc định là `30`)
+
+## Các vấn đề phổ biến
+
+- thiếu bí mật: export `SMARTLING_USER_SECRET` trong cùng một phiên shell
+- thiếu định danh người dùng: đặt `storage.config.userIdentifier`
+- không khớp ngôn ngữ: căn chỉnh `targetLanguages` với các địa phương dự án của bạn

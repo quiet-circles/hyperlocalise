@@ -1,0 +1,46 @@
+---
+title: "第一个项目"
+description: "建立一个最小化的项目布局，并了解预期的输出文件。"
+---
+
+## 最简布局
+
+<Tree>
+  <Tree.Folder name="apps" defaultOpen>
+    <Tree.Folder name="web" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="es-ES.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+    <Tree.Folder name="lab" />
+  </Tree.Folder>
+  <Tree.Folder name="packages" defaultOpen>
+    <Tree.Folder name="ui" defaultOpen>
+      <Tree.Folder name="lang" defaultOpen>
+        <Tree.File name="en-US.json" />
+      </Tree.Folder>
+    </Tree.Folder>
+  </Tree.Folder>
+  <Tree.File name="i18n.jsonc" />
+</Tree>
+
+## 最小配置模式
+
+使用一个存储桶和一个组开始：
+
+- `locales.source`：您的源语言环境 (例如 `en-US`)
+- `locales.targets`: 一个目标区域 (例如 `es-ES`)
+- `buckets.ui.files`: 将源路径模板映射到目标路径模板
+- `groups.default`：附加 `targets` 和 `buckets`
+
+有关完整字段，请参见 [i18n 配置](/configuration/i18n-config).
+
+在此设置中，翻译来源于 `packages/ui/lang` 并生成到 `apps/web/lang`.
+
+## 生成的产物
+
+之后 `hyperlocalise run`:
+
+- 在您配置的  下翻译的目标文件 `to` 路径
+- `.hyperlocalise.lock.json` 在项目根目录
+- 根据您的存储布局，用于来源的旁车元数据文件

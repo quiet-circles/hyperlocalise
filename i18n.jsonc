@@ -157,7 +157,7 @@
         "provider": "openai",
         "model": "gpt-4.1-mini",
         // Prompt template used for each translation task.
-        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. TOV as a technical writer, so use simple and clear language. Input:\n\n{{input}}"
       },
       "ollama": {
         "provider": "ollama",

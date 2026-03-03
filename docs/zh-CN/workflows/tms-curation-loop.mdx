@@ -1,0 +1,33 @@
+---
+title: "TMS 策划循环"
+description: "实验性：从本地草稿生成切换到人工精选翻译，再切换回来。"
+---
+
+<Note>
+此功能处于试验阶段。标志、输出形状和行为可能在不同版本间发生变化。请在受控流程中使用，并在持续集成中固定版本。
+
+随着同步语义和冲突策略的不断完善，工作流程指导可能会发生变化。
+</Note>
+
+## 结束-到-结束序列
+
+1. 本地生成草稿 `run`
+2. 推送草稿与 `sync push --dry-run=false`
+3. 翻译人员在 POEditor/Lokalise/Crowdin 中进行整理
+4. 拉取精选更新与 `sync pull --dry-run=false`
+5. 验证与 `status`
+
+## 决策点
+
+- 保留 `--fail-on-conflict=true` 为了安全。
+- 使用 `--apply-curated-over-draft` 在拉取时，精选数据应占优势。
+- 使用 `--force-conflicts` 仅在审查冲突后才推送。
+
+## 可审计性
+
+使用JSON格式输出以供机器处理-可读性评审：
+
+```bash
+hyperlocalise sync pull --output json
+hyperlocalise sync push --output json
+```

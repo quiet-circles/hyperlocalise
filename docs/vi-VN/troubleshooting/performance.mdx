@@ -1,0 +1,22 @@
+---
+title: "Hiệu suất"
+description: "Cải thiện thời gian chạy và độ ổn định trong các dự án bản địa hóa lớn."
+---
+
+## Giảm công việc có thể tránh được
+
+- dựa vào khoá-bỏ qua tệp trong `run`
+- chia các ánh xạ rất lớn thành các nhóm nhỏ hơn
+- giới hạn phạm vi cục bộ với lặp lại `--locale`
+
+## Cải thiện độ tin cậy đồng bộ
+
+- đặt bộ điều hợp `timeoutSeconds` khi làm việc với các dự án lớn
+- chạy mỗi-công việc đồng bộ locale thay vì quạt toàn bộ-xuất khi cần thiết
+- sử dụng đầu ra JSON để dễ dàng hơn trong việc tự động thử lại
+
+## Chẩn đoán điểm nóng
+
+- so sánh `planned_total` vs `executable_total`
+- kiểm tra các thất bại lặp đi lặp lại bởi `target` và `key`
+- kiểm tra giới hạn tốc độ mạng/API từ nhà cung cấp của bạn

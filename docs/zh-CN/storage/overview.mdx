@@ -1,0 +1,49 @@
+---
+title: "存储概览"
+description: "本地文件、旁车元数据和远程适配器在同步过程中的工作原理。"
+---
+
+## 存储层的作用
+
+存储连接：
+
+- 本地翻译文件，
+- 边车来源元数据，
+- 远程适配器 API。
+
+## 支持的适配器
+
+- [Crowdin](/storage/crowdin)
+- [轻拍](/storage/lilt)
+- [Lokalise](/storage/lokalise)
+- [短语](/storage/phrase)
+- [POEditor](/storage/poeditor)
+- [Smartling](/storage/smartling)
+
+## 条目身份
+
+每个翻译条目通过以下方式标识：
+
+- `key`
+- `context`
+- `locale`
+
+## 为什么存在旁车元数据
+
+您的用户-面对的文本保留在常规翻译文件中。操作元数据 (例如 草稿状态 与 精选状态) 保存在旁车元数据文件中，以保持翻译内容的简洁。
+
+## 拉取和推送生命周期
+
+1. `run` 生成本地草稿 (`origin=llm`, `state=draft`).
+2. `sync push` 将本地更改发送到远程存储。
+3. 人类译者在远程翻译管理系统中管理数值。
+4. `sync pull` 在本地应用精选更改。
+
+## 冲突规则
+
+- 拉可以自动-应用精选-结束-启用时起草。
+- 推送默认保护精选的远程值。
+- `--fail-on-conflict` 防止无声漂移。
+- `--force-conflicts` 是可选的-用于危险覆盖路径。
+
+有关具体冲突决策，请参见 [冲突](/troubleshooting/conflicts).

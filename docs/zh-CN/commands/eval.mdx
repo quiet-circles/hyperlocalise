@@ -1,0 +1,119 @@
+---
+title: "评估"
+description: "实验：运行翻译质量实验，并将候选报告与基线进行比较。"
+---
+
+<Note>
+此功能处于实验阶段。标志、输出形状和行为可能在各版本之间发生变化。请在受控工作流程中使用，并在持续集成中固定版本。
+
+随着评估流程的成熟，报告架构和评分行为可能会发生变化。
+</Note>
+
+使用 `eval` 用于在代表性评估集上基准测试翻译质量并在持续集成中强制执行质量阈值的命令。
+
+## 用法
+
+```bash
+hyperlocalise eval run --eval-set <path> [flags]
+hyperlocalise eval compare --candidate <path> --baseline <path> [flags]
+```
+
+## 评估运行
+
+在您的评估集中运行一个或多个实验变体。
+
+### 此命令的功能
+
+1. 从中加载评估数据集 `--eval-set`.
+2. 从您选择的配置文件、提供商、模型和提示覆盖中扩展实验变体。
+3. 对每个实验变体执行每个用例。
+4. 当您传递时，生成一个 JSON 报告 `--output`.
+5. 打印简明的每个-实验总结表。
+
+### 标志
+
+- `--eval-set`: 评估数据集的路径 (`.json`, `.jsonc`, `.csv`) (必填)
+- `--profile`: 配置文件名称覆盖 (可重复的)
+- `--provider`：提供者覆盖 (可重复的)
+- `--model`: 模型覆盖 (可重复的)
+- `--prompt-file`: 提示文件覆盖
+- `--prompt`：内联提示覆盖 (与……互斥 `--prompt-file`)
+- `--output`: JSON输出报告路径
+
+### 摘要表字段
+
+- `score`: 实验的加权平均质量得分
+- `pass_rate`：实验的成功运行次数 / 总运行次数
+- `placeholder_violations`: 占位符完整性计数严格-失败违规
+- `latency_ms`：实验的平均延迟
+
+### 示例
+
+使用配置中的默认设置运行并编写报告：
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.jsonc \
+  --output ./artifacts/eval-report.json
+```
+
+运行配置文件和提供程序/模型覆盖的矩阵：
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.csv \
+  --profile default \
+  --profile fast \
+  --provider openai \
+  --provider anthropic \
+  --model gpt-4.1-mini \
+  --model claude-sonnet-4-5
+```
+
+使用提示文件覆盖运行：
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --prompt-file ./prompts/translation-eval.txt
+```
+
+## 评估比较
+
+将候选报告与基线报告进行比较。
+
+在持续集成中使用此命令以防止质量下降。
+
+### 标志
+
+- `--candidate`: 候选人报告 JSON 路径 (必填)
+- `--baseline`: 基线报告 JSON 路径 (必填)
+- `--min-score`：最低候选人加权分数
+- `--max-regression`：从基线到候选的最大允许分数回退
+
+### 持续集成行为
+
+当出现以下情况时，命令会错误退出：
+
+- 候选人加权得分低于 `--min-score`，或
+- 分数回归超出 `--max-regression`.
+
+### 示例
+
+仅比较报告并打印摘要值：
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json
+```
+
+如果候选分数低于该值，则使 CI 失败 `0.82` 或者退步超过 `0.02`:
+
+```bash
+hyperlocalise eval compare \
+  --candidate ./artifacts/eval-candidate.json \
+  --baseline ./artifacts/eval-baseline.json \
+  --min-score 0.82 \
+  --max-regression 0.02
+```

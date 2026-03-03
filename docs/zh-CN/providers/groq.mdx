@@ -1,0 +1,38 @@
+---
+title: "Groq"
+description: "将 Groq 配置为翻译生成的 LLM 提供商。"
+---
+
+## 提供者价值
+
+使用 `groq` 进入 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 必需的环境变量
+
+<CodeGroup>
+```bash Export
+export GROQ_BASE_URL="https://api.groq.com/openai/v1"
+export GROQ_API_KEY="your-groq-api-key"
+```
+
+```bash .env.local
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_API_KEY="your-groq-api-key"
+```
+</CodeGroup>

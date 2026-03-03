@@ -1,0 +1,30 @@
+---
+title: "Crowdin 适配器"
+description: "配置 Crowdin 以进行远程翻译同步。"
+---
+
+## 必需配置
+
+```jsonc
+{
+  "storage": {
+    "adapter": "crowdin",
+    "config": {
+      "projectID": "123456",
+      "apiTokenEnv": "CROWDIN_API_TOKEN"
+    }
+  }
+}
+```
+
+## 可选配置字段
+
+- `sourceLanguage`
+- `targetLanguages`
+- `timeoutSeconds`
+
+## 常见问题
+
+- 未找到令牌：export `CROWDIN_API_TOKEN`
+- 项目查找失败：请检查项目ID和账户权限
+- 部分更新：查看冲突报告与 `--output json`

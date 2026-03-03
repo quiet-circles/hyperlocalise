@@ -1,0 +1,33 @@
+---
+title: "Xử lý xung đột"
+description: "Hiểu các xung đột kéo/đẩy và áp dụng các chiến lược giải quyết an toàn."
+---
+
+## Xung đột khi kéo
+
+Trường hợp điển hình: giá trị được tuyển chọn cục bộ khác với giá trị từ xa.
+
+Giải pháp an toàn:
+
+1. chạy `sync pull` với `--output json`
+2. kiểm tra các mục xung đột
+3. quyết định nguồn dữ liệu chính xác
+4. chạy lại với trạng thái cục bộ/xa đã được cập nhật
+
+`--apply-curated-over-draft` chỉ áp dụng khi mục nhập cục bộ ở trạng thái nháp.
+
+## Xung đột đẩy
+
+Trường hợp điển hình: bản nháp cục bộ khác với giá trị được chọn lọc từ xa.
+
+Độ phân giải an toàn:
+
+1. kiểm tra báo cáo xung đột trong JSON
+2. giữ nguyên hành vi mặc định khi xung đột thất bại
+3. sử dụng `--force-conflicts` chỉ dành cho các ngoại lệ đã được xem xét
+
+## Mặc định được đề xuất
+
+- giữ lại `--fail-on-conflict=true`
+- giữ lại `--dry-run=true` cho đến khi báo cáo được xem xét
+- lưu trữ các báo cáo JSON trong CI để theo dõi kiểm toán

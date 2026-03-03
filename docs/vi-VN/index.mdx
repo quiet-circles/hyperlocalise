@@ -1,0 +1,40 @@
+---
+title: "Hyperlocalise là gì?"
+description: "Các quy trình làm việc bản địa hóa ưu tiên CLI cho việc tạo bản nháp AI, đồng bộ tùy chọn quản lý TMS và báo cáo trạng thái."
+---
+
+`hyperlocalise` giúp bạn tạo bản dịch địa phương dự thảo, tùy chọn đồng bộ với TMS của bạn và theo dõi những gì vẫn cần được xem xét.
+
+## Dành cho ai đây
+
+Sử dụng CLI này nếu bạn:
+
+- giữ các tệp dịch trong kho lưu trữ của bạn,
+- muốn AI-tạo bản nháp làm điểm khởi đầu,
+- muốn chọn giữa không-quy trình làm việc của con người và lựa chọn hiệu chỉnh thủ công trong POEditor, Lokalise hoặc Crowdin.
+
+## Quy trình công việc chính
+
+| Giai đoạn | Hành động | Tại sao điều này quan trọng |
+| --- | --- | --- |
+| 1 | [`init`](/commands/init) | Giàn giáo `i18n.jsonc` và các mặc định của bootstrap. |
+| 2 | Cấu hình [`i18n config`](/configuration/i18n-config) | Định nghĩa các locale, bucket và cài đặt LLM/lưu trữ. |
+| 3 | [`run --dry-run`](/commands/run) | Xác nhận kế hoạch và phát hiện vấn đề trước khi viết bản nháp. |
+| 4 | [`run`](/commands/run) | Tạo bản dịch nháp cục bộ. |
+| 5 | [Phát hành từ kho lưu trữ cục bộ](/commands/run) | Không-đường dẫn thủ công khi quy trình của bạn cho phép xuất bản trực tiếp từ các kết quả đã tạo. |
+| 6 (tùy chọn) | [`sync push` (thử nghiệm)](/commands/sync-push) | Tải lên các thay đổi cục bộ của bạn lên TMS để xử lý quy trình làm việc hiệu chỉnh. |
+| 7 (tùy chọn) | Tuyển chọn trong TMS | Đánh giá và chỉnh sửa của con người trên nền tảng dịch thuật của bạn. |
+| 8 (tùy chọn) | [`sync pull` (thử nghiệm)](/commands/sync-pull) | Đưa các bản dịch được tuyển chọn trở lại kho lưu trữ. |
+| 9 | [`status`](/commands/status) | Đo lường hoàn thành và công việc chưa giải quyết trong bất kỳ đường luồng công việc nào. |
+
+## Bắt đầu trong 10 phút
+
+1. [Cài đặt](/getting-started/install).
+2. [Chạy khởi động nhanh](/getting-started/quickstart).
+3. [Cài đặt cấu hình i18n của bạn](/configuration/i18n-config).
+
+## Các bước tiếp theo phổ biến
+
+- Tìm hiểu hành vi lệnh trong [tổng quan về các lệnh](/commands/overview).
+- Cấu hình thông tin đăng nhập nhà cung cấp trong [thông tin đăng nhập nhà cung cấp](/configuration/provider-credentials).
+- Hiểu hành vi đồng bộ trong [tổng quan lưu trữ](/storage/overview).

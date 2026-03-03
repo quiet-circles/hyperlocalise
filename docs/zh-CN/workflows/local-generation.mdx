@@ -1,0 +1,31 @@
+---
+title: "本地生成工作流程"
+description: "安全运行草稿生成，并使锁文件行为可预测。"
+---
+
+## 推荐循环
+
+1. `hyperlocalise run --dry-run`
+2. 检查任务列表和计数
+3. `hyperlocalise run`
+4. 检查失败情况，必要时重新运行
+
+## 锁定-文件行为
+
+`.hyperlocalise.lock.json` 跟踪已完成的任务以避免重复工作。
+
+当您更改源内容或配置映射时，重新-运行并验证是否计划了新任务。
+
+使用 [锁文件合约](/reference/lockfile-contract) 有关架构详细信息和重置指南。
+
+## 良好做法
+
+- 保持干燥-在持续集成中运行以提高可见性
+- 使用确定性文件映射
+- 避免手动编辑锁定状态
+
+## 本地工作流程中的 Markdown
+
+如果您的桶映射指向 `.md` 或 `.mdx` 文件， `hyperlocalise run --dry-run` 仍然从 Markdown 源文件中规划任务。
+
+当您运行时没有 `--dry-run`输出在翻译提取的散文节点时保持 Markdown 和 MDX 布局稳定。

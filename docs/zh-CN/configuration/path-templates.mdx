@@ -1,0 +1,71 @@
+---
+title: "路径模板"
+description: "在桶文件映射中安全使用源和目标占位符。"
+---
+
+## 支持的占位符
+
+- `{{source}}`: 源语言环境
+- `{{target}}`: 目标语言
+- `{{localeDir}}`: 对于源语言输出为空，否则为目标语言
+
+## 示例
+
+### JSON 本地化文件
+
+```jsonc
+{
+  "from": "packages/ui/lang/{{source}}.json",
+  "to": "apps/web/lang/{{target}}.json"
+}
+```
+
+### 区域设置模板，带有 `[locale]` 令牌
+
+```jsonc
+{
+  "from": "lang/en.json",
+  "to": "lang/[locale].json"
+}
+```
+
+
+### 使用通配符进行 Mintlify 递归映射
+
+```jsonc
+{
+  "from": "docs/**/*.mdx",
+  "to": "docs/{{localeDir}}/**/*.mdx"
+}
+```
+
+这会保持源文件结构，并将翻译后的文件写入每个语言文件夹下相同的相对路径中。
+
+与 `source=en` 和目标 `fr`, `es`，和 `zh`:
+
+- `target=en` 解析 `docs/{{localeDir}}/index.mdx` 至 `docs/index.mdx`
+- `target=fr` 解析 `docs/{{localeDir}}/index.mdx` 至 `docs/fr/index.mdx`
+- `target=es` 解决 `docs/{{localeDir}}/index.mdx` 至 `docs/es/index.mdx`
+- `target=zh` 解决 `docs/{{localeDir}}/index.mdx` 至 `docs/zh/index.mdx`
+
+当您的英文源页面直接位于此模式下时使用此模式 `docs/` 翻译后的页面应写入本地化文件夹。
+
+## 良好模式
+
+- 保持源树和目标树分开。
+- 按域名使用稳定的存储桶名称 (`ui`, `marketing`, `emails`).
+- 每个文件映射保持一个职责。
+
+## 防止-模式
+
+- 写作 `to` 路径返回到源目录。
+- 为多个存储桶重复使用相同的输出路径。
+- 将本地令牌与广告混合-模板外的 hoc 字符串替换。
+
+## 快速检查
+
+运行前：
+
+1. 确认 `from` 解析源语言环境，
+2. 确认 `to` 可以为每个目标语言环境创建，
+3. 运行 `hyperlocalise run --dry-run` 检查计划任务。

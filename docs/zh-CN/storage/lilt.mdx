@@ -1,0 +1,45 @@
+---
+title: "Lilt 适配器"
+description: "配置Lilt以进行远程翻译的拉取/推送同步。"
+---
+
+## 所需配置
+
+```jsonc
+{
+  "storage": {
+    "adapter": "lilt",
+    "config": {
+      "projectID": "123",
+      "apiTokenEnv": "LILT_API_TOKEN"
+    }
+  }
+}
+```
+
+## 令牌解析
+
+1. 环境变量名称为 `storage.config.apiTokenEnv`
+2. 后备： `LILT_API_TOKEN`
+
+`apiToken` 配置中不支持内联。仅使用环境变量。
+
+## 可选配置字段
+
+- `targetLanguages`
+- `timeoutSeconds` (默认情况下为 `30`)
+- `pollIntervalMs` (默认为 `1000`)
+- `maxPolls` (默认为 `60`)
+
+## 拉取行为
+
+- 为每个语言环境启动一个导出任务
+- 轮询导出状态直到作业完成
+- 下载 JSON 工件 (单个文件或压缩包)
+- 规范条目并跳过空的键/语言环境/值行
+
+## 常见问题
+
+- 缺少标记：export `LILT_API_TOKEN` 在同一个 shell 会话中
+- 缺少项目ID：设置 `storage.config.projectID`
+- 超时或导出缓慢：增加 `timeoutSeconds`, `pollIntervalMs`，或 `maxPolls`

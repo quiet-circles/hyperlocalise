@@ -1,0 +1,37 @@
+---
+title: "đồng bộ kéo"
+description: "Thử nghiệm: Kéo bản dịch chọn lọc từ bộ nhớ từ xa vào các tệp cục bộ."
+---
+
+<Note>
+Tính năng này đang trong giai đoạn thử nghiệm. Các cờ, hình dạng đầu ra và hành vi có thể thay đổi giữa các phiên bản. Sử dụng trong các quy trình làm việc được kiểm soát và cố định phiên bản trong CI.
+
+Việc xử lý xung đột và hợp đồng đồng bộ có thể phát triển khi các tích hợp TMS trở nên hoàn thiện hơn.
+</Note>
+
+## Sử dụng
+
+```bash
+hyperlocalise sync pull [--config <path>] [flags]
+```
+
+## Hành vi mặc định an toàn
+
+`sync pull` mặc định là khô-chế độ chạy. Bắt đầu bằng cách xem xét báo cáo, sau đó chạy lại với `--dry-run=false`.
+
+## Cờ
+
+- `--config`: đường dẫn cấu hình
+- `--locale`: ngôn ngữ đích(s), có thể lặp lại được
+- `--dry-run`: chỉ xem trước (mặc định `true`)
+- `--output`: `text` hoặc `json`
+- `--fail-on-conflict`: trả về lỗi khi phát hiện xung đột (mặc định `true`)
+- `--apply-curated-over-draft`: cho phép các giá trị từ xa được chọn lọc thay thế các giá trị bản nháp cục bộ (mặc định `true`)
+
+## Ví dụ
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --locale es-ES --output json
+```
+
+Xem [xử lý xung đột](/troubleshooting/conflicts) cho chiến lược giải quyết.

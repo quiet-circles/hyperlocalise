@@ -1,0 +1,42 @@
+---
+title: "大型语言模型提供商概览"
+description: "共享的配置文件字段、提示变量以及指向每个提供商特定配置页面的链接。"
+---
+
+使用下面的一个提供者页面查看准确的设置和示例：
+
+- [OpenAI](/providers/openai)
+- [Azure OpenAI](/providers/azure-openai)
+- [双子座](/providers/gemini)
+- [类人智能](/providers/anthropic)
+- [AWS Bedrock](/providers/bedrock)
+- [LM 工作室](/providers/lmstudio)
+- [Groq](/providers/groq)
+- [Ollama](/providers/ollama)
+
+## 支持的提供者值
+
+- `openai`
+- `azure_openai`
+- `gemini`
+- `anthropic`
+- `bedrock`
+- `lmstudio`
+- `groq`
+- `ollama`
+
+## 必填资料字段
+
+每个 `llm.profiles.<name>` 条目要求：
+
+- `provider`
+- `model`
+- `prompt`
+
+## 提示变量
+
+这些占位符可用于 `prompt`:
+
+- `{{source}}`
+- `{{target}}`
+- `{{input}}`

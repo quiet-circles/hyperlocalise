@@ -1,0 +1,37 @@
+---
+title: "同步推送"
+description: "实验性功能：将本地翻译更改推送到远程存储适配器。"
+---
+
+<Note>
+此功能处于实验阶段。标志、输出形状和行为可能会在各个版本之间发生变化。请在受控的工作流程中使用，并在持续集成中固定版本。
+
+随着TMS集成的成熟，冲突处理和同步合同可能会发展。
+</Note>
+
+## 用法
+
+```bash
+hyperlocalise sync push [--config <path>] [flags]
+```
+
+## 安全的默认行为
+
+`sync push` 默认为干燥-运行模式和冲突失败。
+
+## 标志
+
+- `--config`: 配置路径
+- `--locale`：目标语言(s)，可重复的
+- `--dry-run`仅预览 (默认 `true`)
+- `--output`: `text` 或 `json`
+- `--fail-on-conflict`: 发现冲突时返回错误 (默认 `true`)
+- `--force-conflicts`: 允许在策略允许的情况下覆盖不匹配的情况 (默认 `false`)
+
+## 示例
+
+```bash
+hyperlocalise sync push --config i18n.jsonc --locale es-ES --dry-run=false
+```
+
+见 [冲突处理](/troubleshooting/conflicts) 使用前 `--force-conflicts`.

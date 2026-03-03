@@ -1,0 +1,111 @@
+---
+title: "Tự động hóa CI"
+description: "Các mẫu CI an toàn cho kiểm tra sai lệch và đồng bộ hóa TMS kéo/đẩy theo lịch trình."
+---
+
+## Tiêu chuẩn tiêm bí mật CI
+
+Đối với các adapter từ xa, giữ bí mật trong trình quản lý bí mật CI của bạn và chỉ chèn chúng vào các công việc gọi `hyperlocalise sync`.
+
+- Chỉ cam kết `*Env` tên biến trong `i18n.jsonc`.
+- Tiêm giá trị token trong thời gian chạy thông qua công việc-biến môi trường cấp độ.
+- Sử dụng thông tin đăng nhập riêng cho việc đọc-chỉ kiểm tra so với ghi-đã bật các công việc đồng bộ.
+- Tránh in các biến môi trường trong các bước pipeline.
+
+## Các kiểm tra được đề xuất
+
+### 1. Cấu hình + lên kế hoạch kiểm tra sơ bộ
+
+```bash
+hyperlocalise run --config i18n.jsonc --dry-run
+```
+
+### 2. Ảnh chụp trạng thái
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv
+```
+
+Lưu CSV như một sản phẩm xây dựng để theo dõi xu hướng.
+
+### 3. Cổng xung đột đồng bộ
+
+`sync pull` và `sync push` mặc định thành `--dry-run=true`, đây là một cơ sở CI an toàn.
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+hyperlocalise sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+Sử dụng `--dry-run=false` chỉ trong các công việc được cho phép rõ ràng để ghi các tập tin cục bộ hoặc hệ thống từ xa.
+
+## Ví dụ về công việc đồng bộ theo lịch trình
+
+Sử dụng các ví dụ về GitHub Actions này làm cơ sở. Điều chỉnh tên bí mật và quy tắc phê duyệt cho nền tảng CI của bạn.
+
+### Đồng bộ kéo theo lịch trình (đọc-chỉ, mặc định an toàn)
+
+```yaml
+name: tms-pull-sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  pull-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SMARTLING_USER_SECRET: ${{ secrets.SMARTLING_USER_SECRET }}
+      LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+Để áp dụng các thay đổi từ xa vào các tệp cục bộ trong CI, chuyển sang:
+
+```bash
+go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+```
+
+### Đồng bộ đẩy theo lịch trình (viết-đã bật, đang hoạt động)
+
+```yaml
+name: tms-push-sync
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  push-sync:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      SMARTLING_USER_SECRET: ${{ secrets.SMARTLING_USER_SECRET }}
+      LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+```
+
+Đối với một không-đường kiểm tra biến đổi, sử dụng:
+
+```bash
+go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+```
+
+Để viết-các công việc đã bật, ưu tiên môi trường được bảo vệ, cổng phê duyệt và ít nhất-chứng chỉ dịch vụ đặc quyền.

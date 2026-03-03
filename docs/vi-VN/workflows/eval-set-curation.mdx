@@ -1,0 +1,41 @@
+---
+title: "Chỉnh sửa bộ tập đánh giá"
+description: "Xây dựng một bộ đánh giá bản dịch đại diện để phát hiện các vấn đề chất lượng thực tế."
+---
+
+Sử dụng bộ đánh giá để đo chất lượng bản dịch trên các chuỗi quan trọng nhất đối với bạn.
+
+## Chọn định dạng tệp
+
+Bạn có thể lưu các bộ đánh giá dưới dạng JSON, JSONC hoặc CSV.
+
+- sử dụng JSON hoặc JSONC khi bạn muốn cấu trúc lồng nhau và siêu dữ liệu rõ ràng
+- sử dụng CSV khi bạn muốn chỉnh sửa bảng tính nhanh với các cột như `id`, `source`, `targetLocale`, `context`, `reference`, `tags`, `bucket`, và `group`
+- trong CSV, phân tách nhiều thẻ bằng dấu chấm phẩy (`ui;short;icu`)
+
+## Chọn phạm vi đại diện
+
+Bao gồm một hỗn hợp các loại chuỗi để bạn có thể phát hiện sự suy giảm trên các dạng nội dung khác nhau.
+
+- chuỗi giao diện ngắn: nút bấm, nhãn, mục menu và văn bản lỗi ngắn gọn
+- dài-chuỗi mẫu: các bước hướng dẫn, văn bản trợ giúp, văn bản pháp lý và thông điệp giao dịch
+- ICU và định dạng phức tạp: quy tắc số nhiều, biến thể giới tính, câu lệnh chọn, và các trình giữ chỗ định dạng ngày hoặc số
+- chỗ giữ chỗ và biến: các token như `{name}`, `%s`, hoặc `{{count}}` mà phải giữ nguyên không thay đổi
+
+## Giữ ngữ cảnh gần với từng trường hợp
+
+Đối với mỗi trường hợp, lưu một id ổn định và bao gồm đủ ngữ cảnh cho người đánh giá.
+
+- thêm ngôn ngữ đích và văn bản nguồn
+- bao gồm ảnh chụp màn hình, tên tính năng hoặc ghi chú ý định trong `context`
+- thêm tùy chọn `reference` văn bản khi bạn đã có bản dịch đáng tin cậy
+- gắn nhãn các trường hợp bằng thẻ và lựa chọn thêm nhóm hoặc phần để bạn có thể phân tích báo cáo theo khu vực
+
+## Duy trì chất lượng theo thời gian
+
+Xử lý bộ dữ liệu thử nghiệm đánh giá như dữ liệu kiểm thử sản xuất.
+
+- xem lại và làm mới bộ khi giao diện người dùng hoặc nội dung sản phẩm thay đổi
+- xóa các trường hợp lỗi thời không còn liên kết với các tính năng hoạt động
+- giữ cân bằng giữa các chuỗi dễ, trung bình và khó
+- chạy lại cùng một bộ lặp đi lặp lại để so sánh các thay đổi về mô hình hoặc lời nhắc một cách công bằng

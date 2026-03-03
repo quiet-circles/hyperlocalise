@@ -1,0 +1,34 @@
+---
+title: "Bộ chuyển đổi Lokalise"
+description: "Cấu hình Lokalise API v2 để đồng bộ kéo/đẩy."
+---
+
+## Cấu hình bắt buộc
+
+```jsonc
+{
+  "storage": {
+    "adapter": "lokalise",
+    "config": {
+      "projectID": "your-project-id",
+      "apiTokenEnv": "LOKALISE_API_TOKEN"
+    }
+  }
+}
+```
+
+## Các trường cấu hình tùy chọn
+
+- `targetLanguages`
+- `timeoutSeconds`
+
+## Phân giải token
+
+- biến môi trường mặc định: `LOKALISE_API_TOKEN`
+- ghi đè với `apiTokenEnv`
+
+## Các vấn đề thường gặp
+
+- lỗi không được ủy quyền: thiếu token hoặc phạm vi không đủ
+- không khớp ngôn ngữ: căn chỉnh mã ngôn ngữ Lokalise với các địa phương mục tiêu
+- lỗi hết thời gian: tăng lên `timeoutSeconds` cho các dự án lớn

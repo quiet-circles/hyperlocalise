@@ -1,0 +1,38 @@
+---
+title: "Ollama"
+description: "将 Ollama 配置为翻译生成的 LLM 提供者。"
+---
+
+## 提供者值
+
+使用 `ollama` 在 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 所需环境变量
+
+<CodeGroup>
+```bash Export
+export OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+export OLLAMA_API_KEY="ollama"
+```
+
+```bash .env.local
+OLLAMA_BASE_URL="http://127.0.0.1:11434/v1"
+OLLAMA_API_KEY="ollama"
+```
+</CodeGroup>

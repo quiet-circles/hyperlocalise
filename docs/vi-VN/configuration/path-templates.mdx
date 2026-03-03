@@ -1,0 +1,71 @@
+---
+title: "Mẫu đường dẫn"
+description: "Sử dụng các trình giữ chỗ nguồn và đích một cách an toàn trong ánh xạ tệp bucket."
+---
+
+## Các trình giữ chỗ được hỗ trợ
+
+- `{{source}}`: ngôn ngữ nguồn
+- `{{target}}`: vùng mục tiêu
+- `{{localeDir}}`: để trống cho đầu ra ngôn ngữ nguồn, nếu không thì ngôn ngữ đích
+
+## Ví dụ
+
+### Tập tin ngôn ngữ JSON
+
+```jsonc
+{
+  "from": "packages/ui/lang/{{source}}.json",
+  "to": "apps/web/lang/{{target}}.json"
+}
+```
+
+### Mẫu khu vực với `[locale]` token
+
+```jsonc
+{
+  "from": "lang/en.json",
+  "to": "lang/[locale].json"
+}
+```
+
+
+### Mintlify ánh xạ đệ quy với globs
+
+```jsonc
+{
+  "from": "docs/**/*.mdx",
+  "to": "docs/{{localeDir}}/**/*.mdx"
+}
+```
+
+Điều này giữ nguyên cấu trúc tệp nguồn và ghi các tệp đã dịch vào cùng đường dẫn tương đối dưới mỗi thư mục ngôn ngữ.
+
+Với `source=en` và mục tiêu `fr`, `es`và `zh`:
+
+- `target=en` giải quyết `docs/{{localeDir}}/index.mdx` để `docs/index.mdx`
+- `target=fr` giải quyết `docs/{{localeDir}}/index.mdx` để `docs/fr/index.mdx`
+- `target=es` giải quyết `docs/{{localeDir}}/index.mdx` để `docs/es/index.mdx`
+- `target=zh` giải quyết `docs/{{localeDir}}/index.mdx` để `docs/zh/index.mdx`
+
+Sử dụng mẫu này khi các trang nguồn tiếng Anh của bạn nằm trực tiếp dưới `docs/` và các trang đã dịch nên được lưu vào thư mục ngôn ngữ.
+
+## Các mẫu tốt
+
+- Giữ cây nguồn và cây đích tách biệt.
+- Sử dụng tên bucket ổn định theo miền (`ui`, `marketing`, `emails`).
+- Giữ một trách nhiệm cho mỗi ánh xạ tệp.
+
+## Chống-mẫu thiết kế
+
+- Viết `to` đường dẫn trở lại các thư mục nguồn.
+- Tái sử dụng cùng một đường dẫn đầu ra cho nhiều bucket.
+- Trộn các token vùng với quảng cáo-thay thế chuỗi hoc bên ngoài các mẫu.
+
+## Kiểm tra nhanh
+
+Trước khi chạy:
+
+1. xác nhận `from` giải quyết cho ngôn ngữ gốc,
+2. xác nhận `to` có thể được tạo cho mỗi ngôn ngữ đích,
+3. chạy `hyperlocalise run --dry-run` để kiểm tra các công việc đã lên kế hoạch.

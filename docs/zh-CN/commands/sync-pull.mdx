@@ -1,0 +1,37 @@
+---
+title: "同步拉取"
+description: "实验性功能：将精选的翻译从远程存储拉取到本地文件中。"
+---
+
+<Note>
+此功能处于试验阶段。标志、输出形状和行为可能会在版本之间发生变化。请在受控工作流程中使用，并在持续集成（CI）中固定版本。
+
+随着TMS集成的成熟，冲突处理和同步合同可能会发展。
+</Note>
+
+## 用法
+
+```bash
+hyperlocalise sync pull [--config <path>] [flags]
+```
+
+## 安全的默认行为
+
+`sync pull` 默认为干燥-运行模式。首先查看报告，然后重新运行。 `--dry-run=false`.
+
+## 标志
+
+- `--config`: 配置路径
+- `--locale`: 目标语言(s)，可重复的
+- `--dry-run`：仅预览 (默认 `true`)
+- `--output`: `text` 或 `json`
+- `--fail-on-conflict`: 检测到冲突时返回错误 (默认 `true`)
+- `--apply-curated-over-draft`: 允许精选的远程值替换本地草稿值 (默认 `true`)
+
+## 示例
+
+```bash
+hyperlocalise sync pull --config i18n.jsonc --locale es-ES --output json
+```
+
+查看 [冲突处理](/troubleshooting/conflicts) 用于解决策略。

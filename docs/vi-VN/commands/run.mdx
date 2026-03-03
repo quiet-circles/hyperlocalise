@@ -1,0 +1,119 @@
+---
+title: "chạy"
+description: "Lập kế hoạch và thực hiện việc tạo bản dịch cục bộ từ các tệp nguồn được cấu hình."
+---
+
+## Sử dụng
+
+```bash
+hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-run] [--workers <count>]
+```
+
+## Hành vi
+
+1. tải và xác thực cấu hình,
+2. lập kế hoạch nhiệm vụ từ các nhóm và nhóm đựng,
+3. bỏ qua các nhiệm vụ đã có trong `.hyperlocalise.lock.json`,
+4. thực hiện các nhiệm vụ còn lại,
+5. lưu các tác vụ thành công vào trạng thái khóa.
+
+Đối với các trường lockfile, vòng đời và hướng dẫn đặt lại, hãy xem [Hợp đồng khóa file](/reference/lockfile-contract).
+
+## Các định dạng tệp địa phương được hỗ trợ
+
+`run` có thể đọc các tệp nguồn và tệp đích với các phần mở rộng này:
+
+- `.json`
+- `.xlf` và `.xliff`
+- `.po`
+- `.md`
+- `.mdx`
+- `.strings`
+- `.csv`
+
+Đối với Markdown và MDX (`.md`, `.mdx`), `run` dịch văn bản trích xuất và giữ nguyên các phần không phải văn bản-cấu trúc có thể dịch:
+
+- khối frontmatter (`---`)
+- khối mã có hàng rào (```` ``` ```` and `~~~`)
+- chuỗi mã nội tuyến
+- Các điểm neo Markdown như điểm đến liên kết
+- MDX `import` và `export` dòng
+- Thẻ thành phần JSX/MDX và giá trị thuộc tính
+
+Dành cho Apple/Xcode Strings (`.strings`), `run` giữ nguyên các chú thích và định dạng khóa/giá trị từ mẫu trong khi thay thế giá trị nguyên bằng văn bản đã dịch.
+
+
+Đối với CSV (`.csv`), `run` hỗ trợ hai bố cục:
+
+- bố cục khóa/giá trị (ví dụ: `key,value`)
+- mỗi-bố cục cột ngôn ngữ địa phương (ví dụ: `id,en,fr,de`)
+
+Khi ghi mục tiêu CSV, `run` giữ nguyên tiêu đề hiện có và không-cột mục tiêu, cập nhật các khóa khớp tại chỗ và thêm các khóa mới theo thứ tự sắp xếp xác định.
+
+## Cờ
+
+- `--config`: đường dẫn đến tệp cấu hình (mặc định `i18n.jsonc` trong thư mục hiện tại)
+- `--group`: chỉ chạy các tác vụ cho tên nhóm đã cho
+- `--bucket`: chỉ chạy các tác vụ cho tên bucket đã cho
+- `--dry-run`: chỉ in kế hoạch, không dịch hoặc ghi file
+- `--force`: chạy lại tất cả các tác vụ đã lên kế hoạch và bỏ qua trạng thái bỏ qua của tập tin khóa
+- `--workers`: số lượng công nhân dịch song song (mặc định là số lõi CPU)
+- `--progress`: chế độ hiển thị tiến trình (`auto|on|off`, mặc định: `auto`)
+
+### Ghi nhật ký gỡ lỗi tiến trình (tùy chọn)
+
+Để khắc phục sự cố hiển thị tiến trình, bạn có thể bật nhật ký gỡ lỗi mà không cần thay đổi cờ CLI:
+
+- `HYPERLOCALISE_PROGRESS_DEBUG=1` bật ghi nhật ký gỡ lỗi tiến trình.
+- `HYPERLOCALISE_PROGRESS_DEBUG_FILE=<path>` ghi đè vị trí tệp ghi nhật ký.
+
+Đường dẫn nhật ký mặc định khi được bật: `.hyperlocalise/logs/run.log`.
+
+
+## Phạm vi chạy đến một nhóm
+
+Sử dụng `--group` khi bạn chỉ muốn chạy một nhóm đã được cấu hình.
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --dry-run
+```
+
+Nếu nhóm không tồn tại trong cấu hình của bạn, `run` thất bại với một `unknown group` lỗi lập kế hoạch.
+
+## Phạm vi chạy đến một thùng chứa
+
+Sử dụng `--bucket` khi bạn chỉ muốn chạy một bucket đã cấu hình. Điều này hữu ích cho việc cập nhật tập trung, phân vùng CI, hoặc xác nhận một khu vực trước khi chạy toàn bộ.
+
+```bash
+hyperlocalise run --config i18n.jsonc --bucket ui --dry-run
+```
+
+Nếu bucket không tồn tại trong cấu hình của bạn, `run` thất bại với một `unknown bucket` lỗi lập kế hoạch.
+
+## Buộc chạy lại tất cả các tác vụ đã lên kế hoạch
+
+Sử dụng `--force` bỏ qua trạng thái bỏ qua file khóa và thực thi lại mọi tác vụ đã lên kế hoạch.
+
+```bash
+hyperlocalise run --config i18n.jsonc --group tests --force
+```
+
+## Trường đầu ra
+
+- `planned_total`
+- `skipped_by_lock`
+- `executable_total`
+- `succeeded`
+- `failed`
+- `persisted_to_lock`
+
+## Đầu ra lỗi
+
+Khi nhiệm vụ thất bại, đầu ra bao gồm `failure target=<...> key=<...> reason=<...>`.
+
+
+## Hướng dẫn điều chỉnh công nhân
+
+Thấp hơn `--workers` khi bạn gặp giới hạn tốc độ của nhà cung cấp hoặc chạy trong môi trường CI bị giới hạn. Bắt đầu với `1` để ổn định các lần thử lại rồi sau đó tăng dần.
+
+Nâng lên `--workers` khi hạn mức nhà cung cấp và tài nguyên máy của bạn cho phép tăng throughput. Tăng dần từng bước nhỏ và theo dõi tỷ lệ lỗi API cùng với việc sử dụng CPU và bộ nhớ cục bộ.

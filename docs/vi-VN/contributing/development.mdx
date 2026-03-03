@@ -1,0 +1,65 @@
+---
+title: "Phát triển"
+description: "Phát triển và xác thực CLI hyperlocalise bằng Go."
+---
+
+## Yêu cầu tiên quyết
+
+- Go 1.26+
+- `git`
+- `make` có sẵn trong shell của bạn
+
+## Sao chép kho lưu trữ
+
+```bash
+git clone https://github.com/quiet-circles/hyperlocalise.git
+cd hyperlocalise
+```
+
+## Công cụ và mô-đun Bootstrap
+
+```bash
+make bootstrap
+```
+
+Điều này tải xuống các mô-đun Go và cài đặt bộ công cụ lint đã được ghim.
+
+## Vòng lặp phát triển hàng ngày
+
+```bash
+make fmt
+make lint
+make test
+make check-build
+```
+
+## Chạy CLI trên máy cục bộ
+
+```bash
+make run
+# or
+go run -ldflags "-X main.version=dev" main.go
+```
+
+## Cài đặt nhị phân cục bộ
+
+```bash
+make install
+hyperlocalise version
+```
+
+## Vị trí mã khóa
+
+- `cmd/`: Lệnh Cobra, cờ và hành vi đầu ra CLI
+- `internal/config/`: `i18n.jsonc` phân tích cú pháp và xác thực
+- `internal/i18n/runsvc/`: `run` quy trình lập kế hoạch và thực hiện
+- `internal/i18n/syncsvc/`: đồng bộ điều phối và logic xung đột
+- `internal/i18n/storage/`: hợp đồng bộ điều hợp và tích hợp nhà cung cấp
+
+## Trước khi mở một PR
+
+```bash
+make precommit
+```
+
+Điều này thực hiện định dạng, kiểm tra lint, kiểm tra và xây dựng trong cùng một quy trình được sử dụng bởi người đóng góp.

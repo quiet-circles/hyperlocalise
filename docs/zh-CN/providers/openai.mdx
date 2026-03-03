@@ -1,0 +1,36 @@
+---
+title: "OpenAI"
+description: "将 OpenAI 配置为用于翻译生成的 LLM 提供商。"
+---
+
+## 提供者值
+
+使用 `openai` 中 `llm.profiles.<name>.provider`.
+
+## 示例配置文件
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 必需的环境变量
+
+<CodeGroup>
+```bash Export
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+```bash .env.local
+OPENAI_API_KEY="your-openai-api-key"
+```
+</CodeGroup>
