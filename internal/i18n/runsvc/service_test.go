@@ -883,6 +883,157 @@ func TestRunWritesMDXUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	}
 }
 
+func TestRunWritesXLIFFWithInsertedUnitWhenExistingTargetPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.xlf"
+	targetPath := "/tmp/out.xlf"
+	source := `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en" target-language="fr" datatype="plaintext" original="messages">
+    <body>
+      <trans-unit id="old">
+        <source>Old text</source>
+        <target>Old text</target>
+      </trans-unit>
+      <trans-unit id="new">
+        <source>New text</source>
+        <target>New text</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`
+	target := `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en" target-language="fr" datatype="plaintext" original="messages">
+    <body>
+      <trans-unit id="old">
+        <source>Old text</source>
+        <target>Ancien texte</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{RunCompleted: map[string]lockfile.RunCompletion{
+			taskIdentity(targetPath, "old"): {CompletedAt: time.Now(), SourceHash: hashSourceText("Old text")},
+		}}, nil
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "New text" {
+			t.Fatalf("unexpected translation request: %q", req.Source)
+		}
+		return "Nouveau texte", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "<trans-unit id=\"old\">") || !strings.Contains(out, "<target>Ancien texte</target>") {
+		t.Fatalf("expected old translated unit preserved, got %q", out)
+	}
+	if !strings.Contains(out, "<trans-unit id=\"new\">") || !strings.Contains(out, "<target>Nouveau texte</target>") {
+		t.Fatalf("expected inserted unit translated, got %q", out)
+	}
+}
+
+func TestRunWritesPOWithInsertedEntryWhenExistingTargetPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := `msgid ""
+msgstr ""
+"Project-Id-Version: test\n"
+
+msgid "old"
+msgstr "Old text"
+
+msgid "new"
+msgstr "New text"
+`
+	target := `msgid ""
+msgstr ""
+"Project-Id-Version: test\n"
+
+msgid "old"
+msgstr "Ancien texte"
+`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{RunCompleted: map[string]lockfile.RunCompletion{
+			taskIdentity(targetPath, "old"): {CompletedAt: time.Now(), SourceHash: hashSourceText("Old text")},
+		}}, nil
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "New text" {
+			t.Fatalf("unexpected translation request: %q", req.Source)
+		}
+		return "Nouveau texte", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "msgid \"old\"\nmsgstr \"Ancien texte\"") {
+		t.Fatalf("expected old translated entry preserved, got %q", out)
+	}
+	if !strings.Contains(out, "msgid \"new\"\nmsgstr \"Nouveau texte\"") {
+		t.Fatalf("expected inserted entry translated, got %q", out)
+	}
+}
+
 func TestRunWritesMarkdownWithInsertedSectionWhenExistingTargetPresent(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.md"
@@ -1022,6 +1173,65 @@ func TestRunWritesAppleStringsUsingSourceTemplateWhenTargetMissing(t *testing.T)
 	}
 }
 
+func TestRunWritesAppleStringsWithInsertedKeyWhenExistingTargetPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.strings"
+	targetPath := "/tmp/out.strings"
+	source := `"old" = "Old text";
+"new" = "New text";
+`
+	target := `"old" = "Ancien texte";
+`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{RunCompleted: map[string]lockfile.RunCompletion{
+			taskIdentity(targetPath, "old"): {CompletedAt: time.Now(), SourceHash: hashSourceText("Old text")},
+		}}, nil
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "New text" {
+			t.Fatalf("unexpected translation request: %q", req.Source)
+		}
+		return "Nouveau texte", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, `"old" = "Ancien texte";`) {
+		t.Fatalf("expected old translated key preserved, got %q", out)
+	}
+	if !strings.Contains(out, `"new" = "Nouveau texte";`) {
+		t.Fatalf("expected inserted key translated, got %q", out)
+	}
+}
+
 func TestRunWritesAppleStringsdictUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.stringsdict"
@@ -1091,6 +1301,78 @@ func TestRunWritesAppleStringsdictUsingSourceTemplateWhenTargetMissing(t *testin
 	}
 	if !strings.Contains(out, "<string>%d articles</string>") {
 		t.Fatalf("expected other plural category translated, got %q", out)
+	}
+}
+
+func TestRunWritesAppleStringsdictWithInsertedKeyWhenExistingTargetPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.stringsdict"
+	targetPath := "/tmp/out.stringsdict"
+	source := `<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>old</key>
+  <string>Old text</string>
+  <key>new</key>
+  <string>New text</string>
+</dict>
+</plist>
+`
+	target := `<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>old</key>
+  <string>Ancien texte</string>
+</dict>
+</plist>
+`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{RunCompleted: map[string]lockfile.RunCompletion{
+			taskIdentity(targetPath, "old"): {CompletedAt: time.Now(), SourceHash: hashSourceText("Old text")},
+		}}, nil
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "New text" {
+			t.Fatalf("unexpected translation request: %q", req.Source)
+		}
+		return "Nouveau texte", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "<key>old</key>\n  <string>Ancien texte</string>") {
+		t.Fatalf("expected old translated key preserved, got %q", out)
+	}
+	if !strings.Contains(out, "<key>new</key>\n  <string>Nouveau texte</string>") {
+		t.Fatalf("expected inserted key translated, got %q", out)
 	}
 }
 
@@ -1671,6 +1953,525 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		if len(content) == 0 {
 			t.Fatalf("marshal %s returned empty content", tc.target)
 		}
+	}
+}
+
+func TestMarshalSourceTemplateTargetPrefersTargetTemplateForXLIFFWhenAllKeysPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.xlf"
+	targetPath := "/tmp/out.xlf"
+	source := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <!-- source-note -->
+      <trans-unit id="hello"><source>Hello</source><target>Hello</target></trans-unit>
+    </body>
+  </file>
+</xliff>`)
+	target := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <!-- target-note -->
+      <trans-unit id="hello"><source>Hello</source><target>Bonjour</target></trans-unit>
+    </body>
+  </file>
+</xliff>`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if !strings.Contains(out, "target-note") || strings.Contains(out, "source-note") {
+		t.Fatalf("expected target template metadata preserved, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetPrefersTargetTemplateForPOWhenAllKeysPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := []byte(`# source-comment
+msgid "hello"
+msgstr "Hello"
+`)
+	target := []byte(`# target-comment
+msgid "hello"
+msgstr "Bonjour"
+`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if !strings.Contains(out, "# target-comment") || strings.Contains(out, "# source-comment") {
+		t.Fatalf("expected target template comment preserved, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetPrefersTargetTemplateForStringsWhenAllKeysPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.strings"
+	targetPath := "/tmp/out.strings"
+	source := []byte("/* source-comment */\n\"hello\" = \"Hello\";\n")
+	target := []byte("/* target-comment */\n\"hello\" = \"Bonjour\";\n")
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if !strings.Contains(out, "target-comment") || strings.Contains(out, "source-comment") {
+		t.Fatalf("expected target template comment preserved, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetPrefersTargetTemplateForStringsdictWhenAllKeysPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.stringsdict"
+	targetPath := "/tmp/out.stringsdict"
+	source := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <!-- source-comment -->
+  <key>hello</key>
+  <string>Hello</string>
+</dict>
+</plist>`)
+	target := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <!-- target-comment -->
+  <key>hello</key>
+  <string>Bonjour</string>
+</dict>
+</plist>`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if !strings.Contains(out, "target-comment") || strings.Contains(out, "source-comment") {
+		t.Fatalf("expected target template comment preserved, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetDeletesRemovedKey(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := []byte(`msgid "keep"
+msgstr "Keep"
+`)
+	target := []byte(`# target-comment
+msgid "keep"
+msgstr "Garder"
+
+msgid "delete_me"
+msgstr "Supprimer"
+`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{"keep": "Garder"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if strings.Contains(out, `msgid "delete_me"`) {
+		t.Fatalf("expected deleted key to be removed, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetDeletesAndInsertsKey(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := []byte(`msgid "keep"
+msgstr "Keep"
+
+msgid "new_key"
+msgstr "New value"
+`)
+	target := []byte(`# target-comment
+msgid "keep"
+msgstr "Garder"
+
+msgid "delete_me"
+msgstr "Supprimer"
+`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{
+		"keep":    "Garder",
+		"new_key": "Nouvelle valeur",
+	})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if strings.Contains(out, `msgid "delete_me"`) {
+		t.Fatalf("expected deleted key to be removed, got %q", out)
+	}
+	if !strings.Contains(out, "msgid \"new_key\"\nmsgstr \"Nouvelle valeur\"") {
+		t.Fatalf("expected new key inserted and translated, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetFallsBackToSourceWhenTargetParseFails(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := []byte(`# source-comment
+msgid "keep"
+msgstr "Keep"
+
+msgid "new_key"
+msgstr "New value"
+`)
+	target := []byte("this is not valid po content")
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{
+		"keep":    "Garder",
+		"new_key": "Nouvelle valeur",
+	})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if !strings.Contains(out, "# source-comment") {
+		t.Fatalf("expected source template fallback on target parse failure, got %q", out)
+	}
+	if !strings.Contains(out, "msgid \"new_key\"\nmsgstr \"Nouvelle valeur\"") {
+		t.Fatalf("expected new key present after fallback, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForXLIFF(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.xlf"
+	targetPath := "/tmp/out.xlf"
+	source := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <trans-unit id="keep"><source>Keep</source><target>Keep</target></trans-unit>
+      <trans-unit id="new_key"><source>New value</source><target>New value</target></trans-unit>
+    </body>
+  </file>
+</xliff>`)
+	target := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <trans-unit id="keep"><source>Keep</source><target>Garder</target></trans-unit>
+      <trans-unit id="delete_me"><source>Delete</source><target>Supprimer</target></trans-unit>
+    </body>
+  </file>
+</xliff>`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "fr", map[string]string{
+		"keep":    "Garder",
+		"new_key": "Nouvelle valeur",
+	})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if strings.Contains(out, `id="delete_me"`) {
+		t.Fatalf("expected deleted unit removed, got %q", out)
+	}
+	if !strings.Contains(out, `id="new_key"`) || !strings.Contains(out, "<target>Nouvelle valeur</target>") {
+		t.Fatalf("expected new unit inserted and translated, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForStrings(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.strings"
+	targetPath := "/tmp/out.strings"
+	source := []byte(`"keep" = "Keep";
+"new_key" = "New value";
+`)
+	target := []byte(`"keep" = "Garder";
+"delete_me" = "Supprimer";
+`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "fr", map[string]string{
+		"keep":    "Garder",
+		"new_key": "Nouvelle valeur",
+	})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if strings.Contains(out, `"delete_me"`) {
+		t.Fatalf("expected deleted key removed, got %q", out)
+	}
+	if !strings.Contains(out, `"new_key" = "Nouvelle valeur";`) {
+		t.Fatalf("expected new key inserted and translated, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForStringsdict(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.stringsdict"
+	targetPath := "/tmp/out.stringsdict"
+	source := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>keep</key>
+  <string>Keep</string>
+  <key>new_key</key>
+  <string>New value</string>
+</dict>
+</plist>`)
+	target := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>keep</key>
+  <string>Garder</string>
+  <key>delete_me</key>
+  <string>Supprimer</string>
+</dict>
+</plist>`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "fr", map[string]string{
+		"keep":    "Garder",
+		"new_key": "Nouvelle valeur",
+	})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+	out := string(content)
+	if strings.Contains(out, "<key>delete_me</key>") {
+		t.Fatalf("expected deleted key removed, got %q", out)
+	}
+	if !strings.Contains(out, "<key>new_key</key>") || !strings.Contains(out, "<string>Nouvelle valeur</string>") {
+		t.Fatalf("expected new key inserted and translated, got %q", out)
+	}
+}
+
+func TestRunPruneRemovesDeletedPOKeys(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.po"
+	targetPath := "/tmp/out.po"
+	source := `msgid "keep"
+msgstr "Keep"
+`
+	target := `msgid "keep"
+msgstr "Garder"
+
+msgid "remove_me"
+msgstr "Supprimer"
+`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "Keep" {
+			t.Fatalf("unexpected source %q", req.Source)
+		}
+		return "Garder", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Prune: true})
+	if err != nil {
+		t.Fatalf("run prune: %v", err)
+	}
+	if report.PruneApplied == 0 {
+		t.Fatalf("expected prune to apply deletions, got %+v", report)
+	}
+	out := string(written)
+	if strings.Contains(out, `msgid "remove_me"`) {
+		t.Fatalf("expected removed key pruned, got %q", out)
+	}
+}
+
+func TestRunPruneRemovesDeletedXLIFFUnits(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.xlf"
+	targetPath := "/tmp/out.xlf"
+	source := `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <trans-unit id="keep"><source>Keep</source><target>Keep</target></trans-unit>
+    </body>
+  </file>
+</xliff>`
+	target := `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <trans-unit id="keep"><source>Keep</source><target>Garder</target></trans-unit>
+      <trans-unit id="remove_me"><source>Remove</source><target>Supprimer</target></trans-unit>
+    </body>
+  </file>
+</xliff>`
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "Keep" {
+			t.Fatalf("unexpected source %q", req.Source)
+		}
+		return "Garder", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Prune: true})
+	if err != nil {
+		t.Fatalf("run prune: %v", err)
+	}
+	if report.PruneApplied == 0 {
+		t.Fatalf("expected prune to apply deletions, got %+v", report)
+	}
+	out := string(written)
+	if strings.Contains(out, `id="remove_me"`) {
+		t.Fatalf("expected removed unit pruned, got %q", out)
 	}
 }
 

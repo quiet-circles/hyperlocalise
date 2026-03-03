@@ -254,14 +254,14 @@ func rewriteXLIFFLocaleAttrs(start xml.StartElement, locale string) xml.StartEle
 	case "file":
 		for i := range start.Attr {
 			switch start.Attr[i].Name.Local {
-			case "source-language", "target-language":
+			case "target-language":
 				start.Attr[i].Value = loc
 			}
 		}
 	case "xliff":
 		for i := range start.Attr {
 			switch start.Attr[i].Name.Local {
-			case "srcLang", "trgLang":
+			case "trgLang":
 				start.Attr[i].Value = loc
 			}
 		}

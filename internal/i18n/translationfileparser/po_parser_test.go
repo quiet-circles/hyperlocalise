@@ -38,3 +38,26 @@ msgstr[1] "items"
 		t.Fatalf("expected higher plural forms unchanged, got %q", content)
 	}
 }
+
+func TestPOParserMsgctxtWithDuplicateMsgidCollidesByMsgid(t *testing.T) {
+	content := []byte(`msgctxt "nav"
+msgid "home"
+msgstr "Accueil navigation"
+
+msgctxt "hero"
+msgid "home"
+msgstr "Accueil hero"
+`)
+
+	got, err := (POFileParser{}).Parse(content)
+	if err != nil {
+		t.Fatalf("parse po: %v", err)
+	}
+
+	if len(got) != 1 {
+		t.Fatalf("expected duplicate msgid to collapse to one key, got %+v", got)
+	}
+	if got["home"] != "Accueil hero" {
+		t.Fatalf("expected last msgid variant to win, got %+v", got)
+	}
+}

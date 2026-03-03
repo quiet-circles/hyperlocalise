@@ -140,10 +140,40 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	if ext == ".md" || ext == ".mdx" {
 		return s.marshalMarkdownTarget(path, sourcePath, stagedEntries)
 	}
+	if ext == ".xlf" || ext == ".xlif" || ext == ".xliff" || ext == ".po" || ext == ".strings" || ext == ".stringsdict" {
+		return s.marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale, values)
+	}
 
 	template, err := s.loadTemplateFallback(path, sourcePath)
 	if err != nil {
 		return nil, err
+	}
+
+	switch ext {
+	case ".csv":
+		content, err := translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{})
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
+	default:
+		return nil, fmt.Errorf("flush outputs: unsupported target file extension %q for %q", ext, path)
+	}
+}
+
+func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
+	sourceTemplate, err := s.readFile(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("flush outputs: read template source %q: %w", sourcePath, err)
+	}
+
+	template := sourceTemplate
+	targetTemplate, err := s.readFile(path)
+	if err == nil {
+		targetEntries, parseErr := s.newParser().Parse(path, targetTemplate)
+		if parseErr == nil && hasExactKeySet(targetEntries, values) {
+			template = targetTemplate
+		}
 	}
 
 	switch ext {
@@ -171,15 +201,21 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}
 		return content, nil
-	case ".csv":
-		content, err := translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{})
-		if err != nil {
-			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
-		}
-		return content, nil
 	default:
 		return nil, fmt.Errorf("flush outputs: unsupported target file extension %q for %q", ext, path)
 	}
+}
+
+func hasExactKeySet(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key := range a {
+		if _, ok := b[key]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) marshalMarkdownTarget(path, sourcePath string, stagedEntries map[string]string) ([]byte, error) {
