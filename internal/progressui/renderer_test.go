@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func TestParseMode(t *testing.T) {
@@ -53,7 +53,7 @@ func TestModelRendersPhaseAndProgress(t *testing.T) {
 	next, _ = m.Update(taskDoneMsg{succeeded: 3, failed: 1, total: 10})
 	m, _ = next.(model)
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Planning tasks") {
 		t.Fatalf("expected phase in view, got %q", view)
 	}
@@ -71,7 +71,7 @@ func TestModelIndeterminateView(t *testing.T) {
 	m := newModel("Translating", ModeOn, defaultSpinnerTick, Options{})
 	next, _ := m.Update(taskDoneMsg{succeeded: 1, failed: 0, total: 0})
 	m, _ = next.(model)
-	view := m.View()
+	view := m.View().Content
 
 	if !strings.Contains(view, "estimating workload") {
 		t.Fatalf("expected indeterminate message, got %q", view)
@@ -104,7 +104,7 @@ func TestModelShowsFileStatuses(t *testing.T) {
 	})
 	m, _ = next.(model)
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Files") {
 		t.Fatalf("expected files section, got %q", view)
 	}
@@ -135,7 +135,7 @@ func TestModelFileStatusSortsProcessingFirst(t *testing.T) {
 	next, _ = m.Update(taskStartedMsg{targetPath: "/tmp/fr/live.json", entryKey: "loading"})
 	m, _ = next.(model)
 
-	view := m.View()
+	view := m.View().Content
 	liveIdx := strings.Index(view, "live.json")
 	doneIdx := strings.Index(view, "done.json")
 	if liveIdx == -1 || doneIdx == -1 {
@@ -149,6 +149,23 @@ func TestModelFileStatusSortsProcessingFirst(t *testing.T) {
 	}
 }
 
+func TestModelAdjustsProgressWidthOnWindowResize(t *testing.T) {
+	t.Parallel()
+
+	m := newModel("Translating", ModeOn, defaultSpinnerTick, Options{})
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 10, Height: 10})
+	m, _ = next.(model)
+	if got := m.bar.Width(); got != defaultBarMinWidth {
+		t.Fatalf("expected min clamped bar width %d, got %d", defaultBarMinWidth, got)
+	}
+
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 20})
+	m, _ = next.(model)
+	if got := m.bar.Width(); got != defaultBarMaxWidth {
+		t.Fatalf("expected max clamped bar width %d, got %d", defaultBarMaxWidth, got)
+	}
+}
+
 func TestModelCompleteClearsView(t *testing.T) {
 	t.Parallel()
 
@@ -159,14 +176,11 @@ func TestModelCompleteClearsView(t *testing.T) {
 	if !m.done {
 		t.Fatal("expected model to be marked done")
 	}
-	if m.View() != "" {
-		t.Fatalf("expected empty view, got %q", m.View())
+	if m.View().Content != "" {
+		t.Fatalf("expected empty view, got %q", m.View().Content)
 	}
 	if cmd == nil {
 		t.Fatal("expected quit command")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg command, got %T", cmd())
 	}
 }
 

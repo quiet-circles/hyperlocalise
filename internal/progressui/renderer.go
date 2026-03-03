@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/log"
 	"github.com/mattn/go-isatty"
 )
@@ -36,6 +36,9 @@ const (
 const (
 	defaultSpinnerTick       = 100 * time.Millisecond
 	defaultBarWidth          = 30
+	defaultBarMinWidth       = 20
+	defaultBarMaxWidth       = 80
+	defaultBarSidePadding    = 6
 	defaultVisibleFileStatus = 8
 	envProgressDebug         = "HYPERLOCALISE_PROGRESS_DEBUG"
 	envProgressDebugFilePath = "HYPERLOCALISE_PROGRESS_DEBUG_FILE"
@@ -47,6 +50,7 @@ type Options struct {
 	Tick           time.Duration
 	Frames         []string
 	IsTTYFn        func(io.Writer) bool
+	OnInterrupt    func()
 	Theme          Theme
 	EnableDebugLog bool
 	DebugLogPath   string
@@ -69,6 +73,9 @@ type Renderer struct {
 
 	logger  *log.Logger
 	logFile *os.File
+
+	interruptOnce sync.Once
+	onInterrupt   func()
 }
 
 type phaseMsg struct {
@@ -108,9 +115,10 @@ type model struct {
 	failed    int
 	done      bool
 
-	spinner spinner.Model
-	bar     progress.Model
-	styles  dashboardStyles
+	spin spinner.Model
+	bar  progress.Model
+
+	styles dashboardStyles
 
 	files      map[string]fileStatus
 	fileOrder  []string
@@ -179,6 +187,7 @@ func New(w io.Writer, mode Mode, options Options) *Renderer {
 		w:           w,
 		mode:        mode,
 		interactive: detectTTY(w, options.IsTTYFn),
+		onInterrupt: options.OnInterrupt,
 	}
 
 	enabled, logPath := resolveDebugLogConfig(options)
@@ -202,6 +211,20 @@ func New(w io.Writer, mode Mode, options Options) *Renderer {
 		tea.WithOutput(w),
 		tea.WithInput(os.Stdin),
 		tea.WithoutSignalHandler(),
+		tea.WithFilter(func(_ tea.Model, msg tea.Msg) tea.Msg {
+			switch typed := msg.(type) {
+			case tea.KeyPressMsg:
+				if typed.String() == "ctrl+c" {
+					r.triggerInterrupt()
+					return tea.QuitMsg{}
+				}
+			case tea.InterruptMsg:
+				r.triggerInterrupt()
+				return tea.QuitMsg{}
+			}
+
+			return msg
+		}),
 	)
 	r.program = program
 	r.doneCh = make(chan struct{})
@@ -398,21 +421,20 @@ func newModel(label string, mode Mode, tick time.Duration, options Options) mode
 		frames = spinner.MiniDot.Frames
 	}
 
-	spin := spinner.New(spinner.WithSpinner(spinner.Spinner{Frames: frames, FPS: tick}))
 	styles := newDashboardStyles(options.Theme)
+	spin := spinner.New(spinner.WithSpinner(spinner.Spinner{
+		Frames: frames,
+		FPS:    tick,
+	}))
 	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
 
-	bar := progress.New(progress.WithWidth(defaultBarWidth), progress.WithoutPercentage())
-	bar.Full = '█'
-	bar.Empty = '░'
-	bar.FullColor = "#7AA2F7"
-	bar.EmptyColor = "#3A3A45"
+	bar := progress.New(progress.WithWidth(defaultBarWidth), progress.WithDefaultBlend())
 
 	return model{
 		label:      label,
 		phase:      "Working...",
 		modeLabel:  string(mode),
-		spinner:    spin,
+		spin:       spin,
 		bar:        bar,
 		styles:     styles,
 		files:      map[string]fileStatus{},
@@ -434,16 +456,14 @@ func newDashboardStyles(theme Theme) dashboardStyles {
 	header := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("252"))
 	progressLine := lipgloss.NewStyle().Foreground(lipgloss.Color("249"))
 	summary := lipgloss.NewStyle().Foreground(lipgloss.Color("247"))
-	var okColor lipgloss.TerminalColor
-	switch effectiveTheme {
-	case ThemeCalm:
-		okColor = lipgloss.Color("78")
-	default:
+	meta := lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
+
+	okColor := lipgloss.Color("78")
+	if effectiveTheme != ThemeCalm {
 		okColor = lipgloss.Color("78")
 	}
 	ok := lipgloss.NewStyle().Foreground(okColor).Bold(true)
 	fail := lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Bold(true)
-	meta := lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
 
 	return dashboardStyles{
 		container: container,
@@ -462,22 +482,25 @@ func newDashboardStyles(theme Theme) dashboardStyles {
 }
 
 func (m model) Init() tea.Cmd {
-	return m.spinner.Tick
+	return m.spin.Tick
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
+		if m.done {
+			return m, nil
+		}
 		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.spin, cmd = m.spin.Update(msg)
 		return m, cmd
 	case progress.FrameMsg:
-		next, cmd := m.bar.Update(msg)
-		bar, ok := next.(progress.Model)
-		if ok {
-			m.bar = bar
-		}
+		bar, cmd := m.bar.Update(msg)
+		m.bar = bar
 		return m, cmd
+	case tea.WindowSizeMsg:
+		m.bar.SetWidth(clampBarWidth(msg.Width - defaultBarSidePadding))
+		return m, nil
 	case phaseMsg:
 		m.phase = msg.text
 		return m, nil
@@ -505,9 +528,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	if m.done {
-		return ""
+		return tea.NewView("")
 	}
 
 	phase := m.phase
@@ -515,7 +538,7 @@ func (m model) View() string {
 		phase = "Working..."
 	}
 
-	headerLine := m.styles.header.Render(fmt.Sprintf("%s %s", m.spinner.View(), phase))
+	headerLine := m.styles.header.Render(fmt.Sprintf("%s %s", m.spin.View(), phase))
 	completed := m.succeeded + m.failed
 
 	progressLine := ""
@@ -543,14 +566,13 @@ func (m model) View() string {
 		sections = append(sections, filesBlock)
 	}
 
-	return m.styles.container.Render(lipgloss.JoinVertical(lipgloss.Left, sections...))
+	return tea.NewView(m.styles.container.Render(lipgloss.JoinVertical(lipgloss.Left, sections...)))
 }
 
 func (m *model) setProgressCmd() tea.Cmd {
 	if m.total <= 0 {
 		return nil
 	}
-
 	completed := m.succeeded + m.failed
 	if completed < 0 {
 		completed = 0
@@ -558,9 +580,17 @@ func (m *model) setProgressCmd() tea.Cmd {
 	if completed > m.total {
 		completed = m.total
 	}
+	return m.bar.SetPercent(float64(completed) / float64(m.total))
+}
 
-	percent := float64(completed) / float64(m.total)
-	return m.bar.SetPercent(percent)
+func clampBarWidth(w int) int {
+	if w < defaultBarMinWidth {
+		return defaultBarMinWidth
+	}
+	if w > defaultBarMaxWidth {
+		return defaultBarMaxWidth
+	}
+	return w
 }
 
 func (m *model) recordTaskStarted(targetPath, entryKey string) {
@@ -770,4 +800,12 @@ func (r *Renderer) debug(message string, keyvals ...interface{}) {
 		return
 	}
 	r.logger.Debug(message, keyvals...)
+}
+
+func (r *Renderer) triggerInterrupt() {
+	r.interruptOnce.Do(func() {
+		if r.onInterrupt != nil {
+			r.onInterrupt()
+		}
+	})
 }

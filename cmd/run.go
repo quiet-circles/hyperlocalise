@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"runtime"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/runsvc"
@@ -47,9 +49,15 @@ func newRunCmd() *cobra.Command {
 			}
 
 			output := cmd.OutOrStdout()
+			runCtx, stop := signal.NotifyContext(backgroundContext(), os.Interrupt)
+			defer stop()
+
 			var renderer *progressui.Renderer
 			if progressui.IsEnabled(progressMode, output, nil) {
-				renderer = progressui.New(output, progressMode, progressui.Options{Label: "Translating"})
+				renderer = progressui.New(output, progressMode, progressui.Options{
+					Label:       "Translating",
+					OnInterrupt: stop,
+				})
 			}
 			if renderer != nil {
 				defer renderer.Close()
@@ -72,7 +80,7 @@ func newRunCmd() *cobra.Command {
 				}
 			}
 
-			report, err := runFunc(backgroundContext(), input)
+			report, err := runFunc(runCtx, input)
 			if renderer != nil {
 				renderer.Complete()
 			}
