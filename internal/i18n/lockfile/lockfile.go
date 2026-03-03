@@ -10,11 +10,12 @@ import (
 const DefaultPath = ".hyperlocalise.lock.json"
 
 type File struct {
-	Adapter      string                      `json:"adapter,omitempty"`
-	ProjectID    string                      `json:"project_id,omitempty"`
-	LastPullAt   *time.Time                  `json:"last_pull_at,omitempty"`
-	LocaleStates map[string]LocaleCheckpoint `json:"locale_states,omitempty"`
-	RunCompleted map[string]RunCompletion    `json:"run_completed,omitempty"`
+	Adapter       string                      `json:"adapter,omitempty"`
+	ProjectID     string                      `json:"project_id,omitempty"`
+	LastPullAt    *time.Time                  `json:"last_pull_at,omitempty"`
+	LocaleStates  map[string]LocaleCheckpoint `json:"locale_states,omitempty"`
+	RunCompleted  map[string]RunCompletion    `json:"run_completed,omitempty"`
+	RunCheckpoint map[string]RunCheckpoint    `json:"run_checkpoint,omitempty"`
 }
 
 type LocaleCheckpoint struct {
@@ -27,6 +28,16 @@ type RunCompletion struct {
 	SourceHash  string    `json:"source_hash,omitempty"`
 }
 
+type RunCheckpoint struct {
+	TargetPath   string    `json:"target_path,omitempty"`
+	SourcePath   string    `json:"source_path,omitempty"`
+	TargetLocale string    `json:"target_locale,omitempty"`
+	EntryKey     string    `json:"entry_key,omitempty"`
+	Value        string    `json:"value,omitempty"`
+	SourceHash   string    `json:"source_hash,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
 func Load(path string) (*File, error) {
 	if path == "" {
 		path = DefaultPath
@@ -35,7 +46,7 @@ func Load(path string) (*File, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &File{LocaleStates: map[string]LocaleCheckpoint{}, RunCompleted: map[string]RunCompletion{}}, nil
+			return &File{LocaleStates: map[string]LocaleCheckpoint{}, RunCompleted: map[string]RunCompletion{}, RunCheckpoint: map[string]RunCheckpoint{}}, nil
 		}
 		return nil, fmt.Errorf("read lockfile: %w", err)
 	}
@@ -50,6 +61,9 @@ func Load(path string) (*File, error) {
 	if f.RunCompleted == nil {
 		f.RunCompleted = map[string]RunCompletion{}
 	}
+	if f.RunCheckpoint == nil {
+		f.RunCheckpoint = map[string]RunCheckpoint{}
+	}
 
 	return &f, nil
 }
@@ -63,6 +77,9 @@ func Save(path string, f File) error {
 	}
 	if f.RunCompleted == nil {
 		f.RunCompleted = map[string]RunCompletion{}
+	}
+	if f.RunCheckpoint == nil {
+		f.RunCheckpoint = map[string]RunCheckpoint{}
 	}
 
 	content, err := json.MarshalIndent(f, "", "  ")

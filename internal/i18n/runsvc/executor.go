@@ -20,10 +20,13 @@ type executionReport struct {
 }
 
 type taskCompletion struct {
-	identity   string
-	sourceHash string
-	targetPath string
-	sourcePath string
+	identity     string
+	entryKey     string
+	value        string
+	sourceHash   string
+	targetPath   string
+	sourcePath   string
+	targetLocale string
 }
 
 type stagedOutput struct {
@@ -49,10 +52,19 @@ type executorState struct {
 	reportMu  sync.Mutex
 }
 
-func newExecutorState(tasks []Task, pruneTargets map[string]map[string]struct{}) (*executorState, error) {
+func newExecutorState(tasks []Task, initialStaged map[string]stagedOutput, pruneTargets map[string]map[string]struct{}) (*executorState, error) {
+	staged := map[string]stagedOutput{}
+	for targetPath, output := range initialStaged {
+		entries := map[string]string{}
+		for key, value := range output.entries {
+			entries[key] = value
+		}
+		staged[targetPath] = stagedOutput{entries: entries, sourcePath: output.sourcePath, targetLocale: output.targetLocale}
+	}
+
 	state := &executorState{
 		total:           len(tasks),
-		staged:          map[string]stagedOutput{},
+		staged:          staged,
 		flushedTargets:  map[string]struct{}{},
 		failedTargets:   map[string]struct{}{},
 		idsByTarget:     map[string][]string{},
@@ -79,8 +91,8 @@ func newExecutorState(tasks []Task, pruneTargets map[string]map[string]struct{})
 	return state, nil
 }
 
-func (s *Service) executePool(ctx context.Context, tasks []Task, lockPath string, lockState *lockfile.File, workers int, pruneTargets map[string]map[string]struct{}, emitter *eventEmitter) (map[string]stagedOutput, map[string]struct{}, executionReport, error) {
-	state, err := newExecutorState(tasks, pruneTargets)
+func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged map[string]stagedOutput, lockPath string, lockState *lockfile.File, workers int, pruneTargets map[string]map[string]struct{}, emitter *eventEmitter) (map[string]stagedOutput, map[string]struct{}, executionReport, error) {
+	state, err := newExecutorState(tasks, initialStaged, pruneTargets)
 	if err != nil {
 		return nil, nil, executionReport{}, err
 	}
@@ -149,6 +161,15 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 				continue
 			}
 			lockState.RunCompleted[completion.identity] = lockfile.RunCompletion{CompletedAt: s.now(), SourceHash: completion.sourceHash}
+			lockState.RunCheckpoint[completion.identity] = lockfile.RunCheckpoint{
+				TargetPath:   completion.targetPath,
+				SourcePath:   completion.sourcePath,
+				TargetLocale: completion.targetLocale,
+				EntryKey:     completion.entryKey,
+				Value:        completion.value,
+				SourceHash:   completion.sourceHash,
+				UpdatedAt:    s.now(),
+			}
 			if err := s.saveLock(lockPath, *lockState); err != nil {
 				select {
 				case fatalLockErr <- fmt.Errorf("persist lock state: %w", err):
@@ -278,7 +299,7 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	})
 
 	usage := translator.Usage{}
-	translated, err := s.translate(translator.WithUsageCollector(ctx, &usage), translator.Request{Source: task.SourceText, TargetLanguage: task.TargetLocale, Context: task.EntryKey, ModelProvider: task.Provider, Model: task.Model, Prompt: task.Prompt})
+	translated, err := s.translateWithRetry(translator.WithUsageCollector(ctx, &usage), task)
 	if err != nil {
 		recordTaskFailure(&state.report, &state.reportMu, state.total, task, err, emitter)
 		markTargetFailed(task.TargetPath, &state.pendingMu, state.failedTargets, targetFailures, ctx)
@@ -291,7 +312,7 @@ func (s *Service) processTask(ctx context.Context, task Task, completions chan<-
 	}
 
 	select {
-	case completions <- taskCompletion{identity: taskIdentity(task.TargetPath, task.EntryKey), sourceHash: hashSourceText(task.SourceText), targetPath: task.TargetPath, sourcePath: task.SourcePath}:
+	case completions <- taskCompletion{identity: taskIdentity(task.TargetPath, task.EntryKey), entryKey: task.EntryKey, value: translated, sourceHash: hashSourceText(task.SourceText), targetPath: task.TargetPath, sourcePath: task.SourcePath, targetLocale: task.TargetLocale}:
 		state.reportMu.Lock()
 		state.report.Succeeded++
 		state.report.TokenUsage = addTokenUsage(state.report.TokenUsage, toRunTokenUsage(usage))
@@ -350,8 +371,10 @@ func recordTaskFailure(report *executionReport, reportMu *sync.Mutex, total int,
 }
 
 func stageTaskOutput(staged map[string]stagedOutput, targetPath, sourcePath, targetLocale, entryKey, value string, stageMu *sync.Mutex) error {
-	stageMu.Lock()
-	defer stageMu.Unlock()
+	if stageMu != nil {
+		stageMu.Lock()
+		defer stageMu.Unlock()
+	}
 
 	bucket, ok := staged[targetPath]
 	if !ok {
@@ -404,13 +427,18 @@ func (s *Service) rollbackLockForTarget(lockState *lockfile.File, lockPath, targ
 	}
 
 	removed := 0
+	checkpointRemoved := 0
 	for _, id := range ids {
 		if _, ok := lockState.RunCompleted[id]; ok {
 			delete(lockState.RunCompleted, id)
 			removed++
 		}
+		if _, ok := lockState.RunCheckpoint[id]; ok {
+			delete(lockState.RunCheckpoint, id)
+			checkpointRemoved++
+		}
 	}
-	if removed == 0 {
+	if removed == 0 && checkpointRemoved == 0 {
 		return nil
 	}
 	if err := s.saveLock(lockPath, *lockState); err != nil {

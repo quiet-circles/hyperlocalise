@@ -534,6 +534,181 @@ func TestRunLockWriterPersistsEachSuccess(t *testing.T) {
 	}
 }
 
+func TestRunRetriesRetryableTranslateErrors(t *testing.T) {
+	svc := newTestService()
+	attempts := 0
+	sleeps := 0
+	originalSleep := sleepWithContext
+	t.Cleanup(func() { sleepWithContext = originalSleep })
+	sleepWithContext = func(ctx context.Context, _ time.Duration) error {
+		sleeps++
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			return nil
+		}
+	}
+
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		attempts++
+		if attempts < 3 {
+			return "", errors.New("status code 429")
+		}
+		return strings.ToUpper(req.Source), nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Workers: 1})
+	if err != nil {
+		t.Fatalf("run with retryable failures: %v", err)
+	}
+	if report.Succeeded != 1 || report.Failed != 0 {
+		t.Fatalf("unexpected report: %+v", report)
+	}
+	if attempts != 3 {
+		t.Fatalf("expected 3 translate attempts, got %d", attempts)
+	}
+	if sleeps != 2 {
+		t.Fatalf("expected 2 retry sleeps, got %d", sleeps)
+	}
+}
+
+func TestRunResumesFromCheckpointAfterInterruptedRun(t *testing.T) {
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	aID := taskIdentity(targetPath, "a")
+	now := time.Unix(1700000000, 0).UTC()
+	lockState := &lockfile.File{
+		LocaleStates: map[string]lockfile.LocaleCheckpoint{},
+		RunCompleted: map[string]lockfile.RunCompletion{
+			aID: {CompletedAt: now, SourceHash: hashSourceText("A")},
+		},
+		RunCheckpoint: map[string]lockfile.RunCheckpoint{
+			aID: {TargetPath: targetPath, SourcePath: sourcePath, TargetLocale: "fr", EntryKey: "a", Value: "a", SourceHash: hashSourceText("A"), UpdatedAt: now},
+		},
+	}
+
+	svc := newTestService()
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) { return lockState, nil }
+	svc.saveLock = func(_ string, f lockfile.File) error {
+		*lockState = f
+		return nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	translateCalls := 0
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		translateCalls++
+		return strings.ToLower(req.Source), nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Workers: 1})
+	if err != nil {
+		t.Fatalf("resume run: %v", err)
+	}
+	if report.SkippedByLock != 1 || report.Succeeded != 1 {
+		t.Fatalf("unexpected resume report: %+v", report)
+	}
+	if translateCalls != 1 {
+		t.Fatalf("expected exactly one fresh translation after resume, got %d", translateCalls)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(written, &payload); err != nil {
+		t.Fatalf("decode resumed output: %v", err)
+	}
+	if payload["a"] != "a" || payload["b"] != "b" {
+		t.Fatalf("expected resumed file to include checkpoint and new entries, got %+v", payload)
+	}
+}
+
+func TestRunSkipsCompletedLocaleBatchAndFlushesFromCheckpoint(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	aID := taskIdentity(targetPath, "a")
+	bID := taskIdentity(targetPath, "b")
+	now := time.Unix(1700000000, 0).UTC()
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		case targetPath:
+			return nil, os.ErrNotExist
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{
+			LocaleStates: map[string]lockfile.LocaleCheckpoint{},
+			RunCompleted: map[string]lockfile.RunCompletion{
+				aID: {CompletedAt: now, SourceHash: hashSourceText("A")},
+				bID: {CompletedAt: now, SourceHash: hashSourceText("B")},
+			},
+			RunCheckpoint: map[string]lockfile.RunCheckpoint{
+				aID: {TargetPath: targetPath, SourcePath: sourcePath, TargetLocale: "fr", EntryKey: "a", Value: "aa", SourceHash: hashSourceText("A"), UpdatedAt: now},
+				bID: {TargetPath: targetPath, SourcePath: sourcePath, TargetLocale: "fr", EntryKey: "b", Value: "bb", SourceHash: hashSourceText("B"), UpdatedAt: now},
+			},
+		}, nil
+	}
+	svc.translate = func(_ context.Context, _ translator.Request) (string, error) {
+		return "", errors.New("translate should not be called for completed batch")
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Workers: 1})
+	if err != nil {
+		t.Fatalf("run from checkpoint batch: %v", err)
+	}
+	if report.ExecutableTotal != 0 || report.SkippedByLock != 2 {
+		t.Fatalf("expected fully skipped executable set, got %+v", report)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(written, &payload); err != nil {
+		t.Fatalf("decode checkpoint output: %v", err)
+	}
+	if payload["a"] != "aa" || payload["b"] != "bb" {
+		t.Fatalf("expected checkpoint values to be flushed, got %+v", payload)
+	}
+}
+
 func TestRunWritesMarkdownUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.md"
