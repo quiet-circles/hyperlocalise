@@ -103,6 +103,12 @@ Flags:
 - `--prune-max-deletions` - safety guard for max deletions per run before requiring override (default: 100)
 - `--prune-force` - bypass the prune safety limit
 - `--workers` - number of parallel translation workers (defaults to CPU core count)
+- `--progress` - progress rendering mode (`auto|on|off`, default: `auto`)
+
+Progress debug logging (optional):
+- `HYPERLOCALISE_PROGRESS_DEBUG=1` enables progress debug logging
+- `HYPERLOCALISE_PROGRESS_DEBUG_FILE=<path>` overrides the debug log location
+- default path when enabled: `.hyperlocalise/logs/run.log`
 
 
 ## eval

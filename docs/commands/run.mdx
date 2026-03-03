@@ -58,6 +58,16 @@ When writing CSV targets, `run` preserves the existing header and non-target col
 - `--dry-run`: print plan only, do not translate or write files
 - `--force`: rerun all planned tasks and ignore lockfile skip state
 - `--workers`: number of parallel translation workers (defaults to CPU cores)
+- `--progress`: progress rendering mode (`auto|on|off`, default: `auto`)
+
+### Progress debug logging (optional)
+
+To troubleshoot progress rendering, you can enable debug logs without changing CLI flags:
+
+- `HYPERLOCALISE_PROGRESS_DEBUG=1` enables progress debug logging.
+- `HYPERLOCALISE_PROGRESS_DEBUG_FILE=<path>` overrides log file location.
+
+Default log path when enabled: `.hyperlocalise/logs/run.log`.
 
 
 ## Scope runs to one group
