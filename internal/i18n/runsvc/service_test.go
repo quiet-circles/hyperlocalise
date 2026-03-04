@@ -3365,7 +3365,7 @@ func TestInterleaveTasksByContextKeyAlternatesScopes(t *testing.T) {
 	for _, task := range got {
 		keys = append(keys, task.EntryKey)
 	}
-	want := []string{"a1", "a2", "b1", "b2", "a3"}
+	want := []string{"a1", "b1", "a2", "b2", "a3"}
 	if strings.Join(keys, ",") != strings.Join(want, ",") {
 		t.Fatalf("interleaved order = %v, want %v", keys, want)
 	}

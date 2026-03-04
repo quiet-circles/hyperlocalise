@@ -15,7 +15,7 @@ const (
 	contextMemorySourceMaxChars  = 12000
 	contextMemoryPerGroupTimeout = 45 * time.Second
 	contextMemorySyntheticKey    = "__context_memory__"
-	contextTaskBurstPerKey       = 2
+	contextTaskBurstPerKey       = 1
 )
 
 type contextMemoryPlan struct {

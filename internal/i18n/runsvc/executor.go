@@ -121,6 +121,12 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged m
 		return nil, nil, executionReport{}, err
 	}
 
+	if contextPlan.Enabled {
+		if err := s.precomputeContextMemory(ctx, state, emitter, workers); err != nil {
+			return nil, nil, state.report, err
+		}
+	}
+
 	workerCount := workers
 	if workerCount == 0 {
 		workerCount = s.numCPU()
@@ -160,6 +166,54 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged m
 	}
 
 	return state.staged, state.flushedTargets, state.report, nil
+}
+
+func (s *Service) precomputeContextMemory(ctx context.Context, state *executorState, emitter *eventEmitter, workers int) error {
+	if !state.contextPlan.Enabled || len(state.contextPlan.Groups) == 0 {
+		return nil
+	}
+
+	workerCount := workers
+	if workerCount == 0 {
+		workerCount = s.numCPU()
+	}
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	if workerCount > len(state.contextPlan.Groups) {
+		workerCount = len(state.contextPlan.Groups)
+	}
+
+	jobs := make(chan string)
+	var wg sync.WaitGroup
+	for range workerCount {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for key := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
+				_ = s.resolveTaskContextMemory(ctx, Task{ContextKey: key}, state, emitter)
+			}
+		}()
+	}
+
+	for key := range state.contextPlan.Groups {
+		select {
+		case <-ctx.Done():
+			close(jobs)
+			wg.Wait()
+			return ctx.Err()
+		case jobs <- key:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskCompletion, targetFailures <-chan string, done chan<- struct{}, lockState *lockfile.File, lockPath string, activeRunID string, fatalLockErr chan<- error, cancel context.CancelFunc, state *executorState, emitter *eventEmitter) {
