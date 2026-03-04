@@ -175,6 +175,9 @@ type Service struct {
 	newParser  func() *translationfileparser.Strategy
 	now        func() time.Time
 	numCPU     func() int
+
+	lockPersistBatchSize     int
+	lockPersistFlushInterval time.Duration
 }
 
 func New() *Service {
@@ -190,6 +193,9 @@ func New() *Service {
 		newParser: translationfileparser.NewDefaultStrategy,
 		now:       func() time.Time { return time.Now().UTC() },
 		numCPU:    runtime.NumCPU,
+
+		lockPersistBatchSize:     32,
+		lockPersistFlushInterval: 250 * time.Millisecond,
 	}
 }
 

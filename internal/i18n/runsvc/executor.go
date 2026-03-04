@@ -10,11 +10,6 @@ import (
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translator"
 )
 
-const (
-	lockPersistBatchSize     = 32
-	lockPersistFlushInterval = 250 * time.Millisecond
-)
-
 type executionReport struct {
 	Succeeded       int
 	Failed          int
@@ -164,7 +159,16 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged m
 
 func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskCompletion, targetFailures <-chan string, done chan<- struct{}, lockState *lockfile.File, lockPath string, fatalLockErr chan<- error, cancel context.CancelFunc, state *executorState, emitter *eventEmitter) {
 	defer close(done)
-	ticker := time.NewTicker(lockPersistFlushInterval)
+	flushInterval := s.lockPersistFlushInterval
+	if flushInterval <= 0 {
+		flushInterval = 250 * time.Millisecond
+	}
+	batchSize := s.lockPersistBatchSize
+	if batchSize <= 0 {
+		batchSize = 32
+	}
+
+	ticker := time.NewTicker(flushInterval)
 	defer ticker.Stop()
 
 	dirty := false
@@ -257,7 +261,7 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 			}
 			pendingPersisted[completion.identity] = struct{}{}
 			dirty = true
-			if len(pendingPersisted) >= lockPersistBatchSize {
+			if len(pendingPersisted) >= batchSize {
 				if err := flushPending("persist lock state", 0); err != nil {
 					reportFatal(err)
 					cancel()
