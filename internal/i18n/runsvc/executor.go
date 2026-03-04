@@ -255,11 +255,11 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 				continue
 			}
 			lockState.RunCompleted[completion.identity] = lockfile.RunCompletion{CompletedAt: s.now(), SourceHash: completion.sourceHash}
-				lockState.RunCheckpoint[completion.identity] = lockfile.RunCheckpoint{
-					RunID:        activeRunID,
-					TargetPath:   completion.targetPath,
-					SourcePath:   completion.sourcePath,
-					TargetLocale: completion.targetLocale,
+			lockState.RunCheckpoint[completion.identity] = lockfile.RunCheckpoint{
+				RunID:        activeRunID,
+				TargetPath:   completion.targetPath,
+				SourcePath:   completion.sourcePath,
+				TargetLocale: completion.targetLocale,
 				EntryKey:     completion.entryKey,
 				Value:        completion.value,
 				SourceHash:   completion.sourceHash,

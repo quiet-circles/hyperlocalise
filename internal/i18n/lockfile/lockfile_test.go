@@ -54,11 +54,11 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 				SourceHash:  "abc123",
 			},
 		},
-			RunCheckpoint: map[string]RunCheckpoint{
-				"locales/fr.json::hello": {
-					RunID:        "run_1700000000000000000",
-					TargetPath:   "locales/fr.json",
-					SourcePath:   "locales/en.json",
+		RunCheckpoint: map[string]RunCheckpoint{
+			"locales/fr.json::hello": {
+				RunID:        "run_1700000000000000000",
+				TargetPath:   "locales/fr.json",
+				SourcePath:   "locales/en.json",
 				TargetLocale: "fr",
 				EntryKey:     "hello",
 				Value:        "Bonjour",
