@@ -24,6 +24,7 @@ For lockfile fields, lifecycle, and reset guidance, see [Lockfile contract](/ref
 `run` can read source and target files with these extensions:
 
 - `.json`
+- `.arb`
 - `.xlf` and `.xliff`
 - `.po`
 - `.md`
@@ -38,6 +39,8 @@ For JSON (`.json`), `run` supports:
   `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
 
 In FormatJS mode, only `defaultMessage` is translated. Keys (message IDs), `description`, and other non-message metadata are preserved.
+
+For Flutter ARB (`.arb`), `run` translates only message keys and preserves metadata keys such as `@key` and `@@locale` unchanged.
 
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 

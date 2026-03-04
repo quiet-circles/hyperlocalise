@@ -5,6 +5,7 @@
 ## Supported formats
 
 - `.json` via `JSONParser`
+- `.arb` via `ARBParser` (Flutter Application Resource Bundle)
 - `.xlf` / `.xliff` via `XLIFFParser` (XLIFF 1.2 and 2.x)
 - `.po` via `POFileParser` (GNU gettext)
 - `.md` / `.mdx` via `MarkdownParser`
@@ -26,6 +27,13 @@
 - Nested objects are flattened with dotted keys.
   - Example: `{ "home": { "title": "Accueil" } }` -> `home.title=Accueil`
 - Non-string leaf values are rejected.
+
+### ARB
+
+- Accepts object-shaped ARB JSON (Flutter resource bundles).
+- Only top-level non-metadata keys are treated as translatable message entries.
+- Keys prefixed with `@` (for example `@hello`, `@@locale`) are treated as metadata and excluded from translation parsing.
+- `MarshalARB(template, values)` preserves ARB metadata keys and rewrites only message values.
 
 ### XLIFF
 

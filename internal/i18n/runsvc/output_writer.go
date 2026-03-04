@@ -123,7 +123,7 @@ func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
 func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
-	case ".xlf", ".xlif", ".xliff", ".po", ".md", ".mdx", ".strings", ".stringsdict", ".csv":
+	case ".xlf", ".xlif", ".xliff", ".po", ".md", ".mdx", ".strings", ".stringsdict", ".csv", ".arb":
 		return s.marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale, values, stagedEntries)
 	case ".json":
 		template, err := s.loadTemplateFallback(path, sourcePath)
@@ -140,7 +140,7 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	if ext == ".md" || ext == ".mdx" {
 		return s.marshalMarkdownTarget(path, sourcePath, stagedEntries)
 	}
-	if ext == ".xlf" || ext == ".xlif" || ext == ".xliff" || ext == ".po" || ext == ".strings" || ext == ".stringsdict" {
+	if ext == ".xlf" || ext == ".xlif" || ext == ".xliff" || ext == ".po" || ext == ".strings" || ext == ".stringsdict" || ext == ".arb" {
 		return s.marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale, values)
 	}
 
@@ -197,6 +197,12 @@ func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocal
 		return content, nil
 	case ".stringsdict":
 		content, err := translationfileparser.MarshalAppleStringsdict(template, values)
+		if err != nil {
+			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
+		}
+		return content, nil
+	case ".arb":
+		content, err := translationfileparser.MarshalARB(template, values)
 		if err != nil {
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}

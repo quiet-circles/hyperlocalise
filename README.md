@@ -95,6 +95,10 @@ JSON format support in `run`:
   `{"[id]": {"defaultMessage": "[message]", "description": "[description]"}}`
 - In FormatJS mode, only `defaultMessage` is translated. Message IDs, `description`, and other metadata are preserved.
 
+Flutter ARB format support in `run`:
+- `.arb` files are supported for source and target mappings.
+- Only message keys are translated; metadata keys such as `@key` and `@@locale` are preserved.
+
 Prune workflow recommendation:
 - Run `hyperlocalise run --dry-run --prune` regularly (for example weekly or before releases) to review stale-key candidates.
 - Apply approved cleanup with `hyperlocalise run --prune` in a dedicated change so key deletions are easy to audit.

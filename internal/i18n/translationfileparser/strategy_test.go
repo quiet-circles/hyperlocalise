@@ -21,6 +21,31 @@ func TestStrategyParsesJSON(t *testing.T) {
 	}
 }
 
+func TestStrategyParsesARB(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	got, err := s.Parse("app_en.arb", []byte(`{
+  "@@locale": "en",
+  "hello": "Hello {name}",
+  "@hello": {
+    "description": "Greeting",
+    "placeholders": {
+      "name": {}
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if got["hello"] != "Hello {name}" {
+		t.Fatalf("unexpected hello translation: %q", got["hello"])
+	}
+	if _, ok := got["@hello"]; ok {
+		t.Fatalf("arb metadata keys must not be parsed as translatable entries")
+	}
+}
+
 func TestStrategyParsesXLIFF12(t *testing.T) {
 	s := NewDefaultStrategy()
 

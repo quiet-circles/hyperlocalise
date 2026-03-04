@@ -1935,6 +1935,7 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		"/tmp/source.stringsdict": []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?><plist version=\"1.0\"><dict><key>hello</key><string>Hello</string></dict></plist>"),
 		"/tmp/source.csv":         []byte("key,source,target\nhello,Hello,Hello\n"),
 		"/tmp/source.json":        []byte(`{"hello":"Hello"}`),
+		"/tmp/source.arb":         []byte(`{"@@locale":"en","hello":"Hello","@hello":{"description":"Greeting"}}`),
 	}
 	svc.readFile = func(path string) ([]byte, error) {
 		if b, ok := sourceTemplate[path]; ok {
@@ -1957,6 +1958,7 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 		{target: "/tmp/out.stringsdict", source: "/tmp/source.stringsdict"},
 		{target: "/tmp/out.csv", source: "/tmp/source.csv"},
 		{target: "/tmp/out.json", source: "/tmp/source.json"},
+		{target: "/tmp/out.arb", source: "/tmp/source.arb"},
 	}
 
 	for _, tc := range cases {
@@ -2111,6 +2113,57 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForStringsdictWhenAllKe
 	out := string(content)
 	if !strings.Contains(out, "target-comment") || strings.Contains(out, "source-comment") {
 		t.Fatalf("expected target template comment preserved, got %q", out)
+	}
+}
+
+func TestMarshalSourceTemplateTargetPrefersTargetTemplateForARBWhenAllKeysPresent(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.arb"
+	targetPath := "/tmp/out.arb"
+	source := []byte(`{
+  "@@locale": "en",
+  "hello": "Hello",
+  "@hello": {
+    "description": "source-description"
+  }
+}`)
+	target := []byte(`{
+  "@@locale": "fr",
+  "hello": "Bonjour",
+  "@hello": {
+    "description": "target-description"
+  }
+}`)
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return source, nil
+		case targetPath:
+			return target, nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	content, err := svc.marshalSourceTemplateTarget(".arb", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	if err != nil {
+		t.Fatalf("marshal source-template target: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(content, &payload); err != nil {
+		t.Fatalf("decode output arb: %v", err)
+	}
+
+	if payload["@@locale"] != "fr" {
+		t.Fatalf("expected target template locale metadata preserved, got %#v", payload["@@locale"])
+	}
+	meta, ok := payload["@hello"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected @hello metadata map, got %#v", payload["@hello"])
+	}
+	if meta["description"] != "target-description" {
+		t.Fatalf("expected target template metadata preserved, got %#v", meta["description"])
 	}
 }
 
