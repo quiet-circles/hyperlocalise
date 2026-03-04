@@ -501,7 +501,7 @@ func TestRunContinueOnErrorReturnsPartialFailureReport(t *testing.T) {
 	}
 }
 
-func TestRunLockWriterPersistsEachSuccess(t *testing.T) {
+func TestRunLockWriterBatchesAndFlushesOnShutdown(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"
 	targetPath := "/tmp/out.json"
@@ -540,11 +540,64 @@ func TestRunLockWriterPersistsEachSuccess(t *testing.T) {
 	if report.Succeeded != 3 || report.PersistedToLock != 3 {
 		t.Fatalf("unexpected lock persistence totals: %+v", report)
 	}
-	if lockWrites != 3 {
-		t.Fatalf("expected one lock write per success, got %d", lockWrites)
+	if lockWrites != 1 {
+		t.Fatalf("expected one batched lock write on shutdown flush, got %d", lockWrites)
 	}
 	if seenSizes[len(seenSizes)-1] != 3 {
 		t.Fatalf("expected final lock map size 3, got %v", seenSizes)
+	}
+}
+
+func TestRunLockWriterFlushesPendingEntriesOnCancel(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	lockWrites := 0
+	svc.saveLock = func(_ string, f lockfile.File) error {
+		lockWrites++
+		for identity, completion := range f.RunCompleted {
+			if completion.SourceHash == "" {
+				t.Fatalf("expected source hash persisted for %s", identity)
+			}
+		}
+		return nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var cancelOnce sync.Once
+	report, err := svc.Run(ctx, Input{
+		Workers: 1,
+		OnEvent: func(e Event) {
+			if e.Kind == EventTaskDone && e.TaskSucceeded {
+				cancelOnce.Do(cancel)
+			}
+		},
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if report.PersistedToLock != 1 {
+		t.Fatalf("expected exactly one persisted lock entry after cancel flush, got %+v", report)
+	}
+	if lockWrites != 1 {
+		t.Fatalf("expected pending lock entries flushed once on cancel, got %d writes", lockWrites)
 	}
 }
 

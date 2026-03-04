@@ -4,9 +4,15 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/lockfile"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translator"
+)
+
+const (
+	lockPersistBatchSize     = 32
+	lockPersistFlushInterval = 250 * time.Millisecond
 )
 
 type executionReport struct {
@@ -158,15 +164,76 @@ func (s *Service) executePool(ctx context.Context, tasks []Task, initialStaged m
 
 func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskCompletion, targetFailures <-chan string, done chan<- struct{}, lockState *lockfile.File, lockPath string, fatalLockErr chan<- error, cancel context.CancelFunc, state *executorState, emitter *eventEmitter) {
 	defer close(done)
+	ticker := time.NewTicker(lockPersistFlushInterval)
+	defer ticker.Stop()
+
+	dirty := false
+	pendingPersisted := map[string]struct{}{}
+
+	flushPending := func(errPrefix string, removedPersisted int) error {
+		if !dirty {
+			return nil
+		}
+		if err := s.saveLock(lockPath, *lockState); err != nil {
+			return fmt.Errorf("%s: %w", errPrefix, err)
+		}
+		addedPersisted := len(pendingPersisted)
+		pendingPersisted = map[string]struct{}{}
+		dirty = false
+
+		if addedPersisted == 0 && removedPersisted == 0 {
+			return nil
+		}
+
+		state.reportMu.Lock()
+		state.report.PersistedToLock += addedPersisted
+		state.report.PersistedToLock -= removedPersisted
+		if state.report.PersistedToLock < 0 {
+			state.report.PersistedToLock = 0
+		}
+		persisted := state.report.PersistedToLock
+		succeeded := state.report.Succeeded
+		failed := state.report.Failed
+		state.reportMu.Unlock()
+		emitter.emit(Event{Kind: EventPersisted, PersistedToLock: persisted, Succeeded: succeeded, Failed: failed})
+		return nil
+	}
+
+	reportFatal := func(err error) {
+		select {
+		case fatalLockErr <- err:
+		default:
+		}
+	}
+
+	willTargetFlush := func(targetPath string) bool {
+		state.pendingMu.Lock()
+		remaining := state.pendingByTarget[targetPath]
+		state.pendingMu.Unlock()
+		return remaining <= 1
+	}
+
 	completionCh := completions
 	failureCh := targetFailures
 	for {
 		if completionCh == nil && failureCh == nil {
+			if err := flushPending("persist lock state", 0); err != nil {
+				reportFatal(err)
+			}
 			return
 		}
 		select {
 		case <-ctx.Done():
+			if err := flushPending("persist lock state", 0); err != nil {
+				reportFatal(err)
+			}
 			return
+		case <-ticker.C:
+			if err := flushPending("persist lock state", 0); err != nil {
+				reportFatal(err)
+				cancel()
+				return
+			}
 		case completion, ok := <-completionCh:
 			if !ok {
 				completionCh = nil
@@ -188,30 +255,32 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 				SourceHash:   completion.sourceHash,
 				UpdatedAt:    s.now(),
 			}
-			if err := s.saveLock(lockPath, *lockState); err != nil {
-				select {
-				case fatalLockErr <- fmt.Errorf("persist lock state: %w", err):
-				default:
+			pendingPersisted[completion.identity] = struct{}{}
+			dirty = true
+			if len(pendingPersisted) >= lockPersistBatchSize {
+				if err := flushPending("persist lock state", 0); err != nil {
+					reportFatal(err)
+					cancel()
+					return
 				}
-				cancel()
-				return
 			}
-
-			state.reportMu.Lock()
-			state.report.PersistedToLock++
-			persisted := state.report.PersistedToLock
-			succeeded := state.report.Succeeded
-			failed := state.report.Failed
-			state.reportMu.Unlock()
-			emitter.emit(Event{Kind: EventPersisted, PersistedToLock: persisted, Succeeded: succeeded, Failed: failed})
+			if willTargetFlush(completion.targetPath) {
+				if err := flushPending("persist lock state", 0); err != nil {
+					reportFatal(err)
+					cancel()
+					return
+				}
+			}
 
 			if err := s.flushIfTargetCompleted(completion.targetPath, completion.sourcePath, state); err != nil {
 				recordTaskFailure(&state.report, &state.reportMu, state.total, Task{TargetPath: completion.targetPath}, err, emitter)
-				if rollbackErr := s.rollbackLockForTarget(lockState, lockPath, completion.targetPath, state, emitter); rollbackErr != nil {
-					select {
-					case fatalLockErr <- rollbackErr:
-					default:
-					}
+				removedPersisted, changed := s.rollbackLockForTarget(lockState, completion.targetPath, pendingPersisted, state)
+				if !changed {
+					continue
+				}
+				dirty = true
+				if err := flushPending(fmt.Sprintf("persist lock rollback for %q", completion.targetPath), removedPersisted); err != nil {
+					reportFatal(err)
 					cancel()
 					return
 				}
@@ -222,11 +291,13 @@ func (s *Service) runLockWriter(ctx context.Context, completions <-chan taskComp
 				failureCh = nil
 				continue
 			}
-			if rollbackErr := s.rollbackLockForTarget(lockState, lockPath, targetPath, state, emitter); rollbackErr != nil {
-				select {
-				case fatalLockErr <- rollbackErr:
-				default:
-				}
+			removedPersisted, changed := s.rollbackLockForTarget(lockState, targetPath, pendingPersisted, state)
+			if !changed {
+				continue
+			}
+			dirty = true
+			if err := flushPending(fmt.Sprintf("persist lock rollback for %q", targetPath), removedPersisted); err != nil {
+				reportFatal(err)
 				cancel()
 				return
 			}
@@ -466,40 +537,33 @@ func isTargetFailed(targetPath string, mu *sync.Mutex, failedTargets map[string]
 	return failed
 }
 
-func (s *Service) rollbackLockForTarget(lockState *lockfile.File, lockPath, targetPath string, state *executorState, emitter *eventEmitter) error {
+func (s *Service) rollbackLockForTarget(lockState *lockfile.File, targetPath string, pendingPersisted map[string]struct{}, state *executorState) (int, bool) {
 	ids := state.idsByTarget[targetPath]
 	if len(ids) == 0 {
-		return nil
+		return 0, false
 	}
 
-	removed := 0
+	removedPersisted := 0
 	checkpointRemoved := 0
+	changed := false
 	for _, id := range ids {
 		if _, ok := lockState.RunCompleted[id]; ok {
 			delete(lockState.RunCompleted, id)
-			removed++
+			changed = true
+			if _, pending := pendingPersisted[id]; pending {
+				delete(pendingPersisted, id)
+			} else {
+				removedPersisted++
+			}
 		}
 		if _, ok := lockState.RunCheckpoint[id]; ok {
 			delete(lockState.RunCheckpoint, id)
 			checkpointRemoved++
+			changed = true
 		}
 	}
-	if removed == 0 && checkpointRemoved == 0 {
-		return nil
+	if !changed || (removedPersisted == 0 && checkpointRemoved == 0) {
+		return 0, changed
 	}
-	if err := s.saveLock(lockPath, *lockState); err != nil {
-		return fmt.Errorf("persist lock rollback for %q: %w", targetPath, err)
-	}
-
-	state.reportMu.Lock()
-	state.report.PersistedToLock -= removed
-	if state.report.PersistedToLock < 0 {
-		state.report.PersistedToLock = 0
-	}
-	persisted := state.report.PersistedToLock
-	succeeded := state.report.Succeeded
-	failed := state.report.Failed
-	state.reportMu.Unlock()
-	emitter.emit(Event{Kind: EventPersisted, PersistedToLock: persisted, Succeeded: succeeded, Failed: failed})
-	return nil
+	return removedPersisted, true
 }
