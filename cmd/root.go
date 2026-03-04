@@ -32,6 +32,7 @@ func newRootCmd(version string) *cobra.Command {
 	cmd.AddCommand(newRunCmd())            // run subcommand
 	cmd.AddCommand(newEvalCmd())           // eval subcommands
 	cmd.AddCommand(newStatusCmd())         // status subcommand
+	cmd.AddCommand(newUpdateCmd())         // self-update subcommand
 	cmd.AddCommand(NewManCmd().Cmd)        // hidden manpage subcommand
 
 	return cmd

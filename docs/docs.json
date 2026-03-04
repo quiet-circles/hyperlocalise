@@ -119,12 +119,13 @@
         ]
       },
       {
-        "language": "cn",
+        "language": "zh-CN",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
               "zh-CN/index",
+              "zh-CN/getting-started/why-hyperlocalise",
               "zh-CN/getting-started/install",
               "zh-CN/getting-started/quickstart",
               "zh-CN/getting-started/first-project"
@@ -215,12 +216,13 @@
         ]
       },
       {
-        "language": "vi",
+        "language": "vi-VN",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
               "vi-VN/index",
+              "vi-VN/getting-started/why-hyperlocalise",
               "vi-VN/getting-started/install",
               "vi-VN/getting-started/quickstart",
               "vi-VN/getting-started/first-project"

@@ -15,7 +15,7 @@ import (
 
 const (
 	latestReleaseURL = "https://api.github.com/repos/quiet-circles/hyperlocalise/releases/latest"
-	upgradeCommand   = "go install github.com/quiet-circles/hyperlocalise@latest"
+	upgradeCommand   = "hyperlocalise update"
 )
 
 type releaseInfo struct {

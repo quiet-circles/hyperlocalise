@@ -44,7 +44,7 @@ hyperlocalise version
 hyperlocalise --help
 ```
 
-Expected output includes the available commands: `init`, `run`, `status`, `sync`, and `version`.
+Expected output includes the available commands: `init`, `run`, `status`, `sync`, `version`, and `update`.
 
 ## Install the Hyperlocalise skill (skills.sh)
 
@@ -58,8 +58,16 @@ This uses the [skills.sh](https://skills.sh) installer via `npx`.
 
 ## Upgrade
 
-Re-run your install method.
+Use the built-in self-update command:
 
-- Installer users: run the bootstrap command again, optionally with `VERSION=<tag>`.
-- Go install users: run `go install ...@latest` again.
-- Repository users: pull latest changes, then run `make install`.
+```bash
+hyperlocalise update
+```
+
+Pin a specific release:
+
+```bash
+hyperlocalise update v1.2.3
+```
+
+You can still re-run your original install method if preferred.

@@ -44,7 +44,7 @@ hyperlocalise version
 hyperlocalise --help
 ```
 
-Kết quả mong đợi bao gồm các lệnh khả dụng: `init`, `run`, `status`, `sync`, và `version`.
+Kết quả mong đợi bao gồm các lệnh khả dụng: `init`, `run`, `status`, `sync`, `version`, và `update`.
 
 ## Cài đặt kỹ năng Hyperlocalise (skills.sh)
 
@@ -58,8 +58,16 @@ Phần này sử dụng [skills.sh](https://skills.sh) trình cài đặt qua `n
 
 ## Nâng cấp
 
-Về việc-chạy phương thức cài đặt của bạn.
+Sử dụng bản dựng sẵn-trong self-lệnh cập nhật:
 
-- Người dùng trình cài đặt: chạy lại lệnh bootstrap, tùy chọn với `VERSION=<tag>`.
-- Để cài đặt người dùng Go: chạy `go install ...@latest` lần nữa.
-- Người dùng kho lưu trữ: kéo các thay đổi mới nhất, sau đó chạy `make install`.
+```bash
+hyperlocalise update
+```
+
+Ghim một bản phát hành cụ thể:
+
+```bash
+hyperlocalise update v1.2.3
+```
+
+Bạn vẫn có thể thực hiện lại-Chạy phương pháp cài đặt ban đầu của bạn nếu muốn.

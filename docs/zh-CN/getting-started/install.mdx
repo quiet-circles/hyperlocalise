@@ -44,7 +44,7 @@ hyperlocalise version
 hyperlocalise --help
 ```
 
-预期输出包含可用的命令： `init`, `run`, `status`, `sync`，并且 `version`.
+预期输出包含可用的命令： `init`, `run`, `status`, `sync`, `version`，并且 `update`.
 
 ## 安装 Hyperlocalise 技能 (skills.sh)
 
@@ -58,8 +58,16 @@ npx skills add https://github.com/quiet-circles/hyperlocalise --skill hyperlocal
 
 ## 升级
 
-回复-运行你的安装方法。
+使用内置的-在 self 中-更新命令：
 
-- 安装程序用户：再次运行 bootstrap 命令，可选地使用 `VERSION=<tag>`.
-- 安装 Go 用户：运行 `go install ...@latest` 再次。
-- 仓库用户：拉取最新更改，然后运行 `make install`.
+```bash
+hyperlocalise update
+```
+
+固定特定版本：
+
+```bash
+hyperlocalise update v1.2.3
+```
+
+你仍然可以重新-如需，可运行原始安装方法。

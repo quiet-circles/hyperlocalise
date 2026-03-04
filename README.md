@@ -70,6 +70,7 @@ Available Commands:
   run         generate local translations from source files
   status      show translation status by locale
   sync        synchronize translations with remote storage adapters
+  update      update hyperlocalise using the bootstrap installer
   version     hyperlocalise version
 ```
 

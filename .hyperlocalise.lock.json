@@ -1092,13 +1092,29 @@
       "completed_at": "2026-03-04T12:20:17.911586Z",
       "source_hash": "7015e2cfa2d21e8203af92a1747f766cbfc082180ef031557caa7c6605a49d400967eef132816da3c2111c5bbc053afbdc337f3640955775a514c75aaead45fa"
     },
+    "docs/vi-VN/commands/version-and-completion.mdx::md.413e6404d19743a1": {
+      "completed_at": "2026-03-04T12:43:46.950524Z",
+      "source_hash": "6c162619637fa952b7d6800b81af8d13a941eacfbce617c3763162f9d9761d360ffa2baaa98368eec127f23972e6801fc71510ef479bd8163fee28d1422f16b6"
+    },
     "docs/vi-VN/commands/version-and-completion.mdx::md.47d36af510031a0a": {
       "completed_at": "2026-03-04T12:20:19.622803Z",
       "source_hash": "c93a0b0763382c41ec486e0254d5c241cee523756ab171beabdc4e8321044b2debd24cd24c825932ec1a0ef99e319b54bd3d26a4dccef174f873806d86505c3b"
     },
+    "docs/vi-VN/commands/version-and-completion.mdx::md.4d3e93ca97942fb9": {
+      "completed_at": "2026-03-04T12:43:47.045902Z",
+      "source_hash": "57dae530b74d10c24fe7c9bfd885a5881b7ec845fabf334243be60151d044f59766aac90e4453512fcb278f2ee23b048320c35fb4071c7fbd8f370069b573370"
+    },
+    "docs/vi-VN/commands/version-and-completion.mdx::md.6e6b9fa162dc0820": {
+      "completed_at": "2026-03-04T12:43:47.269663Z",
+      "source_hash": "a3c02409774306fd5fec9052de67ba55341d9a7e702d974c770fb0fc68ad3b476f86df6038124a1846bdccde3380857ed6097d120987213207b6049892a8384b"
+    },
     "docs/vi-VN/commands/version-and-completion.mdx::md.718cdab648e0cd42": {
       "completed_at": "2026-03-04T12:20:19.688911Z",
       "source_hash": "5cbc3eea1e4c4ce9083f1cd4fdfa90bf1d67141481ae1b7cb8ed2bb68cbfc2fcc61177c2344681417cdc21d9bfe7edb753bf40fd444d35ee988a7aadbd53e565"
+    },
+    "docs/vi-VN/commands/version-and-completion.mdx::md.7a7e61b1f34e10eb": {
+      "completed_at": "2026-03-04T12:43:47.010931Z",
+      "source_hash": "7ad1299eb7ef2d690de57e27cbcba969efb70808fcc302cf00272d5e0c408b6011f852f07edd693298f3a41c82bcd3b546b15019852a81ad69d8ee3e73e581ad"
     },
     "docs/vi-VN/commands/version-and-completion.mdx::md.848685725636dfb1": {
       "completed_at": "2026-03-04T12:20:19.753841Z",
@@ -1123,6 +1139,10 @@
     "docs/vi-VN/commands/version-and-completion.mdx::md.e5541b9d62c6e31f": {
       "completed_at": "2026-03-04T12:20:20.060561Z",
       "source_hash": "843df880b617cbd1d5f9e01866a35065a0ffaf9d0cc36c3b5ee03e0c50d786eff80b57c64238c31ad63484ee612916f1629885d02a0feff54ba4671d46750d90"
+    },
+    "docs/vi-VN/commands/version-and-completion.mdx::md.eaa46815578b724a": {
+      "completed_at": "2026-03-04T12:43:46.997163Z",
+      "source_hash": "acebf02a1abccb17a98e4dbfb543782275b904a04663871b0e5ad87e25c76d3cec345dc05b32aa6388f6abdbeccc6d23a8189f9e3b0bb9f4574e5bccaa90598d"
     },
     "docs/vi-VN/configuration/i18n-config.mdx::md.02d1545c1838d7db": {
       "completed_at": "2026-03-04T12:20:21.204419Z",
@@ -2132,9 +2152,21 @@
       "completed_at": "2026-03-04T12:21:00.012343Z",
       "source_hash": "0a13004dfa0a4becf3f160065ea57c9a771f603d92744f9453ee71c46af67efdeb9b3b1be0ac59437c8b4c758c39842ec1ed6721bb215e1ce6536f1f06d6b069"
     },
+    "docs/vi-VN/getting-started/install.mdx::md.00542b75c8e5c6e6": {
+      "completed_at": "2026-03-04T12:43:46.993005Z",
+      "source_hash": "1b65682232b2392d66418345911a114d9e8bcdc7a18dc5f2c27999f51e20bfc502bf89e3d5dfddef02e6436924497cb9fe86d0f25eaf84e7960a4323a2f0b3dc"
+    },
     "docs/vi-VN/getting-started/install.mdx::md.0a63e3f63f232f0c": {
       "completed_at": "2026-03-04T12:21:01.898621Z",
       "source_hash": "79b2317bb8f799c6d7645a3b0194de61fdd950b9a12f9d015bb22ba919262f9c6e6539f67bd51577de027b845058843ed82093cc56117beee6c3dc0ae0cc46f9"
+    },
+    "docs/vi-VN/getting-started/install.mdx::md.152adde2a70813d5": {
+      "completed_at": "2026-03-04T12:43:46.896659Z",
+      "source_hash": "333a793f8d902904072a8f5f977220fea4663eb5508665d0b0993d5b05e82959b73e9624c7ea010c1c0e6f05b88987ab0095571681bcce69a01e382bf6dca1e5"
+    },
+    "docs/vi-VN/getting-started/install.mdx::md.433f1cb09c94201a": {
+      "completed_at": "2026-03-04T12:43:47.27456Z",
+      "source_hash": "7e0d99db82a0d430d2389f9b4135f375f07ba3b3489d7c8db67dfff35efea076315cb9de0ed3971b3838e40091409b0186920b2d973f3fb3d198c0341fb06943"
     },
     "docs/vi-VN/getting-started/install.mdx::md.4744a8d53bebb9e6": {
       "completed_at": "2026-03-04T12:21:01.959513Z",
@@ -2143,6 +2175,10 @@
     "docs/vi-VN/getting-started/install.mdx::md.49f409be2ac0deb7": {
       "completed_at": "2026-03-04T12:21:02.218463Z",
       "source_hash": "0f5e55c9cea22cc41a1bf58bc7606da5eeeaed418590dd0aaf35d449fa990d5f4ad9f5d496c0d8d4e38061a977095755f8072efc7bcc534ccc11fc757ece1faa"
+    },
+    "docs/vi-VN/getting-started/install.mdx::md.54989d8ce5867049": {
+      "completed_at": "2026-03-04T12:43:46.877219Z",
+      "source_hash": "70992e91e4bf0d1bb4267b762771396a9169dbbf7681863e69b323992ca917cd1cd18fe36c881cd016815ed75622593c43b2461b90a7afe350ca92b2b24010e0"
     },
     "docs/vi-VN/getting-started/install.mdx::md.56f07b637334671d": {
       "completed_at": "2026-03-04T12:21:03.423976Z",
@@ -2196,6 +2232,10 @@
       "completed_at": "2026-03-04T12:21:03.365714Z",
       "source_hash": "7749797cd8b0181b200eebfaa4368f2b14f75fd1e24eb39325a0b74f83770de562391bc211f14937358b48bd2799bc9f2681e9fd71afd3c5b46e3208013a94b9"
     },
+    "docs/vi-VN/getting-started/install.mdx::md.bdb2cddaa9639023": {
+      "completed_at": "2026-03-04T12:43:48.017133Z",
+      "source_hash": "c2087bdeeb9aedbd8bc23fd961806d3dd9e96c306ddb34bf95d8bc4ac7ca6b548a574d9d6054bfa35bae7448378dd667fcf0884efd88d3d57cdd576ac2a2c304"
+    },
     "docs/vi-VN/getting-started/install.mdx::md.c3fc54aa5390dc2c": {
       "completed_at": "2026-03-04T12:21:03.22526Z",
       "source_hash": "e3bb2fb8d30709d3f9c28c812d1b69a5fdbea23b5e67b8d609820e7528827391acd702f6053f1b0030155fe13316055c05ebcb28140b847370ccf3ee99138b71"
@@ -2222,6 +2262,10 @@
     },
     "docs/vi-VN/getting-started/install.mdx::md.df85783b8da927c1": {
       "completed_at": "2026-03-04T12:21:03.911142Z",
+      "source_hash": "2f3f40d66541730d208707c6e85594dcfff4aadb95495c539a4a4cb9dbe824fee63257aa765a4a862c86f849a7e6779cc79181c2fd7761eb1fb555c697673532"
+    },
+    "docs/vi-VN/getting-started/install.mdx::md.df85783b8da927c1.2": {
+      "completed_at": "2026-03-04T12:43:48.705429Z",
       "source_hash": "2f3f40d66541730d208707c6e85594dcfff4aadb95495c539a4a4cb9dbe824fee63257aa765a4a862c86f849a7e6779cc79181c2fd7761eb1fb555c697673532"
     },
     "docs/vi-VN/getting-started/install.mdx::md.e4253d71e1bc93af": {
@@ -6464,13 +6508,29 @@
       "completed_at": "2026-03-04T12:20:20.671725Z",
       "source_hash": "7015e2cfa2d21e8203af92a1747f766cbfc082180ef031557caa7c6605a49d400967eef132816da3c2111c5bbc053afbdc337f3640955775a514c75aaead45fa"
     },
+    "docs/zh-CN/commands/version-and-completion.mdx::md.413e6404d19743a1": {
+      "completed_at": "2026-03-04T12:43:46.973258Z",
+      "source_hash": "6c162619637fa952b7d6800b81af8d13a941eacfbce617c3763162f9d9761d360ffa2baaa98368eec127f23972e6801fc71510ef479bd8163fee28d1422f16b6"
+    },
     "docs/zh-CN/commands/version-and-completion.mdx::md.47d36af510031a0a": {
       "completed_at": "2026-03-04T12:20:20.060588Z",
       "source_hash": "c93a0b0763382c41ec486e0254d5c241cee523756ab171beabdc4e8321044b2debd24cd24c825932ec1a0ef99e319b54bd3d26a4dccef174f873806d86505c3b"
     },
+    "docs/zh-CN/commands/version-and-completion.mdx::md.4d3e93ca97942fb9": {
+      "completed_at": "2026-03-04T12:43:46.877666Z",
+      "source_hash": "57dae530b74d10c24fe7c9bfd885a5881b7ec845fabf334243be60151d044f59766aac90e4453512fcb278f2ee23b048320c35fb4071c7fbd8f370069b573370"
+    },
+    "docs/zh-CN/commands/version-and-completion.mdx::md.6e6b9fa162dc0820": {
+      "completed_at": "2026-03-04T12:43:47.175197Z",
+      "source_hash": "a3c02409774306fd5fec9052de67ba55341d9a7e702d974c770fb0fc68ad3b476f86df6038124a1846bdccde3380857ed6097d120987213207b6049892a8384b"
+    },
     "docs/zh-CN/commands/version-and-completion.mdx::md.718cdab648e0cd42": {
       "completed_at": "2026-03-04T12:20:20.060746Z",
       "source_hash": "5cbc3eea1e4c4ce9083f1cd4fdfa90bf1d67141481ae1b7cb8ed2bb68cbfc2fcc61177c2344681417cdc21d9bfe7edb753bf40fd444d35ee988a7aadbd53e565"
+    },
+    "docs/zh-CN/commands/version-and-completion.mdx::md.7a7e61b1f34e10eb": {
+      "completed_at": "2026-03-04T12:43:47.007442Z",
+      "source_hash": "7ad1299eb7ef2d690de57e27cbcba969efb70808fcc302cf00272d5e0c408b6011f852f07edd693298f3a41c82bcd3b546b15019852a81ad69d8ee3e73e581ad"
     },
     "docs/zh-CN/commands/version-and-completion.mdx::md.848685725636dfb1": {
       "completed_at": "2026-03-04T12:20:20.202292Z",
@@ -6495,6 +6555,10 @@
     "docs/zh-CN/commands/version-and-completion.mdx::md.e5541b9d62c6e31f": {
       "completed_at": "2026-03-04T12:20:23.799839Z",
       "source_hash": "843df880b617cbd1d5f9e01866a35065a0ffaf9d0cc36c3b5ee03e0c50d786eff80b57c64238c31ad63484ee612916f1629885d02a0feff54ba4671d46750d90"
+    },
+    "docs/zh-CN/commands/version-and-completion.mdx::md.eaa46815578b724a": {
+      "completed_at": "2026-03-04T12:43:46.839866Z",
+      "source_hash": "acebf02a1abccb17a98e4dbfb543782275b904a04663871b0e5ad87e25c76d3cec345dc05b32aa6388f6abdbeccc6d23a8189f9e3b0bb9f4574e5bccaa90598d"
     },
     "docs/zh-CN/configuration/i18n-config.mdx::md.02d1545c1838d7db": {
       "completed_at": "2026-03-04T12:20:26.304136Z",
@@ -7504,9 +7568,21 @@
       "completed_at": "2026-03-04T12:21:01.940872Z",
       "source_hash": "0a13004dfa0a4becf3f160065ea57c9a771f603d92744f9453ee71c46af67efdeb9b3b1be0ac59437c8b4c758c39842ec1ed6721bb215e1ce6536f1f06d6b069"
     },
+    "docs/zh-CN/getting-started/install.mdx::md.00542b75c8e5c6e6": {
+      "completed_at": "2026-03-04T12:43:48.23422Z",
+      "source_hash": "1b65682232b2392d66418345911a114d9e8bcdc7a18dc5f2c27999f51e20bfc502bf89e3d5dfddef02e6436924497cb9fe86d0f25eaf84e7960a4323a2f0b3dc"
+    },
     "docs/zh-CN/getting-started/install.mdx::md.0a63e3f63f232f0c": {
       "completed_at": "2026-03-04T12:21:04.520614Z",
       "source_hash": "79b2317bb8f799c6d7645a3b0194de61fdd950b9a12f9d015bb22ba919262f9c6e6539f67bd51577de027b845058843ed82093cc56117beee6c3dc0ae0cc46f9"
+    },
+    "docs/zh-CN/getting-started/install.mdx::md.152adde2a70813d5": {
+      "completed_at": "2026-03-04T12:43:48.133944Z",
+      "source_hash": "333a793f8d902904072a8f5f977220fea4663eb5508665d0b0993d5b05e82959b73e9624c7ea010c1c0e6f05b88987ab0095571681bcce69a01e382bf6dca1e5"
+    },
+    "docs/zh-CN/getting-started/install.mdx::md.433f1cb09c94201a": {
+      "completed_at": "2026-03-04T12:43:48.095295Z",
+      "source_hash": "7e0d99db82a0d430d2389f9b4135f375f07ba3b3489d7c8db67dfff35efea076315cb9de0ed3971b3838e40091409b0186920b2d973f3fb3d198c0341fb06943"
     },
     "docs/zh-CN/getting-started/install.mdx::md.4744a8d53bebb9e6": {
       "completed_at": "2026-03-04T12:21:04.220223Z",
@@ -7515,6 +7591,10 @@
     "docs/zh-CN/getting-started/install.mdx::md.49f409be2ac0deb7": {
       "completed_at": "2026-03-04T12:21:04.563105Z",
       "source_hash": "0f5e55c9cea22cc41a1bf58bc7606da5eeeaed418590dd0aaf35d449fa990d5f4ad9f5d496c0d8d4e38061a977095755f8072efc7bcc534ccc11fc757ece1faa"
+    },
+    "docs/zh-CN/getting-started/install.mdx::md.54989d8ce5867049": {
+      "completed_at": "2026-03-04T12:43:47.968275Z",
+      "source_hash": "70992e91e4bf0d1bb4267b762771396a9169dbbf7681863e69b323992ca917cd1cd18fe36c881cd016815ed75622593c43b2461b90a7afe350ca92b2b24010e0"
     },
     "docs/zh-CN/getting-started/install.mdx::md.56f07b637334671d": {
       "completed_at": "2026-03-04T12:21:04.366557Z",
@@ -7568,6 +7648,10 @@
       "completed_at": "2026-03-04T12:21:05.509426Z",
       "source_hash": "7749797cd8b0181b200eebfaa4368f2b14f75fd1e24eb39325a0b74f83770de562391bc211f14937358b48bd2799bc9f2681e9fd71afd3c5b46e3208013a94b9"
     },
+    "docs/zh-CN/getting-started/install.mdx::md.bdb2cddaa9639023": {
+      "completed_at": "2026-03-04T12:43:48.308554Z",
+      "source_hash": "c2087bdeeb9aedbd8bc23fd961806d3dd9e96c306ddb34bf95d8bc4ac7ca6b548a574d9d6054bfa35bae7448378dd667fcf0884efd88d3d57cdd576ac2a2c304"
+    },
     "docs/zh-CN/getting-started/install.mdx::md.c3fc54aa5390dc2c": {
       "completed_at": "2026-03-04T12:21:05.590922Z",
       "source_hash": "e3bb2fb8d30709d3f9c28c812d1b69a5fdbea23b5e67b8d609820e7528827391acd702f6053f1b0030155fe13316055c05ebcb28140b847370ccf3ee99138b71"
@@ -7594,6 +7678,10 @@
     },
     "docs/zh-CN/getting-started/install.mdx::md.df85783b8da927c1": {
       "completed_at": "2026-03-04T12:21:06.385456Z",
+      "source_hash": "2f3f40d66541730d208707c6e85594dcfff4aadb95495c539a4a4cb9dbe824fee63257aa765a4a862c86f849a7e6779cc79181c2fd7761eb1fb555c697673532"
+    },
+    "docs/zh-CN/getting-started/install.mdx::md.df85783b8da927c1.2": {
+      "completed_at": "2026-03-04T12:43:48.045897Z",
       "source_hash": "2f3f40d66541730d208707c6e85594dcfff4aadb95495c539a4a4cb9dbe824fee63257aa765a4a862c86f849a7e6779cc79181c2fd7761eb1fb555c697673532"
     },
     "docs/zh-CN/getting-started/install.mdx::md.e4253d71e1bc93af": {

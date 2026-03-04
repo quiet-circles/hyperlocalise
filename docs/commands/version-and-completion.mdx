@@ -1,6 +1,6 @@
 ---
-title: "version and completion"
-description: "Check installed version and generate shell completion scripts."
+title: "version, update, and completion"
+description: "Check installed version, self-update the CLI, and generate shell completion scripts."
 ---
 
 ## Version
@@ -13,6 +13,20 @@ Expected output format:
 
 ```text
 hyperlocalise: <version>
+```
+
+## Update
+
+Update to the latest published release:
+
+```bash
+hyperlocalise update
+```
+
+Pin a specific release tag:
+
+```bash
+hyperlocalise update v1.2.3
 ```
 
 ## Completion
