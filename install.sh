@@ -7,7 +7,12 @@ BINARY_NAME="hyperlocalise"
 VERSION="${VERSION:-latest}"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
+echo "Starting ${BINARY_NAME} installer..."
+echo "Requested version: ${VERSION}"
+echo "Preferred install dir: ${INSTALL_DIR}"
+
 if [ "${VERSION}" = "latest" ]; then
+  echo "Resolving latest release version from GitHub..."
   LATEST_RELEASE_JSON="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null || true)"
   VERSION="$(printf '%s' "${LATEST_RELEASE_JSON}" | sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' | head -n1)"
   if [ -z "${VERSION}" ]; then
@@ -20,6 +25,8 @@ if [ "${VERSION}" = "latest" ]; then
     exit 1
   fi
 fi
+
+echo "Using release version: ${VERSION}"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
@@ -56,7 +63,9 @@ make_asset_version_candidates() {
 }
 
 TMP_DIR="$(mktemp -d)"
+echo "Created temporary working directory: ${TMP_DIR}"
 cleanup() {
+  echo "Cleaning up temporary files..."
   rm -rf "${TMP_DIR}"
 }
 trap cleanup EXIT
@@ -68,9 +77,11 @@ while IFS= read -r tag_candidate; do
   candidate_base_url="https://github.com/${REPO}/releases/download/${tag_candidate}"
   while IFS= read -r asset_version_candidate; do
     candidate_archive="${BINARY_NAME}_${asset_version_candidate}_${OS}_${ARCH}.tar.gz"
+    echo "Trying release asset: ${candidate_archive} (tag: ${tag_candidate})"
     if curl -fsSL "${candidate_base_url}/${candidate_archive}" -o "${TMP_DIR}/${candidate_archive}"; then
       BASE_URL="${candidate_base_url}"
       ARCHIVE="${candidate_archive}"
+      echo "Downloaded release archive: ${ARCHIVE}"
       break 2
     fi
   done < <(make_asset_version_candidates "${VERSION}")
@@ -84,6 +95,7 @@ if [ -z "${ARCHIVE}" ]; then
 fi
 
 if curl -fsSL "${BASE_URL}/${CHECKSUMS}" -o "${TMP_DIR}/${CHECKSUMS}"; then
+  echo "Downloaded ${CHECKSUMS}. Verifying archive integrity..."
   (
     cd "${TMP_DIR}"
     EXPECTED_LINE="$(grep " ${ARCHIVE}$" "${CHECKSUMS}" || true)"
@@ -110,12 +122,15 @@ else
   echo "Warning: ${CHECKSUMS} not found for ${VERSION}; skipping checksum verification." >&2
 fi
 
+echo "Extracting ${ARCHIVE}..."
 tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "${TMP_DIR}" "${BINARY_NAME}"
 
 if [ -w "${INSTALL_DIR}" ]; then
+  echo "Installing ${BINARY_NAME} to ${INSTALL_DIR}..."
   install -m 0755 "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
 else
   FALLBACK_DIR="${HOME}/.local/bin"
+  echo "No write access to ${INSTALL_DIR}; falling back to ${FALLBACK_DIR}..."
   mkdir -p "${FALLBACK_DIR}"
   install -m 0755 "${TMP_DIR}/${BINARY_NAME}" "${FALLBACK_DIR}/${BINARY_NAME}"
   INSTALL_DIR="${FALLBACK_DIR}"
