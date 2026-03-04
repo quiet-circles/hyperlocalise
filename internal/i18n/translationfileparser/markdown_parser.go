@@ -549,3 +549,85 @@ func MarshalMarkdownWithTargetFallback(sourceTemplate, targetTemplate []byte, va
 
 	return []byte(b.String())
 }
+
+// AlignMarkdownTargetToSource maps translated target segments back to source-derived markdown keys.
+// This is useful for status/reporting where source key identity must remain stable across locales.
+func AlignMarkdownTargetToSource(sourceTemplate, targetTemplate []byte) map[string]string {
+	sourceDoc, sourceEntries := parseMarkdownDocument(sourceTemplate)
+	targetDoc, _ := parseMarkdownDocument(targetTemplate)
+	return alignMarkdownFallback(sourceDoc, sourceEntries, targetDoc)
+}
+
+func alignMarkdownFallback(sourceDoc markdownDocument, sourceEntries map[string]string, targetDoc markdownDocument) map[string]string {
+	targetContexts := targetDoc.keyContexts()
+	targetUsed := make([]bool, len(targetContexts))
+	targetCursor := 0
+	sourceContexts := sourceDoc.keyContexts()
+	sourceCtxIdx := 0
+	aligned := make(map[string]string, len(sourceEntries))
+
+	takeFallback := func(sourceCtx markdownKeyContext) (string, bool) {
+		for i := targetCursor; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
+				targetUsed[i] = true
+				targetCursor = i + 1
+				return targetContexts[i].text, true
+			}
+		}
+		for i := 0; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
+				targetUsed[i] = true
+				if i >= targetCursor {
+					targetCursor = i + 1
+				}
+				return targetContexts[i].text, true
+			}
+		}
+		for i := targetCursor; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			targetUsed[i] = true
+			targetCursor = i + 1
+			return targetContexts[i].text, true
+		}
+		for i := 0; i < len(targetContexts); i++ {
+			if targetUsed[i] {
+				continue
+			}
+			targetUsed[i] = true
+			return targetContexts[i].text, true
+		}
+		return "", false
+	}
+
+	for _, part := range sourceDoc.parts {
+		if part.key == "" {
+			continue
+		}
+
+		// Only consume fallback translations for keys that are part of source extraction.
+		// This avoids injecting fallback text into non-translatable structural segments.
+		if _, ok := sourceEntries[part.key]; ok && sourceCtxIdx < len(sourceContexts) {
+			if fallback, ok := takeFallback(sourceContexts[sourceCtxIdx]); ok {
+				aligned[part.key] = preserveChunkBoundaryWhitespace(part.source, fallback)
+				sourceCtxIdx++
+				continue
+			}
+		}
+		if sourceCtxIdx < len(sourceContexts) {
+			sourceCtxIdx++
+		}
+		if _, ok := sourceEntries[part.key]; ok {
+			aligned[part.key] = ""
+		}
+	}
+
+	return aligned
+}
