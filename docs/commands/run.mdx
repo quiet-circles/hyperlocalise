@@ -58,6 +58,7 @@ For Apple/Xcode Strings (`.strings`), `run` preserves comments and key/value for
 For Apple/Xcode Stringsdict (`.stringsdict`), `run` preserves plist/XML structure (including plural branches) while replacing `<string>` values.
 
 For Apple/Xcode Strings Catalog (`.xcstrings`), `run` translates localized `stringUnit.value` entries while preserving catalog metadata/state fields and variation structure.
+When a catalog declares `sourceLanguage`, each parsed/cloned entry must include that source locale in `localizations`; otherwise `run` fails with a parse/marshal error.
 
 For CSV (`.csv`), `run` supports two layouts:
 

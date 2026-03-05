@@ -2,6 +2,7 @@ package translationfileparser
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -65,6 +66,67 @@ func TestXCStringsParserParsesValuesAndVariations(t *testing.T) {
 	}
 	if got["item_count.plural.other"] != "%d items" {
 		t.Fatalf("unexpected other translation: %q", got["item_count.plural.other"])
+	}
+}
+
+func TestXCStringsParserRejectsMissingDeclaredSourceLocalization(t *testing.T) {
+	content := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallo"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	_, err := (XCStringsParser{}).Parse(content)
+	if err == nil {
+		t.Fatalf("expected missing source localization error")
+	}
+	if !strings.Contains(err.Error(), `source localization "en" not found`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestXCStringsParserFallsBackDeterministicallyWhenSourceLanguageMissing(t *testing.T) {
+	content := []byte(`{
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你好"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallo"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	got, err := (XCStringsParser{}).Parse(content)
+	if err != nil {
+		t.Fatalf("parse xcstrings: %v", err)
+	}
+
+	// sourceLanguage is absent, so parser falls back to first locale key (sorted).
+	if got["hello"] != "Hallo" {
+		t.Fatalf("unexpected fallback locale value: %q", got["hello"])
 	}
 }
 
@@ -275,6 +337,33 @@ func TestMarshalXCStringsCreatesMissingTargetLocaleFromSource(t *testing.T) {
 	}
 	if frOne["state"] != "needs_review" || frOther["state"] != "needs_review" {
 		t.Fatalf("expected cloned target plural states reset to needs_review, got one=%#v other=%#v", frOne["state"], frOther["state"])
+	}
+}
+
+func TestMarshalXCStringsRejectsCloneWhenDeclaredSourceLocalizationMissing(t *testing.T) {
+	template := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallo"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	_, err := MarshalXCStrings(template, map[string]string{"hello": "Bonjour"}, "fr")
+	if err == nil {
+		t.Fatalf("expected missing source localization error during clone")
+	}
+	if !strings.Contains(err.Error(), `source localization "en" not found`) {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

@@ -141,7 +141,7 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 		return s.marshalMarkdownTarget(path, sourcePath, stagedEntries)
 	}
 	if ext == ".xlf" || ext == ".xlif" || ext == ".xliff" || ext == ".po" || ext == ".strings" || ext == ".stringsdict" || ext == ".xcstrings" || ext == ".arb" {
-		return s.marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale, values)
+		return s.marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale, values, stagedEntries)
 	}
 
 	template, err := s.loadTemplateFallback(path, sourcePath)
@@ -161,7 +161,7 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	}
 }
 
-func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, error) {
 	sourceTemplate, err := s.readFile(sourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("flush outputs: read template source %q: %w", sourcePath, err)
@@ -202,7 +202,7 @@ func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocal
 		}
 		return content, nil
 	case ".xcstrings":
-		content, err := translationfileparser.MarshalXCStrings(template, values, targetLocale)
+		content, err := translationfileparser.MarshalXCStrings(template, stagedEntries, targetLocale)
 		if err != nil {
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}

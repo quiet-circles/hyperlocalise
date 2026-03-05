@@ -79,6 +79,8 @@
   - Example: `item_count.plural.one=1 item`
 - Preserves catalog metadata/state fields when marshalling.
 - `MarshalXCStrings(template, values, targetLocale)` updates only targeted localized values while preserving structure.
+- Invariant: if catalog-level `sourceLanguage` is set, each entry being parsed/cloned must contain that locale under `localizations`; otherwise parsing/marshalling returns an error.
+- Fallback rule: only when `sourceLanguage` is empty, parser selection falls back deterministically to the first locale key (sorted order).
 
 ## Minimal usage
 

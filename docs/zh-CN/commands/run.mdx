@@ -58,6 +58,7 @@ hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--dry-ru
 适用于 Apple/Xcode Stringsdict (`.stringsdict`), `run` 保留 plist/XML 结构 (包括复数分支) 替换时 `<string>` 值。
 
 用于 Apple/Xcode 字符串目录 (`.xcstrings`), `run` 翻译本地化 `stringUnit.value` 在保留目录元数据/状态字段和变体结构的同时处理条目。
+当目录声明 `sourceLanguage`每个解析/克隆的条目都必须包含该源语言区域设置在 `localizations`；否则 `run` 因解析/编组错误而失败。
 
 对于 CSV (`.csv`), `run` 支持两种布局：
 

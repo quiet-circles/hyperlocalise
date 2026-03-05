@@ -122,6 +122,7 @@ func selectXCStringsLocalization(entry map[string]any, sourceLanguage string) (m
 			}
 			return loc, nil
 		}
+		return nil, fmt.Errorf("xcstrings source localization %q not found", sourceLanguage)
 	}
 
 	locales := sortedMapKeys(localizations)

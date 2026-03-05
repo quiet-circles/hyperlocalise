@@ -58,6 +58,7 @@ Dành cho chuỗi Apple/Xcode (`.strings`), `run` giữ nguyên các bình luậ
 Dành cho Apple/Xcode Stringsdict (`.stringsdict`), `run` giữ nguyên cấu trúc plist/XML (bao gồm các nhánh số nhiều) trong khi thay thế `<string>` giá trị.
 
 Dành cho Danh mục Chuỗi của Apple/Xcode (`.xcstrings`), `run` dịch bản địa hóa `stringUnit.value` các mục trong khi vẫn giữ nguyên các trường siêu dữ liệu/trạng thái của danh mục và cấu trúc biến thể.
+Khi một danh mục khai báo `sourceLanguage`, mỗi mục đã được phân tích/nhân bản phải bao gồm ngôn ngữ nguồn đó trong `localizations`; nếu không thì `run` bị lỗi phân tích cú pháp/tuần tự hóa.
 
 Đối với CSV (`.csv`), `run` hỗ trợ hai bố cục:
 
