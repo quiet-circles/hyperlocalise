@@ -277,3 +277,78 @@ func TestMarshalXCStringsCreatesMissingTargetLocaleFromSource(t *testing.T) {
 		t.Fatalf("expected cloned target plural states reset to needs_review, got one=%#v other=%#v", frOne["state"], frOther["state"])
 	}
 }
+
+func TestMarshalXCStringsResetsStateWhenExistingLocaleValueChanges(t *testing.T) {
+	template := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour"
+          }
+        }
+      }
+    },
+    "item_count": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 article"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%d articles"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	out, err := MarshalXCStrings(template, map[string]string{
+		"hello":                   "Salut",
+		"item_count.plural.one":   "1 element",
+		"item_count.plural.other": "%d elements",
+	}, "fr")
+	if err != nil {
+		t.Fatalf("marshal xcstrings: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(out, &payload); err != nil {
+		t.Fatalf("decode marshaled xcstrings: %v", err)
+	}
+
+	stringsMap := payload["strings"].(map[string]any)
+
+	helloUnit := stringsMap["hello"].(map[string]any)["localizations"].(map[string]any)["fr"].(map[string]any)["stringUnit"].(map[string]any)
+	if helloUnit["value"] != "Salut" {
+		t.Fatalf("expected existing locale value updated, got %#v", helloUnit["value"])
+	}
+	if helloUnit["state"] != "needs_review" {
+		t.Fatalf("expected existing locale state reset to needs_review, got %#v", helloUnit["state"])
+	}
+
+	plural := stringsMap["item_count"].(map[string]any)["localizations"].(map[string]any)["fr"].(map[string]any)["variations"].(map[string]any)["plural"].(map[string]any)
+	one := plural["one"].(map[string]any)["stringUnit"].(map[string]any)
+	other := plural["other"].(map[string]any)["stringUnit"].(map[string]any)
+	if one["value"] != "1 element" || other["value"] != "%d elements" {
+		t.Fatalf("expected existing plural values updated, got one=%#v other=%#v", one["value"], other["value"])
+	}
+	if one["state"] != "needs_review" || other["state"] != "needs_review" {
+		t.Fatalf("expected existing plural states reset to needs_review, got one=%#v other=%#v", one["state"], other["state"])
+	}
+}
