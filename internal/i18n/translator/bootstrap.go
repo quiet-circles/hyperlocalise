@@ -14,6 +14,7 @@ func RegisterBuiltins(t *Tool) error {
 		NewAnthropicProvider(),
 		NewLMStudioProvider(),
 		NewGroqProvider(),
+		NewMistralProvider(),
 		NewOllamaProvider(),
 		NewGeminiProvider(),
 		NewBedrockProvider(),

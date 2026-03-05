@@ -28,6 +28,7 @@ func TestRegisterBuiltinsRegistersExpectedProviders(t *testing.T) {
 		ProviderGemini,
 		ProviderGroq,
 		ProviderLMStudio,
+		ProviderMistral,
 		ProviderOllama,
 		ProviderOpenAI,
 	}

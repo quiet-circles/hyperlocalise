@@ -1,0 +1,31 @@
+---
+title: "Mistral"
+description: "配置 hyperlocalise 使用 Mistral 的 OpenAI 兼容 API。"
+---
+
+在 `llm.profiles.<name>.provider` 中使用 `mistral`。
+
+## 配置示例
+
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "mistral",
+        "model": "mistral-large-latest",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+## 环境变量
+
+```bash
+# 可选，默认为 https://api.mistral.ai/v1
+export MISTRAL_BASE_URL="https://api.mistral.ai/v1"
+
+export MISTRAL_API_KEY="your-mistral-api-key"
+```

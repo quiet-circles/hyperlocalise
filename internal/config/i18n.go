@@ -18,6 +18,7 @@ const (
 	llmProviderAnthropic   = "anthropic"
 	llmProviderLMStudio    = "lmstudio"
 	llmProviderGroq        = "groq"
+	llmProviderMistral     = "mistral"
 	llmProviderOllama      = "ollama"
 	llmProviderGemini      = "gemini"
 	llmProviderBedrock     = "bedrock"
@@ -432,7 +433,7 @@ func validateProfile(fieldPrefix string, profile LLMProfile) error {
 	}
 
 	switch provider {
-	case llmProviderOpenAI, llmProviderAzureOpenAI, llmProviderAnthropic, llmProviderLMStudio, llmProviderGroq, llmProviderOllama, llmProviderGemini, llmProviderBedrock:
+	case llmProviderOpenAI, llmProviderAzureOpenAI, llmProviderAnthropic, llmProviderLMStudio, llmProviderGroq, llmProviderMistral, llmProviderOllama, llmProviderGemini, llmProviderBedrock:
 	default:
 		return fmt.Errorf("%s.provider: unsupported provider %q", fieldPrefix, profile.Provider)
 	}
