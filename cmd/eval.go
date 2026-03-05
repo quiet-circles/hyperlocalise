@@ -16,13 +16,16 @@ import (
 var evalRunFunc = evalsvc.Run
 
 type evalRunOptions struct {
-	evalSetPath string
-	profiles    []string
-	providers   []string
-	models      []string
-	promptFile  string
-	prompt      string
-	outputPath  string
+	evalSetPath  string
+	profiles     []string
+	providers    []string
+	models       []string
+	promptFile   string
+	prompt       string
+	evalProvider string
+	evalModel    string
+	evalPrompt   string
+	outputPath   string
 }
 
 type evalCompareOptions struct {
@@ -66,14 +69,27 @@ func newEvalRunCmd() *cobra.Command {
 			if strings.TrimSpace(o.evalSetPath) == "" {
 				return fmt.Errorf("--eval-set is required")
 			}
+			hasEvalProvider := strings.TrimSpace(o.evalProvider) != ""
+			hasEvalModel := strings.TrimSpace(o.evalModel) != ""
+			hasEvalPrompt := strings.TrimSpace(o.evalPrompt) != ""
+			if hasEvalProvider != hasEvalModel {
+				return fmt.Errorf("--eval-provider and --eval-model must be provided together")
+			}
+			if hasEvalPrompt && !hasEvalProvider {
+				return fmt.Errorf("--eval-prompt requires --eval-provider and --eval-model")
+			}
 
 			report, err := evalRunFunc(backgroundContext(), evalsvc.Input{
-				EvalSetPath: o.evalSetPath,
-				Profiles:    o.profiles,
-				Providers:   o.providers,
-				Models:      o.models,
-				Prompts:     prompts,
-				OutputPath:  o.outputPath,
+				EvalSetPath:    o.evalSetPath,
+				Profiles:       o.profiles,
+				Providers:      o.providers,
+				Models:         o.models,
+				Prompts:        prompts,
+				EnableLLMJudge: hasEvalProvider,
+				EvalProvider:   o.evalProvider,
+				EvalModel:      o.evalModel,
+				EvalPrompt:     o.evalPrompt,
+				OutputPath:     o.outputPath,
 			})
 			if err != nil {
 				return fmt.Errorf("run eval: %w", err)
@@ -89,6 +105,9 @@ func newEvalRunCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&o.models, "model", nil, "model override (repeatable)")
 	cmd.Flags().StringVar(&o.promptFile, "prompt-file", "", "path to prompt file override")
 	cmd.Flags().StringVar(&o.prompt, "prompt", "", "inline prompt override")
+	cmd.Flags().StringVar(&o.evalProvider, "eval-provider", "", "evaluation model provider")
+	cmd.Flags().StringVar(&o.evalModel, "eval-model", "", "evaluation model name")
+	cmd.Flags().StringVar(&o.evalPrompt, "eval-prompt", "", "evaluation prompt override")
 	cmd.Flags().StringVar(&o.outputPath, "output", "", "report output JSON path")
 
 	return cmd

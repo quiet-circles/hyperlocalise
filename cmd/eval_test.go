@@ -56,7 +56,10 @@ func TestEvalRunRejectsInlineAndFilePromptTogether(t *testing.T) {
 
 func TestEvalRunPrintsSummary(t *testing.T) {
 	prev := evalRunFunc
-	evalRunFunc = func(_ context.Context, _ evalsvc.Input) (evalsvc.Report, error) {
+	evalRunFunc = func(_ context.Context, in evalsvc.Input) (evalsvc.Report, error) {
+		if in.EnableLLMJudge {
+			t.Fatalf("expected llm judge disabled by default")
+		}
 		return evalsvc.Report{Runs: []evalsvc.RunResult{
 			{
 				ExperimentID: "default|openai|gpt|prompt",
@@ -92,6 +95,53 @@ func TestEvalRunPrintsSummary(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "50.0%") {
 		t.Fatalf("expected pass rate, got %q", out.String())
+	}
+}
+
+func TestEvalRunRequiresEvalProviderAndModelTogether(t *testing.T) {
+	cmd := newRootCmd("")
+	cmd.SetArgs([]string{"eval", "run", "--eval-set", "set.json", "--eval-provider", "openai"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "must be provided together") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestEvalRunRequiresProviderModelForEvalPrompt(t *testing.T) {
+	cmd := newRootCmd("")
+	cmd.SetArgs([]string{"eval", "run", "--eval-set", "set.json", "--eval-prompt", "judge"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "--eval-prompt requires --eval-provider and --eval-model") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestEvalRunEnablesLLMJudgeWhenEvalProviderModelSet(t *testing.T) {
+	prev := evalRunFunc
+	evalRunFunc = func(_ context.Context, in evalsvc.Input) (evalsvc.Report, error) {
+		if !in.EnableLLMJudge {
+			t.Fatalf("expected llm judge mode to be enabled")
+		}
+		if in.EvalProvider != "openai" || in.EvalModel != "gpt-4.1" || in.EvalPrompt != "custom judge" {
+			t.Fatalf("unexpected eval judge input: %+v", in)
+		}
+		return evalsvc.Report{}, nil
+	}
+	t.Cleanup(func() { evalRunFunc = prev })
+
+	cmd := newRootCmd("")
+	cmd.SetArgs([]string{"eval", "run", "--eval-set", "set.json", "--eval-provider", "openai", "--eval-model", "gpt-4.1", "--eval-prompt", "custom judge"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("eval run: %v", err)
 	}
 }
 

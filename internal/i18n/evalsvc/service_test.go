@@ -136,11 +136,14 @@ func TestRunAggregatesScorersAndPersistsReport(t *testing.T) {
 	if report.Aggregate.TotalRuns != 4 {
 		t.Fatalf("expected 4 total runs, got %d", report.Aggregate.TotalRuns)
 	}
-	if report.Aggregate.AverageScoreByName["reference"] != 1 {
-		t.Fatalf("unexpected reference aggregate score: %+v", report.Aggregate.AverageScoreByName)
+	if _, ok := report.Aggregate.AverageScoreByName["reference"]; ok {
+		t.Fatalf("expected reference scorer to be disabled in llm mode: %+v", report.Aggregate.AverageScoreByName)
 	}
 	if report.Aggregate.AverageScoreByName["judge"] != 0.25 {
 		t.Fatalf("unexpected judge aggregate score: %+v", report.Aggregate.AverageScoreByName)
+	}
+	if report.Aggregate.WeightedScore != 0.25 {
+		t.Fatalf("expected weighted score from llm judge, got %+v", report.Aggregate.WeightedScore)
 	}
 	if len(report.CaseSummaries) != 2 {
 		t.Fatalf("expected 2 case summaries, got %d", len(report.CaseSummaries))
@@ -242,7 +245,7 @@ func TestExecuteSingleCapturesArtifacts(t *testing.T) {
 		provider: "openai",
 		model:    "m1",
 		prompt:   "p1",
-	}, nil)
+	}, nil, false)
 
 	if run.Translated == "" || run.LatencyMS < 0 {
 		t.Fatalf("expected translation artifacts, got %+v", run)
@@ -261,5 +264,177 @@ func zeroLatency(runs []RunResult) {
 func zeroCaseLatency(summaries []CaseSummary) {
 	for i := range summaries {
 		summaries[i].AverageLatencyMS = 0
+	}
+}
+
+func TestValidationEvalProviderModelPaired(t *testing.T) {
+	svc := newTestService()
+
+	// Test: EvalProvider without EvalModel should fail
+	_, err := svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		EvalProvider: "openai",
+	})
+	if err == nil {
+		t.Fatalf("expected error when EvalProvider is set without EvalModel")
+	}
+	if !strings.Contains(err.Error(), "eval provider and model must be both set or both empty") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Test: EvalModel without EvalProvider should fail
+	_, err = svc.Run(context.Background(), Input{
+		EvalSetPath: "unused.json",
+		EvalModel:   "gpt-4",
+	})
+	if err == nil {
+		t.Fatalf("expected error when EvalModel is set without EvalProvider")
+	}
+	if !strings.Contains(err.Error(), "eval provider and model must be both set or both empty") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidationEvalPromptRequiresProviderModel(t *testing.T) {
+	svc := newTestService()
+
+	// Test: EvalPrompt without provider/model should fail
+	_, err := svc.Run(context.Background(), Input{
+		EvalSetPath: "unused.json",
+		EvalPrompt:  "Judge this translation: {{translation}}",
+	})
+	if err == nil {
+		t.Fatalf("expected error when EvalPrompt is set without provider/model")
+	}
+	if !strings.Contains(err.Error(), "eval prompt requires both eval provider and eval model") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "gpt-4",
+		EvalPrompt:   "Judge this translation: {{translation}}",
+	})
+	if err != nil {
+		t.Fatalf("expected paired eval provider/model/prompt to pass validation, got %v", err)
+	}
+}
+
+func TestLLMModeEnabledWithEvalProviderModel(t *testing.T) {
+	svc := newTestService()
+	svc.WithJudgeScorers(fakeJudgeScorer{})
+
+	// Without eval provider/model, judge scoring should be disabled by default
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath: "unused.json",
+		Profiles:    []string{"default"},
+		Providers:   []string{"openai"},
+		Models:      []string{"model-a"},
+		Prompts:     []string{"prompt A"},
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	// Verify judge scores are not present (LLM mode not enabled)
+	for _, run := range report.Runs {
+		if _, ok := run.Scores["judge"]; ok {
+			t.Fatalf("expected judge scorer to be disabled when no eval provider/model")
+		}
+	}
+
+	// With eval provider/model, LLM mode should be enabled
+	report, err = svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "gpt-4",
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	// Verify judge scores are present (LLM mode enabled)
+	foundJudgeScore := false
+	for _, run := range report.Runs {
+		if _, ok := run.Scores["judge"]; ok {
+			foundJudgeScore = true
+			break
+		}
+	}
+	if !foundJudgeScore {
+		t.Fatalf("expected judge scorer to be enabled when eval provider/model are set")
+	}
+}
+
+func TestLLModeUsesJudgeScoringOnly(t *testing.T) {
+	svc := newTestService()
+	svc.WithJudgeScorers(fakeJudgeScorer{})
+
+	// Run in LLM mode
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "gpt-4",
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	// In LLM mode, weighted score should come from judge scores
+	// The fake judge scorer returns 0.25 for translations without "!" and 0.5 with "!"
+	// Our test cases: "hello" -> "HELLO" and "boom" -> "BOOM"
+	// Neither contains "!", so judge score should be 0.25
+	if report.Aggregate.WeightedScore != 0.25 {
+		t.Fatalf("expected weighted score from judge (0.25), got %f", report.Aggregate.WeightedScore)
+	}
+
+	// Verify that Quality.WeightedAggregate matches the judge score
+	for _, run := range report.Runs {
+		if run.Error == "" && run.Quality.WeightedAggregate == 0 {
+			t.Fatalf("expected non-zero quality weighted aggregate in LLM mode, got %f", run.Quality.WeightedAggregate)
+		}
+	}
+}
+
+func TestLLMModeUsesBuiltInJudgeFromEvalProviderModel(t *testing.T) {
+	svc := newTestService()
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Model == "judge-model" {
+			return "0.88", nil
+		}
+		return strings.ToUpper(req.Source), nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "judge-model",
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	if report.Aggregate.AverageScoreByName["judge"] != 0.88 {
+		t.Fatalf("expected built-in judge score in report, got %+v", report.Aggregate.AverageScoreByName)
+	}
+	if report.Aggregate.WeightedScore != 0.88 {
+		t.Fatalf("expected weighted score from built-in judge, got %v", report.Aggregate.WeightedScore)
 	}
 }

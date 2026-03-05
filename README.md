@@ -134,11 +134,16 @@ Progress debug logging (optional):
 Run experiment-based translation quality checks and compare reports:
 
 ```
-hyperlocalise eval run --eval-set <path> [--profile <name> ...] [--provider <name> ...] [--model <name> ...] [--prompt <text> | --prompt-file <path>] [--output <report.json>]
+hyperlocalise eval run --eval-set <path> [--profile <name> ...] [--provider <name> ...] [--model <name> ...] [--prompt <text> | --prompt-file <path>] [--eval-provider <name> --eval-model <name> [--eval-prompt <text>]] [--output <report.json>]
 hyperlocalise eval compare --candidate <report.json> --baseline <report.json> [--min-score <value>] [--max-regression <value>]
 ```
 
 `eval run` prints a concise per-experiment table with score, pass rate, placeholder violations, and latency.
+
+LLM-judge mode:
+- `--eval-provider` and `--eval-model` must be provided together
+- `--eval-prompt` can only be used when both `--eval-provider` and `--eval-model` are set
+- when eval provider/model are set, weighted score comes from LLM judge scoring (report/json schema remains compatible)
 
 `eval compare` supports CI gating:
 - `--min-score` fails when candidate weighted score is below threshold

@@ -28,6 +28,9 @@ type Input struct {
 	Seed           int64
 	OutputPath     string
 	EnableLLMJudge bool
+	EvalProvider   string
+	EvalModel      string
+	EvalPrompt     string
 }
 
 // Aggregate summarizes evaluation totals.
@@ -147,6 +150,18 @@ func (s *Service) WithJudgeScorers(scorers ...JudgeScorer) *Service {
 }
 
 func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
+	hasEvalProvider := in.EvalProvider != ""
+	hasEvalModel := in.EvalModel != ""
+	hasEvalPrompt := in.EvalPrompt != ""
+	if hasEvalProvider != hasEvalModel {
+		return Report{}, fmt.Errorf("eval provider and model must be both set or both empty")
+	}
+	if hasEvalPrompt && !hasEvalProvider {
+		return Report{}, fmt.Errorf("eval prompt requires both eval provider and eval model to be set")
+	}
+
+	llmMode := in.EnableLLMJudge || (hasEvalProvider && hasEvalModel)
+
 	dataset, err := s.loadEvalset(in.EvalSetPath)
 	if err != nil {
 		return Report{}, fmt.Errorf("load evalset: %w", err)
@@ -166,12 +181,17 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	workerCount := resolveWorkerCount(in.Concurrency, s.numCPU)
-	judges := []JudgeScorer(nil)
-	if in.EnableLLMJudge {
-		judges = s.judgeScorers
+	referenceScorers := s.referenceScorers
+	var judgeScorers []JudgeScorer
+	if llmMode {
+		referenceScorers = nil
+		judgeScorers = s.judgeScorers
+		if len(judgeScorers) == 0 && hasEvalProvider && hasEvalModel {
+			judgeScorers = []JudgeScorer{newLLMJudgeScorer(s.translate, in.EvalProvider, in.EvalModel, in.EvalPrompt)}
+		}
 	}
-	scorers := adaptScorers(s.referenceScorers, judges)
-	runs, err := s.execute(ctx, cases, experiments, scorers, workerCount)
+	scorers := adaptScorers(referenceScorers, judgeScorers)
+	runs, err := s.execute(ctx, cases, experiments, scorers, workerCount, llmMode)
 	if err != nil {
 		return Report{}, err
 	}
@@ -277,7 +297,7 @@ func adaptScorers(reference []ReferenceScorer, judge []JudgeScorer) []scoreAdapt
 	return adapters
 }
 
-func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments []experiment, scorers []scoreAdapter, workerCount int) ([]RunResult, error) {
+func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments []experiment, scorers []scoreAdapter, workerCount int, llmMode bool) ([]RunResult, error) {
 	type job struct {
 		tc  evalset.Case
 		exp experiment
@@ -292,7 +312,7 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 		go func() {
 			defer wg.Done()
 			for item := range jobs {
-				results <- s.executeSingle(ctx, item.tc, item.exp, scorers)
+				results <- s.executeSingle(ctx, item.tc, item.exp, scorers, llmMode)
 			}
 		}()
 	}
@@ -325,7 +345,7 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 	return runs, nil
 }
 
-func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, scorers []scoreAdapter) RunResult {
+func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, scorers []scoreAdapter, llmMode bool) RunResult {
 	if s.qualityEvaluator == nil {
 		s.qualityEvaluator = scoring.NewEvaluator()
 	}
@@ -355,9 +375,37 @@ func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experi
 
 	if err != nil {
 		run.Error = err.Error()
+		if llmMode {
+			run.Quality = scoring.Result{WeightedAggregate: 0}
+			return run
+		}
 		run.Quality = s.qualityEvaluator.Evaluate(tc.Source, "", tc.Reference)
 		return run
 	}
+
+	if llmMode {
+		scoreInput := ScoreInput{Case: tc, Request: req, Translated: translated}
+		total := 0.0
+		count := 0
+		for _, scorer := range scorers {
+			score, scoreErr := scorer.score(ctx, scoreInput)
+			if scoreErr != nil {
+				continue
+			}
+			if run.Scores == nil {
+				run.Scores = map[string]float64{}
+			}
+			run.Scores[scorer.name] = score
+			total += score
+			count++
+		}
+		run.Quality = scoring.Result{WeightedAggregate: 0}
+		if count > 0 {
+			run.Quality.WeightedAggregate = round3(total / float64(count))
+		}
+		return run
+	}
+
 	run.Quality = s.qualityEvaluator.Evaluate(tc.Source, translated, tc.Reference)
 
 	scoreInput := ScoreInput{Case: tc, Request: req, Translated: translated}
