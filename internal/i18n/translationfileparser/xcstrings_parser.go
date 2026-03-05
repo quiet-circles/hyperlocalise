@@ -3,6 +3,7 @@ package translationfileparser
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // XCStringsParser parses Apple Strings Catalog (.xcstrings) files.
@@ -51,6 +52,10 @@ func (p XCStringsParser) Parse(content []byte) (map[string]string, error) {
 
 // MarshalXCStrings preserves catalog metadata and updates only localized string values.
 func MarshalXCStrings(template []byte, values map[string]string, targetLocale string) ([]byte, error) {
+	if strings.TrimSpace(targetLocale) == "" {
+		return nil, fmt.Errorf("xcstrings target locale is required")
+	}
+
 	var payload map[string]any
 	if err := json.Unmarshal(template, &payload); err != nil {
 		return nil, fmt.Errorf("xcstrings decode: %w", err)

@@ -161,3 +161,27 @@ func TestMarshalXCStringsPreservesStateAndUpdatesTargetLocale(t *testing.T) {
 		t.Fatalf("expected plural state preserved, got one=%#v other=%#v", one["state"], other["state"])
 	}
 }
+
+func TestMarshalXCStringsRejectsEmptyTargetLocale(t *testing.T) {
+	template := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	_, err := MarshalXCStrings(template, map[string]string{"hello": "Bonjour"}, "")
+	if err == nil {
+		t.Fatalf("expected empty target locale error")
+	}
+}

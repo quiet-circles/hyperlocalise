@@ -2511,6 +2511,9 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForXCStringsWhenAllKeys
 	if frUnit["state"] != "needs_review" {
 		t.Fatalf("expected target template state preserved, got %#v", frUnit["state"])
 	}
+	if frUnit["value"] != "Coucou" {
+		t.Fatalf("expected translated value written to target locale, got %#v", frUnit["value"])
+	}
 }
 
 func TestMarshalSourceTemplateTargetDeletesRemovedKey(t *testing.T) {
