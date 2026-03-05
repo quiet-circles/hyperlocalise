@@ -11,7 +11,24 @@ Use this CLI if you:
 
 - keep translation files in your repository,
 - want AI-generated drafts as a starting point,
-- want to choose between zero-human workflows and optional human curation in POEditor, Lokalise, or Crowdin.
+- want to choose between zero-human workflows and optional human curation in Crowdin, LILT AI, Lokalise, Phrase, POEditor, or Smartling.
+
+## What Hyperlocalise focuses on
+
+```mermaid
+flowchart LR
+    H["Hyperlocalise"] --> P["LLM provider layer<br/>OpenAI · Azure OpenAI · Gemini · Anthropic · AWS Bedrock · LM Studio · Groq · Ollama"]
+    H --> T["TMS adapters (experimental)<br/>Crowdin · LILT AI · Lokalise · Phrase · POEditor · Smartling"]
+    H --> E["Eval framework (experimental)<br/>quality + regression checks across locales/models"]
+    H --> S["CI-ready status (experimental)<br/>ready · needs review · missing"]
+    H --> L["Plan-first + lockfile<br/>deterministic runs + reviewable diffs"]
+```
+
+Status mapping to command output:
+
+- `ready` = `translated`
+- `needs review` = `needs_review`
+- `missing` = `untranslated`
 
 ## Core workflow
 
@@ -38,3 +55,5 @@ Use this CLI if you:
 - Learn command behavior in [commands overview](/commands/overview).
 - Configure provider credentials in [provider credentials](/configuration/provider-credentials).
 - Understand sync behavior in [storage overview](/storage/overview).
+- Choose an operating model in [workflow decision guide](/workflows/workflow-decision-guide).
+- Check feature maturity in [stability matrix](/reference/stability-matrix).

@@ -59,6 +59,7 @@
             "group": "Workflows",
             "pages": [
               "workflows/local-generation",
+              "workflows/workflow-decision-guide",
               "workflows/eval-set-curation",
               "workflows/tms-curation-loop",
               "workflows/ci-automation"
@@ -105,6 +106,7 @@
               "reference/config-schema",
               "reference/output-formats",
               "reference/lockfile-contract",
+              "reference/stability-matrix",
               "reference/creator"
             ]
           },

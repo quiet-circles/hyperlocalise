@@ -1,0 +1,29 @@
+---
+title: "Stability matrix"
+description: "Feature maturity overview for providers, sync adapters, eval, status gating, and lockfile-driven workflows."
+---
+
+Use this page to understand which Hyperlocalise capabilities are stable versus experimental before you wire them into CI or release workflows.
+
+## Capability maturity
+
+| Capability | Status | What it covers | Recommended usage |
+| --- | --- | --- | --- |
+| LLM provider layer | Stable | OpenAI, Azure OpenAI, Gemini, Anthropic, AWS Bedrock, LM Studio, Groq, Ollama | Safe for day-to-day draft generation and CI usage. |
+| Plan-first + lockfile | Stable | `run --dry-run`, deterministic planning, `.hyperlocalise.lock.json` checkpointing | Keep enabled for predictable reruns and reviewable diffs. |
+| TMS adapters | Experimental | Crowdin, LILT AI, Lokalise, Phrase, POEditor, Smartling | Use in controlled environments and pin CLI versions in CI. |
+| Eval framework | Experimental | `eval run` and `eval compare` quality/regression checks across locales/models | Use for quality gates, but expect schema and scoring adjustments over time. |
+| CI-ready status labels | Experimental | Friendly labels (`ready`, `needs review`, `missing`) mapped to `status` output | Keep your CI checks based on raw `status` values for compatibility. |
+
+## Status label mapping
+
+- `ready` = `translated`
+- `needs review` = `needs_review`
+- `missing` = `untranslated`
+
+## Related docs
+
+- [What is Hyperlocalise?](/index)
+- [Commands overview](/commands/overview)
+- [Lockfile contract](/reference/lockfile-contract)
+- [CI automation](/workflows/ci-automation)

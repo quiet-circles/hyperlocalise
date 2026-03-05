@@ -24,6 +24,52 @@ hyperlocalise status [--config <path>] [flags]
 - `needs_review`: provenance is `origin=llm` and `state=draft`
 - `untranslated`: value is empty
 
+Friendly label mapping used in some CI dashboards:
+
+- `ready` = `translated`
+- `needs review` = `needs_review`
+- `missing` = `untranslated`
+
+## CSV schema
+
+`status` emits CSV with this header:
+
+`key,namespace,locale,status,origin,state`
+
+Column definitions:
+
+- `key`: translation entry key in the file
+- `namespace`: source mapping path from the configured bucket file (`from`)
+- `locale`: target locale for the row
+- `status`: computed status (`translated`, `needs_review`, `untranslated`)
+- `origin`: provenance source (`llm`, `human`, `unknown`, depending on metadata availability)
+- `state`: provenance state (`draft`, `final`, or empty when unknown)
+
+Row behavior:
+
+- one row per `key` + `namespace` + `locale`
+- sorted deterministically by `namespace`, then `key`, then `locale`
+
+## CI checks from CSV
+
+Write a status artifact:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > artifacts/status.csv
+```
+
+Fail if any entries are `untranslated`:
+
+```bash
+awk -F, 'NR > 1 && $4 == "untranslated" {count++} END {exit count > 0}' artifacts/status.csv
+```
+
+Fail if `needs_review` exceeds a threshold:
+
+```bash
+awk -F, 'NR > 1 && $4 == "needs_review" {count++} END {exit count > 25}' artifacts/status.csv
+```
+
 ## Examples
 
 ```bash
@@ -33,3 +79,10 @@ hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
 ```bash
 hyperlocalise status --config i18n.jsonc --group default --output csv -i
 ```
+
+## See also
+
+- [run](/commands/run)
+- [sync pull (experimental)](/commands/sync-pull)
+- [CI automation](/workflows/ci-automation)
+- [Stability matrix](/reference/stability-matrix)

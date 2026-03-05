@@ -13,7 +13,7 @@ Workflow guidance may shift as sync semantics and conflict policies continue to 
 
 1. generate drafts locally with `run`
 2. push drafts with `sync push --dry-run=false`
-3. translators curate in POEditor/Lokalise/Crowdin
+3. translators curate in Crowdin, LILT AI, Lokalise, Phrase, POEditor, or Smartling
 4. pull curated updates with `sync pull --dry-run=false`
 5. verify with `status`
 
@@ -31,3 +31,5 @@ Use JSON output for machine-readable review:
 hyperlocalise sync pull --output json
 hyperlocalise sync push --output json
 ```
+
+For workflow selection tradeoffs, see [workflow decision guide](/workflows/workflow-decision-guide).
