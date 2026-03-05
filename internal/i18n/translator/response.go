@@ -4,21 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"go.jetify.com/ai/api"
+	"github.com/openai/openai-go/v2"
 )
 
-func responseText(resp *api.Response) (string, error) {
+func responseText(resp *openai.ChatCompletion) (string, error) {
 	if resp == nil {
 		return "", fmt.Errorf("response is nil")
 	}
 
 	b := strings.Builder{}
-	for _, block := range resp.Content {
-		textBlock, ok := block.(*api.TextBlock)
-		if !ok {
-			continue
-		}
-		b.WriteString(textBlock.Text)
+	if len(resp.Choices) > 0 {
+		b.WriteString(resp.Choices[0].Message.Content)
 	}
 
 	text := sanitizeGeneratedText(b.String())

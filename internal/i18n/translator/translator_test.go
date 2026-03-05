@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.jetify.com/ai/api"
+	"github.com/openai/openai-go/v2"
 )
 
 type fakeProvider struct {
@@ -117,34 +117,42 @@ func TestResponseText(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		resp    *api.Response
+		resp    *openai.ChatCompletion
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "single text block",
-			resp: &api.Response{Content: []api.ContentBlock{
-				&api.TextBlock{Text: "bonjour"},
-			}},
+			resp: &openai.ChatCompletion{Choices: []openai.ChatCompletionChoice{{
+				Message: openai.ChatCompletionMessage{Content: "bonjour"},
+			}}},
 			want: "bonjour",
 		},
 		{
 			name: "strips trailing model control marker",
-			resp: &api.Response{Content: []api.ContentBlock{
-				&api.TextBlock{Text: "bonjour <|END_RESPONSE|>"},
-			}},
+			resp: &openai.ChatCompletion{Choices: []openai.ChatCompletionChoice{{
+				Message: openai.ChatCompletionMessage{Content: "bonjour <|END_RESPONSE|>"},
+			}}},
 			want: "bonjour",
 		},
 		{
 			name: "strips embedded model control marker",
-			resp: &api.Response{Content: []api.ContentBlock{
-				&api.TextBlock{Text: "bon<|END_RESPONSE|>jour"},
+			resp: &openai.ChatCompletion{Choices: []openai.ChatCompletionChoice{{
+				Message: openai.ChatCompletionMessage{Content: "bon<|END_RESPONSE|>jour"},
+			}}},
+			want: "bonjour",
+		},
+		{
+			name: "uses first choice only",
+			resp: &openai.ChatCompletion{Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Content: "bonjour"}},
+				{Message: openai.ChatCompletionMessage{Content: "salut"}},
 			}},
 			want: "bonjour",
 		},
 		{
 			name:    "empty content",
-			resp:    &api.Response{},
+			resp:    &openai.ChatCompletion{},
 			want:    "",
 			wantErr: true,
 		},

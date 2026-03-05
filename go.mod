@@ -16,7 +16,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/subosito/gotenv v1.4.1
 	github.com/tidwall/jsonc v0.3.2
-	go.jetify.com/ai v0.5.1
 )
 
 require (
@@ -119,7 +118,6 @@ require (
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/jsonschema-go v0.3.0 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
