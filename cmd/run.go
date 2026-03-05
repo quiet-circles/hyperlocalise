@@ -52,13 +52,13 @@ func newRunCmd() *cobra.Command {
 				return fmt.Errorf("invalid --workers value %d: must be >= 1", workers)
 			}
 			if cmd.Flags().Changed("target-locale") {
+				if len(o.targetLocales) == 0 {
+					return fmt.Errorf("invalid --target-locale value: must not be empty")
+				}
 				for _, locale := range o.targetLocales {
 					if strings.TrimSpace(locale) == "" {
 						return fmt.Errorf("invalid --target-locale value: must not be empty")
 					}
-				}
-				if len(o.targetLocales) == 0 {
-					return fmt.Errorf("invalid --target-locale value: must not be empty")
 				}
 			}
 			contextMemoryScope := strings.ToLower(strings.TrimSpace(o.contextMemoryScope))
