@@ -6,10 +6,7 @@
     "source": "en-US",
     // Target locales: one output is generated per locale listed here.
     // Add more locales as your project grows.
-    "targets": [
-      "zh-CN",
-      "vi-VN"
-    ]
+    "targets": ["zh-CN", "vi-VN"],
   },
   // One bucket defines how files map from source to target.
   // Use {{source}} and {{target}} placeholders in paths.
@@ -26,98 +23,98 @@
           // Output path template.
           // Example with target=es-ES:
           // docs/es-ES/getting-started/quickstart.mdx
-          "to": "docs/{{localeDir}}/**/*.mdx"
-        }
-      ]
+          "to": "docs/{{localeDir}}/**/*.mdx",
+        },
+      ],
     },
     "tests_json": {
       "files": [
         {
           "from": "tests/json/en-US.json",
-          "to": "tests/json/[locale].json"
-        }
-      ]
+          "to": "tests/json/[locale].json",
+        },
+      ],
     },
     "tests_formatjs": {
       "files": [
         {
           "from": "tests/formatjs/en-US.json",
-          "to": "tests/formatjs/[locale].json"
-        }
-      ]
+          "to": "tests/formatjs/[locale].json",
+        },
+      ],
     },
     "tests_xlf": {
       "files": [
         {
           "from": "tests/xlf/en-US.xlf",
-          "to": "tests/xlf/[locale].xlf"
-        }
-      ]
+          "to": "tests/xlf/[locale].xlf",
+        },
+      ],
     },
     "tests_xlif": {
       "files": [
         {
           "from": "tests/xlif/en-US.xlif",
-          "to": "tests/xlif/[locale].xlif"
-        }
-      ]
+          "to": "tests/xlif/[locale].xlif",
+        },
+      ],
     },
     "tests_xliff": {
       "files": [
         {
           "from": "tests/xliff/en-US.xliff",
-          "to": "tests/xliff/[locale].xliff"
-        }
-      ]
+          "to": "tests/xliff/[locale].xliff",
+        },
+      ],
     },
     "tests_po": {
       "files": [
         {
           "from": "tests/po/en-US.po",
-          "to": "tests/po/[locale].po"
-        }
-      ]
+          "to": "tests/po/[locale].po",
+        },
+      ],
     },
     "tests_md": {
       "files": [
         {
           "from": "tests/md/en-US.md",
-          "to": "tests/md/[locale].md"
-        }
-      ]
+          "to": "tests/md/[locale].md",
+        },
+      ],
     },
     "tests_mdx": {
       "files": [
         {
           "from": "tests/mdx/en-US.mdx",
-          "to": "tests/mdx/[locale].mdx"
-        }
-      ]
+          "to": "tests/mdx/[locale].mdx",
+        },
+      ],
     },
     "tests_strings": {
       "files": [
         {
           "from": "tests/strings/en-US.strings",
-          "to": "tests/strings/[locale].strings"
-        }
-      ]
+          "to": "tests/strings/[locale].strings",
+        },
+      ],
     },
     "tests_stringsdict": {
       "files": [
         {
           "from": "tests/stringsdict/en-US.stringsdict",
-          "to": "tests/stringsdict/[locale].stringsdict"
-        }
-      ]
+          "to": "tests/stringsdict/[locale].stringsdict",
+        },
+      ],
     },
     "tests_csv": {
       "files": [
         {
           "from": "tests/csv/en-US.csv",
-          "to": "tests/csv/[locale].csv"
-        }
-      ]
-    }
+          "to": "tests/csv/[locale].csv",
+        },
+      ],
+    },
   },
   // One group links the target(s) with the bucket(s).
   // Think of a group as "what to run" for a subset of locales/files.
@@ -125,21 +122,13 @@
     "default": {
       // Targets in this group.
       // Must be a subset of locales.targets.
-      "targets": [
-        "zh-CN",
-        "vi-VN"
-      ],
+      "targets": ["zh-CN", "vi-VN"],
       // Buckets in this group.
       // Names must match keys under the top-level "buckets" object.
-      "buckets": [
-        "docs"
-      ]
+      "buckets": ["docs"],
     },
     "tests": {
-      "targets": [
-        "zh-CN",
-        "vi-VN"
-      ],
+      "targets": ["zh-CN", "vi-VN"],
       "buckets": [
         "tests_json",
         "tests_formatjs",
@@ -151,9 +140,9 @@
         "tests_mdx",
         "tests_strings",
         "tests_stringsdict",
-        "tests_csv"
-      ]
-    }
+        "tests_csv",
+      ],
+    },
   },
   "llm": {
     // Profiles define provider/model/prompt behavior.
@@ -166,14 +155,14 @@
         "provider": "openai",
         "model": "gpt-5.2",
         // Prompt template used for each translation task.
-        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. TOV as a technical writer, so use simple and clear language. Input:\n\n{{input}}"
+        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. TOV as a technical writer, so use simple and clear language. Input:\n\n{{input}}",
       },
       "ollama": {
         "provider": "ollama",
         // "model": "hf.co/CohereLabs/tiny-aya-global-GGUF:F16",
-        "model": "gpt-oss:20b",
-        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. Input:\n\n{{input}}"
-      }
+        "model": "translategemma",
+        "prompt": "Translate from {{source}} to {{target}}, only return the translation, no other text. Input:\n\n{{input}}",
+      },
     },
     // Rules connect groups to profiles.
     // If multiple rules match, the highest priority wins.
@@ -181,13 +170,13 @@
       {
         "priority": 100,
         "group": "default",
-        "profile": "default"
+        "profile": "default",
       },
       {
         "priority": 200,
         "group": "tests",
-        "profile": "ollama"
-      }
-    ]
-  }
+        "profile": "ollama",
+      },
+    ],
+  },
 }

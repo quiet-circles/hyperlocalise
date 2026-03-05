@@ -25,6 +25,8 @@ type Request struct {
 	ModelProvider  string
 	Model          string
 	Prompt         string
+	RepairSource   string
+	RepairDraft    string
 }
 
 type Provider interface {
@@ -33,7 +35,13 @@ type Provider interface {
 }
 
 func validateRequest(req Request) error {
-	if strings.TrimSpace(req.Source) == "" {
+	repairSource := strings.TrimSpace(req.RepairSource)
+	repairDraft := strings.TrimSpace(req.RepairDraft)
+	if (repairSource == "") != (repairDraft == "") {
+		return fmt.Errorf("translate request: repair_source and repair_draft must both be provided")
+	}
+	isRepair := repairSource != "" && repairDraft != ""
+	if !isRepair && strings.TrimSpace(req.Source) == "" {
 		return fmt.Errorf("translate request: source is required")
 	}
 	if strings.TrimSpace(req.TargetLanguage) == "" {
