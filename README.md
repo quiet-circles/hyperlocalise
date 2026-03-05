@@ -217,6 +217,7 @@ Flags:
 - `anthropic`
 - `lmstudio`
 - `groq`
+- `mistral`
 - `ollama`
 - `gemini`
 - `bedrock`
@@ -436,6 +437,31 @@ Environment:
 export GROQ_BASE_URL="https://api.groq.com/openai/v1"
 
 export GROQ_API_KEY="your-groq-api-key"
+```
+
+## Mistral Example
+
+Config:
+```json
+{
+  "llm": {
+    "profiles": {
+      "default": {
+        "provider": "mistral",
+        "model": "mistral-large-latest",
+        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+      }
+    }
+  }
+}
+```
+
+Environment:
+```bash
+# Optional, defaults to https://api.mistral.ai/v1
+export MISTRAL_BASE_URL="https://api.mistral.ai/v1"
+
+export MISTRAL_API_KEY="your-mistral-api-key"
 ```
 
 

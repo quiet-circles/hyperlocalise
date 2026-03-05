@@ -12,6 +12,7 @@ const (
 	ProviderAnthropic   = "anthropic"
 	ProviderLMStudio    = "lmstudio"
 	ProviderGroq        = "groq"
+	ProviderMistral     = "mistral"
 	ProviderOllama      = "ollama"
 	ProviderGemini      = "gemini"
 	ProviderBedrock     = "bedrock"
