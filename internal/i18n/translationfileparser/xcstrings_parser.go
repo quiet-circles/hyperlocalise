@@ -169,6 +169,7 @@ func selectXCStringsLocalizationForMarshal(entry map[string]any, sourceLanguage,
 		}
 
 		cloned := cloneXCStringsObject(base)
+		resetXCStringsState(cloned, "needs_review")
 		localizations[targetLocale] = cloned
 		return cloned, nil
 	}
@@ -289,5 +290,39 @@ func cloneXCStringsValue(value any) any {
 		return cloneXCStringsArray(typed)
 	default:
 		return typed
+	}
+}
+
+func resetXCStringsState(node map[string]any, state string) {
+	rawUnit, hasUnit := node["stringUnit"]
+	if hasUnit {
+		if unit, ok := rawUnit.(map[string]any); ok {
+			unit["state"] = state
+		}
+	}
+
+	rawVariations, hasVariations := node["variations"]
+	if !hasVariations {
+		return
+	}
+	variations, ok := rawVariations.(map[string]any)
+	if !ok {
+		return
+	}
+
+	for _, dimension := range sortedMapKeys(variations) {
+		rawSelectors := variations[dimension]
+		selectors, ok := rawSelectors.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, selector := range sortedMapKeys(selectors) {
+			rawChild := selectors[selector]
+			child, ok := rawChild.(map[string]any)
+			if !ok {
+				continue
+			}
+			resetXCStringsState(child, state)
+		}
 	}
 }
