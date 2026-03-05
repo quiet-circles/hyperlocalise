@@ -19,6 +19,7 @@
 - `NewDefaultStrategy()` returns a strategy pre-registered with all supported parsers listed above.
 - `Register(ext, parser)` allows adding/replacing parser implementations by extension.
 - `Parse(path, content)` resolves parser by extension and returns `map[string]string`.
+- `ParseForLocale(path, content, locale)` resolves parser by extension and returns values for a preferred locale when supported by that parser (otherwise falls back to `Parse`).
 
 ## Parser behavior
 

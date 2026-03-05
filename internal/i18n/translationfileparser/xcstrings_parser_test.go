@@ -130,6 +130,66 @@ func TestXCStringsParserFallsBackDeterministicallyWhenSourceLanguageMissing(t *t
 	}
 }
 
+func TestXCStringsParserParseForLocaleReadsRequestedLocale(t *testing.T) {
+	content := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	got, err := (XCStringsParser{}).ParseForLocale(content, "fr")
+	if err != nil {
+		t.Fatalf("parse xcstrings for locale: %v", err)
+	}
+	if got["hello"] != "Bonjour" {
+		t.Fatalf("expected requested locale value, got %q", got["hello"])
+	}
+}
+
+func TestXCStringsParserParseForLocaleMissingLocaleDoesNotFallback(t *testing.T) {
+	content := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	got, err := (XCStringsParser{}).ParseForLocale(content, "fr")
+	if err != nil {
+		t.Fatalf("parse xcstrings for locale: %v", err)
+	}
+	if _, ok := got["hello"]; ok {
+		t.Fatalf("expected missing preferred locale to skip key instead of falling back to source")
+	}
+}
+
 func TestMarshalXCStringsPreservesStateAndUpdatesTargetLocale(t *testing.T) {
 	template := []byte(`{
   "sourceLanguage": "en",

@@ -33,7 +33,7 @@ func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[
 }
 
 func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, keep map[string]struct{}) error {
-	values, err := s.loadExistingTarget(targetPath)
+	values, err := s.loadExistingTarget(targetPath, output.targetLocale)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (s *Service) planPruneCandidates(pruneTargets map[string]map[string]struct{
 	slices.Sort(targetPaths)
 
 	for _, targetPath := range targetPaths {
-		existing, err := s.loadExistingTarget(targetPath)
+		existing, err := s.loadExistingTarget(targetPath, "")
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func validatePruneLimit(in Input, candidates int) error {
 	return fmt.Errorf("prune safety limit exceeded: %d keys scheduled for deletion (limit %d). rerun with --prune-max-deletions %d or --prune-force", candidates, limit, candidates)
 }
 
-func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
+func (s *Service) loadExistingTarget(path, locale string) (map[string]string, error) {
 	content, err := s.readFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -113,7 +113,7 @@ func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
 		}
 		return nil, fmt.Errorf("flush outputs: read target file %q: %w", path, err)
 	}
-	entries, err := s.newParser().Parse(path, content)
+	entries, err := s.newParser().ParseForLocale(path, content, locale)
 	if err != nil {
 		return nil, fmt.Errorf("flush outputs: parse target file %q: %w", path, err)
 	}
@@ -170,7 +170,7 @@ func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocal
 	template := sourceTemplate
 	targetTemplate, err := s.readFile(path)
 	if err == nil {
-		targetEntries, parseErr := s.newParser().Parse(path, targetTemplate)
+		targetEntries, parseErr := s.newParser().ParseForLocale(path, targetTemplate, targetLocale)
 		if parseErr == nil && hasExactKeySet(targetEntries, values) {
 			template = targetTemplate
 		}

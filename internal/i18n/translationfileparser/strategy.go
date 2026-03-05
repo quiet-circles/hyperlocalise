@@ -11,6 +11,11 @@ type Parser interface {
 	Parse(content []byte) (map[string]string, error)
 }
 
+// LocaleParser parses translation file content into key/value pairs for a specific locale.
+type LocaleParser interface {
+	ParseForLocale(content []byte, locale string) (map[string]string, error)
+}
+
 // Strategy selects a parser based on file extension.
 type Strategy struct {
 	parsersByExt map[string]Parser
@@ -53,6 +58,15 @@ func (s *Strategy) Register(ext string, parser Parser) {
 
 // Parse resolves a parser from the file path extension and parses content.
 func (s *Strategy) Parse(path string, content []byte) (map[string]string, error) {
+	return s.parse(path, content, "")
+}
+
+// ParseForLocale resolves a parser from the file path extension and parses content for one locale.
+func (s *Strategy) ParseForLocale(path string, content []byte, locale string) (map[string]string, error) {
+	return s.parse(path, content, locale)
+}
+
+func (s *Strategy) parse(path string, content []byte, locale string) (map[string]string, error) {
 	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(path)))
 	if ext == "" {
 		return nil, fmt.Errorf("translation file parser: file %q has no extension", path)
@@ -63,7 +77,15 @@ func (s *Strategy) Parse(path string, content []byte) (map[string]string, error)
 		return nil, fmt.Errorf("translation file parser: unsupported file extension %q", ext)
 	}
 
-	values, err := parser.Parse(content)
+	var (
+		values map[string]string
+		err    error
+	)
+	if localeParser, ok := parser.(LocaleParser); ok {
+		values, err = localeParser.ParseForLocale(content, locale)
+	} else {
+		values, err = parser.Parse(content)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("translation file parser: parse %q: %w", path, err)
 	}

@@ -254,6 +254,41 @@ func TestStrategyParsesXCStrings(t *testing.T) {
 	}
 }
 
+func TestStrategyParseForLocaleUsesLocaleAwareXCStringsParser(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	content := []byte(`{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "hello": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour"
+          }
+        }
+      }
+    }
+  }
+}`)
+
+	got, err := s.ParseForLocale("fr.xcstrings", content, "fr")
+	if err != nil {
+		t.Fatalf("parse for locale: %v", err)
+	}
+	if got["hello"] != "Bonjour" {
+		t.Fatalf("unexpected hello translation: %q", got["hello"])
+	}
+}
+
 func TestStrategyParsesCSV(t *testing.T) {
 	s := NewDefaultStrategy()
 

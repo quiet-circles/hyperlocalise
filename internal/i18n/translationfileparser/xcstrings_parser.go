@@ -10,6 +10,14 @@ import (
 type XCStringsParser struct{}
 
 func (p XCStringsParser) Parse(content []byte) (map[string]string, error) {
+	return p.parse(content, "")
+}
+
+func (p XCStringsParser) ParseForLocale(content []byte, locale string) (map[string]string, error) {
+	return p.parse(content, locale)
+}
+
+func (p XCStringsParser) parse(content []byte, preferredLocale string) (map[string]string, error) {
 	var payload map[string]any
 	if err := json.Unmarshal(content, &payload); err != nil {
 		return nil, fmt.Errorf("xcstrings decode: %w", err)
@@ -35,7 +43,7 @@ func (p XCStringsParser) Parse(content []byte) (map[string]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("xcstrings key %q must be object, got %T", key, rawEntry)
 		}
-		localization, err := selectXCStringsLocalization(entry, sourceLanguage)
+		localization, err := selectXCStringsLocalizationForParse(entry, sourceLanguage, preferredLocale)
 		if err != nil {
 			return nil, err
 		}
@@ -48,6 +56,32 @@ func (p XCStringsParser) Parse(content []byte) (map[string]string, error) {
 	}
 
 	return out, nil
+}
+
+func selectXCStringsLocalizationForParse(entry map[string]any, sourceLanguage, preferredLocale string) (map[string]any, error) {
+	preferred := strings.TrimSpace(preferredLocale)
+	if preferred != "" {
+		rawLocalizations, ok := entry["localizations"]
+		if !ok {
+			return nil, nil
+		}
+		localizations, ok := rawLocalizations.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("xcstrings field %q must be object, got %T", "localizations", rawLocalizations)
+		}
+
+		rawLoc, ok := localizations[preferred]
+		if !ok {
+			return nil, nil
+		}
+		loc, ok := rawLoc.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("xcstrings localization %q must be object, got %T", preferred, rawLoc)
+		}
+		return loc, nil
+	}
+
+	return selectXCStringsLocalization(entry, sourceLanguage)
 }
 
 // MarshalXCStrings preserves catalog metadata and updates only localized string values.

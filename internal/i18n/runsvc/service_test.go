@@ -2633,8 +2633,14 @@ func TestMarshalTargetFileXCStringsPreservesExistingTargetValuesForUnstagedKeys(
 	if hello["value"] != "Salut" {
 		t.Fatalf("expected staged key updated, got %#v", hello["value"])
 	}
+	if hello["state"] != "needs_review" {
+		t.Fatalf("expected staged key state reset to needs_review, got %#v", hello["state"])
+	}
 	if bye["value"] != "Au revoir" {
 		t.Fatalf("expected unstaged key to preserve existing target translation, got %#v", bye["value"])
+	}
+	if bye["state"] != "translated" {
+		t.Fatalf("expected unstaged key state to remain unchanged, got %#v", bye["state"])
 	}
 }
 
