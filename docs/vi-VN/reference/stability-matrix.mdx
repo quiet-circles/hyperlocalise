@@ -1,0 +1,31 @@
+---
+title: "Ma trận ổn định"
+description: "Các mức độ hoàn thiện của tính năng trên lớp nhà cung cấp, luồng lockfile, bộ điều hợp TMS, eval và nhãn trạng thái sẵn sàng cho CI."
+---
+
+Sử dụng trang này để quyết định những khả năng nào an toàn để dùng làm mặc định trong môi trường sản xuất và những khả năng nào nên được giữ sau các biện pháp kiểm soát triển khai chặt chẽ hơn.
+
+## Mức độ hoàn thiện tính năng
+
+| Khu vực | Phạm vi | Trạng thái | Ghi chú |
+| --- | --- | --- | --- |
+| Lớp nhà cung cấp LLM | OpenAI, Azure OpenAI, Gemini, Anthropic, AWS Bedrock, LM Studio, Groq, Ollama | Ổn định | Đường dẫn tạo chính cho `run`. |
+| Gói-đầu tiên + tệp khóa | `run --dry-run`, lập kế hoạch xác định, `.hyperlocalise.lock.json` điểm kiểm tra | Ổn định | Giá trị mặc định được đề xuất cho các luồng CI và quy trình xem xét PR. |
+| Bộ điều hợp TMS | Crowdin, LILT AI, Lokalise, Phrase, POEditor, Smartling | Thử nghiệm | `sync push` / `sync pull` các hợp đồng có thể thay đổi. Hãy cố định phiên bản CLI trong CI. |
+| Khung đánh giá | `eval run`, `eval compare`, chấm điểm chất lượng/hồi quy | Thử nghiệm | Lược đồ báo cáo và cách chấm điểm có thể thay đổi giữa các phiên bản. |
+| CI-nhãn trạng thái sẵn sàng | `ready`, `needs review`, `missing` được dẫn xuất từ `status` CSV | Thử nghiệm | Ánh xạ nhãn ổn định cho tài liệu hiện tại, nhưng ngữ nghĩa phân loại có thể thay đổi. |
+
+## Chính sách triển khai được khuyến nghị
+
+1. Xử lý `run` + lockfile làm đường cơ sở trong các kiểm tra CI mặc định.
+2. Sử dụng `sync` và `eval` trong các pipeline được kiểm soát với việc ghim phiên bản rõ ràng.
+3. Chặn phát hành với trạng thái-kiểm tra dựa trên trước khi bật quyền ghi-có khả năng `sync` công việc.
+
+## Xem thêm
+
+- [chạy](/commands/run)
+- [trạng thái](/commands/status)
+- [đồng bộ kéo](/commands/sync-pull)
+- [đồng bộ đẩy](/commands/sync-push)
+- [eval](/commands/eval)
+- [Hợp đồng tệp khóa](/reference/lockfile-contract)

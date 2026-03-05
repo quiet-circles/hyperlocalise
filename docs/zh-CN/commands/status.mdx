@@ -24,6 +24,49 @@ hyperlocalise status [--config <path>] [flags]
 - `needs_review`：provenance 为 `origin=llm` 和 `state=draft`
 - `untranslated`：值为空
 
+## CSV 架构
+
+`status --output csv` 总是输出此标头：
+
+```csv
+key,namespace,locale,status,origin,state
+```
+
+列含义：
+
+- `key`: 翻译键标识符
+- `namespace`：用于键分组的逻辑命名空间
+- `locale`: 目标区域设置
+- `status`: 计算的状态分类
+- `origin`: value source (`llm`, `human`或适配器-来源信息)
+- `state`: 工作流状态 (例如 `draft` 或精选-等效状态)
+
+## CI-准备标签映射 (实验性)
+
+当您的管道需要产品时，请使用此映射-级别标签：
+
+| CSV `status` | CI-就绪标签 |
+| --- | --- |
+| `translated` | `ready` |
+| `needs_review` | `needs review` |
+| `untranslated` | `missing` |
+
+## CI 门禁示例
+
+当存在任何条目时阻止 `missing`:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="untranslated"{bad=1} END{exit bad}' status.csv
+```
+
+阻止当 `needs review` 超过 `20` 行：
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="needs_review"{count++} END{exit(count>20)}' status.csv
+```
+
 ## 示例
 
 ```bash
@@ -33,3 +76,11 @@ hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
 ```bash
 hyperlocalise status --config i18n.jsonc --group default --output csv -i
 ```
+
+## 另请参阅
+
+- [运行](/commands/run)
+- [eval](/commands/eval)
+- [同步拉取](/commands/sync-pull)
+- [同步推送](/commands/sync-push)
+- [输出格式](/reference/output-formats)

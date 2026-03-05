@@ -1,0 +1,31 @@
+---
+title: "稳定性矩阵"
+description: "涵盖提供商层、锁文件流程、TMS 适配器、评估以及 CI 就绪状态标签的功能成熟度级别。"
+---
+
+使用此页面来确定哪些功能适合作为生产环境的默认设置，哪些功能应继续置于更严格的发布控制之下。
+
+## 功能成熟度
+
+| 区域 | 范围 | 状态 | 备注 |
+| --- | --- | --- | --- |
+| LLM 提供商层 | OpenAI、Azure OpenAI、Gemini、Anthropic、AWS Bedrock、LM Studio、Groq、Ollama | 稳定 | 主要生成路径用于 `run`. |
+| 计划-第一 + 锁文件 | `run --dry-run`，确定性规划， `.hyperlocalise.lock.json` 检查点 | 稳定 | CI 和 PR 审查流程的推荐默认设置。 |
+| TMS 适配器 | Crowdin、LILT AI、Lokalise、Phrase、POEditor、Smartling | 实验性 | `sync push` / `sync pull` 合约可能会演变。在 CI 中固定 CLI 版本。 |
+| 评估框架 | `eval run`, `eval compare`，质量/回归评分 | 实验性 | 报告架构和评分可能会在不同版本之间发生变化。 |
+| CI-就绪状态标签 | `ready`, `needs review`, `missing` 源自 `status` CSV | 实验性 | 当前文档的标签映射是稳定的，但分类语义可能会演变。 |
+
+## 推荐的发布策略
+
+1. Treat `run` + 在默认的 CI 检查中将 lockfile 作为基线。
+2. 使用 `sync` 和 `eval` 在受控的流水线中，并明确固定版本号。
+3. 通过状态门控发布-启用写入前的基础检查-有能力 `sync` 作业。
+
+## 另请参阅
+
+- [运行](/commands/run)
+- [状态](/commands/status)
+- [同步拉取](/commands/sync-pull)
+- [同步推送](/commands/sync-push)
+- [eval](/commands/eval)
+- [锁文件契约](/reference/lockfile-contract)

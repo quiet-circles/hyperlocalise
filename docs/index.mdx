@@ -5,13 +5,37 @@ description: "CLI-first localization workflows for AI draft generation, optional
 
 `hyperlocalise` helps you generate local translation drafts, optionally sync with your TMS, and track what still needs review.
 
+## Platform focus
+
+- LLM provider layer: OpenAI, Azure OpenAI, Gemini, Anthropic, AWS Bedrock, LM Studio, Groq, Ollama
+- TMS adapters (experimental): Crowdin, LILT AI, Lokalise, Phrase, POEditor, Smartling
+- Eval framework (experimental): quality + regression checks across locales/models
+- CI-ready status labels (experimental): `ready` / `needs review` / `missing`
+- Plan-first + lockfile: deterministic runs and reviewable diffs
+
+## Feature graph
+
+```mermaid
+flowchart LR
+  A["Source files in repo"] --> B["run (plan-first, lockfile)"]
+  B --> C["Local drafts"]
+  C --> D{"Workflow choice"}
+  D --> E["Local-only release"]
+  D --> F["sync push (experimental)"]
+  F --> G["TMS curation"]
+  G --> H["sync pull (experimental)"]
+  H --> I["status labels for CI"]
+  C --> J["eval (experimental)"]
+  J --> I
+```
+
 ## Who this is for
 
 Use this CLI if you:
 
 - keep translation files in your repository,
 - want AI-generated drafts as a starting point,
-- want to choose between zero-human workflows and optional human curation in POEditor, Lokalise, or Crowdin.
+- want to choose between zero-human workflows and optional human curation in your TMS.
 
 ## Core workflow
 
@@ -38,3 +62,4 @@ Use this CLI if you:
 - Learn command behavior in [commands overview](/commands/overview).
 - Configure provider credentials in [provider credentials](/configuration/provider-credentials).
 - Understand sync behavior in [storage overview](/storage/overview).
+- Review feature maturity in the [stability matrix](/reference/stability-matrix).

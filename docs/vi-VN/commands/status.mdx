@@ -24,6 +24,49 @@ hyperlocalise status [--config <path>] [flags]
 - `needs_review`: provenance là `origin=llm` và `state=draft`
 - `untranslated`: giá trị trống
 
+## Lược đồ CSV
+
+`status --output csv` luôn xuất tiêu đề này:
+
+```csv
+key,namespace,locale,status,origin,state
+```
+
+Ý nghĩa cột:
+
+- `key`: mã định danh khóa dịch
+- `namespace`: không gian tên logic để nhóm khóa
+- `locale`: ngôn ngữ mục tiêu
+- `status`: phân loại trạng thái được tính toán
+- `origin`: nguồn giá trị (`llm`, `human`, hoặc bộ chuyển đổi-nguồn gốc ban đầu)
+- `state`: trạng thái quy trình làm việc (ví dụ `draft` hoặc được tuyển chọn-trạng thái tương đương)
+
+## CI-ánh xạ nhãn sẵn sàng (thử nghiệm)
+
+Sử dụng ánh xạ này khi quy trình của bạn yêu cầu sản phẩm-nhãn cấp độ:
+
+| CSV `status` | CI-nhãn sẵn sàng |
+| --- | --- |
+| `translated` | `ready` |
+| `needs_review` | `needs review` |
+| `untranslated` | `missing` |
+
+## Ví dụ về cổng CI
+
+Chặn khi có bất kỳ mục nhập nào `missing`:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="untranslated"{bad=1} END{exit bad}' status.csv
+```
+
+Chặn khi `needs review` vượt quá `20` rows:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="needs_review"{count++} END{exit(count>20)}' status.csv
+```
+
 ## Ví dụ
 
 ```bash
@@ -33,3 +76,11 @@ hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
 ```bash
 hyperlocalise status --config i18n.jsonc --group default --output csv -i
 ```
+
+## Xem thêm
+
+- [chạy](/commands/run)
+- [eval](/commands/eval)
+- [đồng bộ kéo](/commands/sync-pull)
+- [đồng bộ hóa đẩy](/commands/sync-push)
+- [Định dạng đầu ra](/reference/output-formats)

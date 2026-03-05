@@ -24,6 +24,49 @@ hyperlocalise status [--config <path>] [flags]
 - `needs_review`: provenance is `origin=llm` and `state=draft`
 - `untranslated`: value is empty
 
+## CSV schema
+
+`status --output csv` always emits this header:
+
+```csv
+key,namespace,locale,status,origin,state
+```
+
+Column meaning:
+
+- `key`: translation key identifier
+- `namespace`: logical namespace for key grouping
+- `locale`: target locale
+- `status`: computed status classification
+- `origin`: value source (`llm`, `human`, or adapter-originated provenance)
+- `state`: workflow state (for example `draft` or curated-equivalent state)
+
+## CI-ready label mapping (experimental)
+
+Use this mapping when your pipeline expects product-level labels:
+
+| CSV `status` | CI-ready label |
+| --- | --- |
+| `translated` | `ready` |
+| `needs_review` | `needs review` |
+| `untranslated` | `missing` |
+
+## CI gate examples
+
+Block when any entries are `missing`:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="untranslated"{bad=1} END{exit bad}' status.csv
+```
+
+Block when `needs review` exceeds `20` rows:
+
+```bash
+hyperlocalise status --config i18n.jsonc --output csv > status.csv
+awk -F, 'NR>1 && $4=="needs_review"{count++} END{exit(count>20)}' status.csv
+```
+
 ## Examples
 
 ```bash
@@ -33,3 +76,11 @@ hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
 ```bash
 hyperlocalise status --config i18n.jsonc --group default --output csv -i
 ```
+
+## See also
+
+- [run](/commands/run)
+- [eval](/commands/eval)
+- [sync pull](/commands/sync-pull)
+- [sync push](/commands/sync-push)
+- [Output formats](/reference/output-formats)

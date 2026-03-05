@@ -1,0 +1,31 @@
+---
+title: "Stability matrix"
+description: "Feature maturity levels across provider layer, lockfile flow, TMS adapters, eval, and CI-ready status labels."
+---
+
+Use this page to decide which capabilities are safe for production defaults and which should stay behind tighter rollout controls.
+
+## Feature maturity
+
+| Area | Scope | Status | Notes |
+| --- | --- | --- | --- |
+| LLM provider layer | OpenAI, Azure OpenAI, Gemini, Anthropic, AWS Bedrock, LM Studio, Groq, Ollama | Stable | Primary generation path for `run`. |
+| Plan-first + lockfile | `run --dry-run`, deterministic planning, `.hyperlocalise.lock.json` checkpoints | Stable | Recommended default for CI and PR review flows. |
+| TMS adapters | Crowdin, LILT AI, Lokalise, Phrase, POEditor, Smartling | Experimental | `sync push` / `sync pull` contracts may evolve. Pin CLI versions in CI. |
+| Eval framework | `eval run`, `eval compare`, quality/regression scoring | Experimental | Report schema and scoring can change between releases. |
+| CI-ready status labels | `ready`, `needs review`, `missing` derived from `status` CSV | Experimental | Label mapping is stable for current docs, but classification semantics may evolve. |
+
+## Recommended rollout policy
+
+1. Treat `run` + lockfile as baseline in default CI checks.
+2. Use `sync` and `eval` in controlled pipelines with explicit version pinning.
+3. Gate releases with status-based checks before enabling write-capable `sync` jobs.
+
+## See also
+
+- [run](/commands/run)
+- [status](/commands/status)
+- [sync pull](/commands/sync-pull)
+- [sync push](/commands/sync-push)
+- [eval](/commands/eval)
+- [Lockfile contract](/reference/lockfile-contract)

@@ -102,6 +102,7 @@
             "group": "Reference & Concepts",
             "pages": [
               "reference/glossary",
+              "reference/stability-matrix",
               "reference/config-schema",
               "reference/output-formats",
               "reference/lockfile-contract",
