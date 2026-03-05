@@ -1774,6 +1774,16 @@ func TestRunDryRunReportsPruneCandidates(t *testing.T) {
 	}
 }
 
+func TestNormalizeTargetLocalesRejectsEmptyValuesWithoutPlanningPrefix(t *testing.T) {
+	_, err := normalizeTargetLocales([]string{" ", "de"})
+	if err == nil {
+		t.Fatalf("expected empty target locale error")
+	}
+	if err.Error() != "target locale must not be empty" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestRunPruneRemovesStaleKeysForJSONAndNestedKeys(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"

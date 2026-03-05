@@ -212,7 +212,7 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 	filteredGroup := strings.TrimSpace(onlyGroup)
 	filteredTargets, err := normalizeTargetLocales(onlyTargetLocales)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("planning tasks: %w", err)
 	}
 	if filteredBucket != "" {
 		if _, ok := cfg.Buckets[filteredBucket]; !ok {
@@ -335,7 +335,7 @@ func normalizeTargetLocales(locales []string) ([]string, error) {
 	for _, locale := range locales {
 		trimmed := strings.TrimSpace(locale)
 		if trimmed == "" {
-			return nil, fmt.Errorf("planning tasks: target locale must not be empty")
+			return nil, fmt.Errorf("target locale must not be empty")
 		}
 		if _, ok := seen[trimmed]; ok {
 			continue

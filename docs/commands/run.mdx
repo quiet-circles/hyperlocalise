@@ -69,6 +69,9 @@ When writing CSV targets, `run` preserves the existing header and non-target col
 - `--target-locale`: run only tasks for the given target locale (repeatable)
 - `--dry-run`: print plan only, do not translate or write files
 - `--force`: rerun all planned tasks and ignore lockfile skip state
+- `--prune`: remove target keys that no longer exist in source files
+- `--prune-max-deletions`: maximum stale keys deleted in one run before requiring an explicit override (default `100`)
+- `--prune-force`: bypass the prune deletion safety limit
 - `--workers`: number of parallel translation workers (defaults to CPU cores)
 - `--progress`: progress rendering mode (`auto|on|off`, default: `auto`)
 - `--output`: write machine-readable JSON run report to the given path
@@ -143,6 +146,12 @@ hyperlocalise run --config i18n.jsonc --group tests --target-locale fr --target-
 ```
 
 If a requested locale is not present in `locales.targets`, `run` fails with an `unknown target locale` planning error. When combined with `--group`, only locales that belong to that group are planned.
+
+When combined with `--prune`, stale-key detection is also limited to the selected target locales. `run` only scans and prunes target files that belong to the filtered locale set.
+
+```bash
+hyperlocalise run --config i18n.jsonc --prune --target-locale de --dry-run
+```
 
 ## Force rerun all planned tasks
 
