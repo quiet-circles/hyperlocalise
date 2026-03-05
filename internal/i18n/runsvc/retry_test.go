@@ -24,14 +24,14 @@ func TestTranslateWithRetryAutoRepairRepairsDetectedLeak(t *testing.T) {
 
 	usage := translator.Usage{}
 	task := Task{
-		SourceText:    "Welcome to the developer dashboard",
-		SourceLocale:  "en",
-		TargetLocale:  "fr",
-		EntryKey:      "hello",
-		Provider:      "openai",
-		Model:         "gpt-4.1-mini",
-		Prompt:        "Translate from en to fr.",
-		AutoRepair:    true,
+		SourceText:   "Welcome to the developer dashboard",
+		SourceLocale: "en",
+		TargetLocale: "fr",
+		EntryKey:     "hello",
+		Provider:     "openai",
+		Model:        "gpt-4.1-mini",
+		Prompt:       "Translate from en to fr.",
+		AutoRepair:   true,
 	}
 
 	got, _, err := svc.translateWithRetry(translator.WithUsageCollector(context.Background(), &usage), task)
@@ -60,14 +60,14 @@ func TestTranslateWithRetryAutoRepairSkipsRepairWhenNoLeakDetected(t *testing.T)
 
 	usage := translator.Usage{}
 	task := Task{
-		SourceText:    "Welcome to the developer dashboard",
-		SourceLocale:  "en",
-		TargetLocale:  "fr",
-		EntryKey:      "hello",
-		Provider:      "openai",
-		Model:         "gpt-4.1-mini",
-		Prompt:        "Translate from en to fr.",
-		AutoRepair:    true,
+		SourceText:   "Welcome to the developer dashboard",
+		SourceLocale: "en",
+		TargetLocale: "fr",
+		EntryKey:     "hello",
+		Provider:     "openai",
+		Model:        "gpt-4.1-mini",
+		Prompt:       "Translate from en to fr.",
+		AutoRepair:   true,
 	}
 
 	got, _, err := svc.translateWithRetry(translator.WithUsageCollector(context.Background(), &usage), task)
