@@ -139,6 +139,10 @@ func selectXCStringsLocalization(entry map[string]any, sourceLanguage string) (m
 }
 
 func selectXCStringsLocalizationForMarshal(entry map[string]any, sourceLanguage, targetLocale string) (map[string]any, error) {
+	if strings.TrimSpace(targetLocale) == "" {
+		return nil, fmt.Errorf("xcstrings target locale is required")
+	}
+
 	rawLocalizations, ok := entry["localizations"]
 	if !ok {
 		return nil, nil
@@ -151,30 +155,26 @@ func selectXCStringsLocalizationForMarshal(entry map[string]any, sourceLanguage,
 		return nil, nil
 	}
 
-	if targetLocale != "" {
-		if rawLoc, ok := localizations[targetLocale]; ok {
-			loc, ok := rawLoc.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("xcstrings localization %q must be object, got %T", targetLocale, rawLoc)
-			}
-			return loc, nil
+	if rawLoc, ok := localizations[targetLocale]; ok {
+		loc, ok := rawLoc.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("xcstrings localization %q must be object, got %T", targetLocale, rawLoc)
 		}
-
-		base, err := selectXCStringsLocalization(entry, sourceLanguage)
-		if err != nil {
-			return nil, err
-		}
-		if base == nil {
-			return nil, nil
-		}
-
-		cloned := cloneXCStringsObject(base)
-		resetXCStringsState(cloned, "needs_review")
-		localizations[targetLocale] = cloned
-		return cloned, nil
+		return loc, nil
 	}
 
-	return selectXCStringsLocalization(entry, sourceLanguage)
+	base, err := selectXCStringsLocalization(entry, sourceLanguage)
+	if err != nil {
+		return nil, err
+	}
+	if base == nil {
+		return nil, nil
+	}
+
+	cloned := cloneXCStringsObject(base)
+	resetXCStringsState(cloned, "needs_review")
+	localizations[targetLocale] = cloned
+	return cloned, nil
 }
 
 func collectXCStringsValues(out map[string]string, key string, node map[string]any) error {
@@ -232,7 +232,11 @@ func applyXCStringsValues(node map[string]any, key string, values map[string]str
 			return fmt.Errorf("xcstrings field %q must be object, got %T", "stringUnit", rawUnit)
 		}
 		if translated, ok := values[key]; ok {
+			currentValue, hasCurrent := unit["value"].(string)
 			unit["value"] = translated
+			if !hasCurrent || currentValue != translated {
+				unit["state"] = "needs_review"
+			}
 		}
 	}
 
