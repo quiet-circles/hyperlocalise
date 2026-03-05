@@ -15,7 +15,7 @@ func TestTranslateWithRetryAutoRepairRepairsDetectedLeak(t *testing.T) {
 	calls := 0
 	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
 		calls++
-		if strings.Contains(req.Source, "TRANSLATION_DRAFT:") {
+		if strings.Contains(req.Source, "\"translation_draft\"") {
 			translator.SetUsage(ctx, translator.Usage{PromptTokens: 7, CompletionTokens: 3, TotalTokens: 10})
 			return "Bonjour le monde", nil
 		}
@@ -91,7 +91,7 @@ func TestTranslateWithRetryAutoRepairFailsClosedWhenRepairPassFails(t *testing.T
 	calls := 0
 	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
 		calls++
-		if strings.Contains(req.Source, "TRANSLATION_DRAFT:") {
+		if strings.Contains(req.Source, "\"translation_draft\"") {
 			return "", errors.New("repair request rejected")
 		}
 		translator.SetUsage(ctx, translator.Usage{PromptTokens: 5, CompletionTokens: 2, TotalTokens: 7})

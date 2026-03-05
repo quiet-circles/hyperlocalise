@@ -2,6 +2,7 @@ package runsvc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -178,11 +179,19 @@ func buildRepairPrompt(basePrompt string) string {
 	if base == "" {
 		base = "You are a translation assistant."
 	}
-	return base + " This is pass 2 quality repair. Improve the translation draft so it is fully in the target language, fluent, and natural. Remove source-language bleed-through while preserving placeholders, variables, markup, and formatting. Return only the repaired translation."
+	return base + " This is pass 2 quality repair. Use the JSON payload fields `original_source_text` and `translation_draft` as literal input values. Improve the translation draft so it is fully in the target language, fluent, and natural. Remove source-language bleed-through while preserving placeholders, variables, markup, and formatting. Return only the repaired translation."
 }
 
 func buildRepairSource(source, draft string) string {
-	return "ORIGINAL_SOURCE_TEXT:\n" + source + "\n\nTRANSLATION_DRAFT:\n" + draft
+	payload := map[string]string{
+		"original_source_text": source,
+		"translation_draft":    draft,
+	}
+	data, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return `{"original_source_text":"","translation_draft":""}`
+	}
+	return string(data)
 }
 
 func shouldAttemptAutoRepair(sourceLocale, targetLocale, source, translated string) bool {
