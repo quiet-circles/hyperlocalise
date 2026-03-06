@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -303,5 +305,225 @@ func TestDebugLoggingSetupFailureWritesStderr(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "progress debug logging disabled") {
 		t.Fatalf("expected stderr warning when debug setup fails, got %q", string(data))
+	}
+}
+
+func TestRendererNonInteractiveMethodsAndGuards(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	r := New(&out, ModeOn, Options{
+		IsTTYFn: func(_ io.Writer) bool { return false },
+	})
+
+	r.Phase("Planning...")
+	r.Plan(3)
+	r.TaskStarted(" ", "ignored")
+	r.TaskStarted("/tmp/fr/app.json", "hello")
+	r.TaskStatus(" ", "ignored", true, "")
+	r.TaskStatus("/tmp/fr/app.json", "hello", false, "rate limit")
+	r.TokenUsage(10, 5, 15)
+	r.TaskDone(3, 0, 3)
+	r.Complete()
+
+	beforeClose := out.String()
+	if !strings.Contains(beforeClose, "progress phase=Planning...") {
+		t.Fatalf("expected phase line in plain output, got %q", beforeClose)
+	}
+	if !strings.Contains(beforeClose, "progress executable_total=3") {
+		t.Fatalf("expected plan line in plain output, got %q", beforeClose)
+	}
+	if !strings.Contains(beforeClose, "progress completed=3/3 succeeded=3 failed=0") {
+		t.Fatalf("expected task summary line in plain output, got %q", beforeClose)
+	}
+	if !strings.Contains(beforeClose, "progress done succeeded=3 failed=0") {
+		t.Fatalf("expected completion line in plain output, got %q", beforeClose)
+	}
+
+	r.Close()
+	r.Close()
+
+	r.Phase("after close")
+	r.Plan(99)
+	r.TaskStarted("/tmp/fr/app.json", "x")
+	r.TaskStatus("/tmp/fr/app.json", "x", true, "")
+	r.TaskDone(9, 9, 9)
+	r.TokenUsage(1, 1, 2)
+	r.Complete()
+
+	if got := out.String(); got != beforeClose {
+		t.Fatalf("expected no output after close; before=%q after=%q", beforeClose, got)
+	}
+}
+
+func TestRendererModeAutoSuppressesPlainProgressLines(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	r := New(&out, ModeAuto, Options{
+		IsTTYFn: func(_ io.Writer) bool { return false },
+	})
+	r.Phase("Planning...")
+	r.Plan(2)
+	r.TaskDone(1, 0, 2)
+	r.Complete()
+	r.Close()
+
+	got := out.String()
+	if strings.Contains(got, "progress phase=") || strings.Contains(got, "progress executable_total=") || strings.Contains(got, "progress completed=") {
+		t.Fatalf("expected auto mode to suppress plain progress logs, got %q", got)
+	}
+	if !strings.Contains(got, "progress done succeeded=1 failed=0") {
+		t.Fatalf("expected completion line, got %q", got)
+	}
+}
+
+func TestIsEnabledUnknownModeReturnsFalse(t *testing.T) {
+	t.Parallel()
+
+	if IsEnabled(Mode("mystery"), bytes.NewBuffer(nil), nil) {
+		t.Fatal("unknown mode should be disabled")
+	}
+}
+
+func TestDetectTTYBranches(t *testing.T) {
+	t.Parallel()
+
+	if !detectTTY(bytes.NewBuffer(nil), func(_ io.Writer) bool { return true }) {
+		t.Fatal("expected custom detector branch to return true")
+	}
+	if detectTTY(bytes.NewBuffer(nil), nil) {
+		t.Fatal("non-file writer should not be considered a tty")
+	}
+
+	f, err := os.CreateTemp(t.TempDir(), "detect-tty-*")
+	if err != nil {
+		t.Fatalf("create temp file: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+	if detectTTY(f, nil) {
+		t.Fatal("regular file should not be considered a tty")
+	}
+}
+
+func TestModelInitAndSpinnerDonePath(t *testing.T) {
+	t.Parallel()
+
+	m := newModel("Translating", ModeOn, defaultSpinnerTick, Options{})
+	if cmd := m.Init(); cmd == nil {
+		t.Fatal("expected init command")
+	}
+
+	m.done = true
+	next, _ := m.Update(spinner.TickMsg{})
+	updated, ok := next.(model)
+	if !ok {
+		t.Fatalf("expected updated model type, got %T", next)
+	}
+	if !updated.done {
+		t.Fatal("expected done state to be preserved on spinner ticks")
+	}
+}
+
+func TestSetProgressCmdClampsCompletedBounds(t *testing.T) {
+	t.Parallel()
+
+	m := newModel("Translating", ModeOn, defaultSpinnerTick, Options{})
+	m.total = 2
+	m.succeeded = -1
+	m.failed = 0
+	if cmd := m.setProgressCmd(); cmd == nil {
+		t.Fatal("expected command when total is positive")
+	}
+	next, _ := m.Update(taskDoneMsg{succeeded: 5, failed: 5, total: 2})
+	m, _ = next.(model)
+	if m.succeeded != 5 || m.failed != 5 {
+		t.Fatalf("expected task counts to update, got succeeded=%d failed=%d", m.succeeded, m.failed)
+	}
+}
+
+func TestStatusLabelEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	if got := statusLabel(" "); got != "(unknown)" {
+		t.Fatalf("expected unknown label for blank path, got %q", got)
+	}
+	if got := statusLabel("/"); got != "/" {
+		t.Fatalf("expected slash path label to remain unchanged, got %q", got)
+	}
+}
+
+func TestParseBoolEnvOnAndInvalidValues(t *testing.T) {
+	t.Parallel()
+
+	if !parseBoolEnv("on") {
+		t.Fatal("expected on to parse as true")
+	}
+	if parseBoolEnv("definitely-not-bool") {
+		t.Fatal("expected invalid bool value to parse as false")
+	}
+}
+
+func TestNewDebugLoggerErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	if _, _, err := newDebugLogger(" "); err == nil {
+		t.Fatal("expected empty path error")
+	}
+
+	blocker := filepath.Join(t.TempDir(), "blocker")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write blocker file: %v", err)
+	}
+	if _, _, err := newDebugLogger(filepath.Join(blocker, "run.log")); err == nil {
+		t.Fatal("expected mkdir/open failure when parent is a file")
+	}
+}
+
+func TestTriggerInterruptRunsCallbackOnce(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	r := &Renderer{
+		onInterrupt: func() {
+			calls++
+		},
+	}
+	r.triggerInterrupt()
+	r.triggerInterrupt()
+	r.triggerInterrupt()
+
+	if calls != 1 {
+		t.Fatalf("expected interrupt callback to run once, got %d", calls)
+	}
+}
+
+func TestLogPlainThrottleAndForce(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	r := &Renderer{
+		w:    &out,
+		mode: ModeOn,
+	}
+	r.logPlain("first", false)
+	r.logPlain("second", false)
+	r.logPlain("forced", true)
+
+	got := out.String()
+	if !strings.Contains(got, "first\n") {
+		t.Fatalf("expected initial log line, got %q", got)
+	}
+	if strings.Contains(got, "second\n") {
+		t.Fatalf("expected throttled line to be suppressed, got %q", got)
+	}
+	if !strings.Contains(got, "forced\n") {
+		t.Fatalf("expected forced line, got %q", got)
+	}
+
+	r.lastPlainLog = time.Now().Add(-2 * time.Second)
+	r.logPlain("third", false)
+	if !strings.Contains(out.String(), "third\n") {
+		t.Fatalf("expected line after throttle window, got %q", out.String())
 	}
 }
