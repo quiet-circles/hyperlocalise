@@ -27,8 +27,10 @@ Run one or more experiment variants across your eval set.
 1. Loads the eval dataset from `--eval-set`.
 2. Expands experiment variants from your selected profiles, providers, models, and prompt override.
 3. Executes every case against every experiment variant.
-4. Writes a JSON report when you pass `--output`.
-5. Prints a concise per-experiment summary table.
+4. Scores each translation with the built-in heuristic lane.
+5. Optionally adds an LLM judge lane when you pass both `--eval-provider` and `--eval-model`.
+6. Writes a JSON report when you pass `--output`.
+7. Prints a concise per-experiment summary table.
 
 ### Flags
 
@@ -38,7 +40,17 @@ Run one or more experiment variants across your eval set.
 - `--model`: model override (repeatable)
 - `--prompt-file`: prompt file override
 - `--prompt`: inline prompt override (mutually exclusive with `--prompt-file`)
+- `--eval-provider`: provider for LLM evaluation
+- `--eval-model`: model for LLM evaluation
+- `--eval-prompt-file`: evaluation prompt file override
+- `--eval-prompt`: inline evaluation prompt override (mutually exclusive with `--eval-prompt-file`)
 - `--output`: JSON output report path
+
+LLM evaluation mode turns on only when you pass both `--eval-provider` and `--eval-model`.
+
+Your translation flags keep their current meaning. The `--eval-*` flags only control the judge lane.
+
+Reference translations are optional in LLM evaluation mode. When present, the evaluator uses them as style and tone guidance.
 
 ### Summary table fields
 
@@ -78,24 +90,50 @@ hyperlocalise eval run \
   --prompt-file ./prompts/translation-eval.txt
 ```
 
+Run with LLM evaluation using an inline judge prompt:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --eval-provider openai \
+  --eval-model gpt-4.1-mini \
+  --eval-prompt "Score translation quality from 0.0 to 1.0 and explain briefly." \
+  --output ./artifacts/eval-report.json
+```
+
+Run with LLM evaluation using a judge prompt file:
+
+```bash
+hyperlocalise eval run \
+  --eval-set ./evalsets/core.json \
+  --eval-provider anthropic \
+  --eval-model claude-sonnet-4-5 \
+  --eval-prompt-file ./prompts/eval-judge.txt \
+  --output ./artifacts/eval-report.json
+```
+
 ## eval compare
 
 Compare a candidate report with a baseline report.
 
 Use this command in CI to prevent quality regressions.
 
+The workflow stays the same: run `eval run` first, then run `eval compare`.
+
 ### Flags
 
 - `--candidate`: candidate report JSON path (required)
 - `--baseline`: baseline report JSON path (required)
-- `--min-score`: minimum candidate weighted score
+- `--min-score`: minimum candidate score
 - `--max-regression`: maximum allowed score regression from baseline to candidate
 
 ### CI behavior
 
+`eval compare` prefers the LLM aggregate score when both reports include a usable LLM judge aggregate. Otherwise, it falls back to the heuristic weighted score.
+
 The command exits with an error when:
 
-- candidate weighted score is below `--min-score`, or
+- candidate score is below `--min-score`, or
 - score regression exceeds `--max-regression`.
 
 ### Examples
