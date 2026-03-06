@@ -112,10 +112,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 func warningsForLegacyPrompts(tasks []Task) []string {
 	seenProfiles := map[string]struct{}{}
 	for _, task := range tasks {
-		if strings.TrimSpace(task.Prompt) == "" {
-			continue
-		}
-		if strings.TrimSpace(task.SystemPrompt) != "" || strings.TrimSpace(task.UserPrompt) != "" {
+		if !task.LegacyPrompt {
 			continue
 		}
 		if strings.TrimSpace(task.ProfileName) == "" {

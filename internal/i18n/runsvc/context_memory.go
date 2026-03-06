@@ -132,7 +132,7 @@ func (s *Service) resolveTaskContextMemory(ctx context.Context, task Task, state
 		Context:        fmt.Sprintf("Scope: %s\nSource locale: %s\nSource identifier: %s", state.contextPlan.Scope, group.Seed.SourceLocale, contextScopeValue(group.Seed, state.contextPlan.Scope)),
 		ModelProvider:  group.Seed.ContextProvider,
 		Model:          group.Seed.ContextModel,
-		Prompt:         buildContextMemoryPrompt(group.Seed.SourceLocale),
+		SystemPrompt:   buildContextMemoryPrompt(group.Seed.SourceLocale),
 	}
 	memory, err := s.translateRequestWithRetry(translator.WithUsageCollector(groupCtx, &usage), request)
 	cancel()

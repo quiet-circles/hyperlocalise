@@ -113,6 +113,250 @@ func TestRunDefaultsWorkersToNumCPUWhenUnset(t *testing.T) {
 	}
 }
 
+func TestRunLegacyProfilePromptMapsToSystemPrompt(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	var gotSystemPrompt string
+	var gotUserPrompt string
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		gotSystemPrompt = req.SystemPrompt
+		gotUserPrompt = req.UserPrompt
+		return "Bonjour", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if gotSystemPrompt != "Translate en to fr: Hello" {
+		t.Fatalf("expected legacy prompt mapped to system prompt, got %q", gotSystemPrompt)
+	}
+	if gotUserPrompt != "" {
+		t.Fatalf("expected empty user prompt when not configured, got %q", gotUserPrompt)
+	}
+	if len(report.Warnings) == 0 || !strings.Contains(strings.Join(report.Warnings, "\n"), "legacy_prompt profile=default") {
+		t.Fatalf("expected legacy prompt warning, got %+v", report.Warnings)
+	}
+}
+
+func TestRunSystemPromptOverridesLegacyPrompt(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		profile := cfg.LLM.Profiles["default"]
+		profile.SystemPrompt = "System translate {{source}}->{{target}}: {{input}}"
+		cfg.LLM.Profiles["default"] = profile
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	var gotSystemPrompt string
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		gotSystemPrompt = req.SystemPrompt
+		return "Bonjour", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if gotSystemPrompt != "System translate en->fr: Hello" {
+		t.Fatalf("expected explicit system prompt precedence, got %q", gotSystemPrompt)
+	}
+	if strings.Contains(strings.Join(report.Warnings, "\n"), "legacy_prompt profile=default") {
+		t.Fatalf("did not expect legacy prompt warning when system_prompt is set, got %+v", report.Warnings)
+	}
+}
+
+func TestRunPromptAndUserPromptNoLegacyWarningAndUsesUserPrompt(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		profile := cfg.LLM.Profiles["default"]
+		profile.UserPrompt = "Custom user {{target}}: {{input}}"
+		cfg.LLM.Profiles["default"] = profile
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	var gotSystemPrompt string
+	var gotUserPrompt string
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		gotSystemPrompt = req.SystemPrompt
+		gotUserPrompt = req.UserPrompt
+		return "Bonjour", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if gotSystemPrompt != "Translate en to fr: Hello" {
+		t.Fatalf("expected legacy prompt to remain system fallback, got %q", gotSystemPrompt)
+	}
+	if gotUserPrompt != "Custom user fr: Hello" {
+		t.Fatalf("expected rendered user prompt, got %q", gotUserPrompt)
+	}
+	if strings.Contains(strings.Join(report.Warnings, "\n"), "legacy_prompt profile=default") {
+		t.Fatalf("did not expect legacy warning when user_prompt is set, got %+v", report.Warnings)
+	}
+}
+
+func TestRunLegacyPromptWarningDedupesByProfile(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		return &config.I18NConfig{
+			Locales: config.LocaleConfig{Source: "en", Targets: []string{"fr"}},
+			Buckets: map[string]config.BucketConfig{
+				"ui": {
+					Files: []config.BucketFileMapping{{From: sourcePath, To: targetPath}},
+				},
+			},
+			Groups: map[string]config.GroupConfig{
+				"group_a": {Targets: []string{"fr"}, Buckets: []string{"ui"}},
+				"group_b": {Targets: []string{"fr"}, Buckets: []string{"ui"}},
+				"group_c": {Targets: []string{"fr"}, Buckets: []string{"ui"}},
+			},
+			LLM: config.LLMConfig{
+				Profiles: map[string]config.LLMProfile{
+					"default": {Provider: "openai", Model: "gpt-4.1-mini", Prompt: "default {{input}}"},
+					"p1":      {Provider: "openai", Model: "gpt-4.1-mini", Prompt: "p1 {{input}}"},
+					"p2":      {Provider: "openai", Model: "gpt-4.1-mini", Prompt: "p2 {{input}}"},
+				},
+				Rules: []config.LLMRule{
+					{Priority: 100, Group: "group_a", Profile: "p1"},
+					{Priority: 100, Group: "group_b", Profile: "p1"},
+					{Priority: 100, Group: "group_c", Profile: "p2"},
+				},
+			},
+		}, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"a":"A","b":"B"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "FR(" + req.Source + ")", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	warnings := strings.Join(report.Warnings, "\n")
+	if !strings.Contains(warnings, "legacy_prompt profile=p1") {
+		t.Fatalf("expected p1 warning, got %+v", report.Warnings)
+	}
+	if !strings.Contains(warnings, "legacy_prompt profile=p2") {
+		t.Fatalf("expected p2 warning, got %+v", report.Warnings)
+	}
+	if strings.Count(warnings, "legacy_prompt profile=p1") != 1 {
+		t.Fatalf("expected deduped warning for p1, got %+v", report.Warnings)
+	}
+	if strings.Count(warnings, "legacy_prompt profile=p2") != 1 {
+		t.Fatalf("expected deduped warning for p2, got %+v", report.Warnings)
+	}
+}
+
+func TestRunReportExecutableOmitsLegacyPromptField(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		profile := cfg.LLM.Profiles["default"]
+		profile.SystemPrompt = "System {{input}}"
+		profile.UserPrompt = "User {{input}}"
+		cfg.LLM.Profiles["default"] = profile
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "Bonjour", nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if len(report.Executable) != 1 {
+		t.Fatalf("expected one executable task, got %d", len(report.Executable))
+	}
+
+	raw, err := json.Marshal(report.Executable[0])
+	if err != nil {
+		t.Fatalf("marshal task json: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		t.Fatalf("unmarshal task json: %v", err)
+	}
+	if _, ok := payload["prompt"]; ok {
+		t.Fatalf("expected prompt field removed from task json, got %s", string(raw))
+	}
+	if _, ok := payload["systemPrompt"]; !ok {
+		t.Fatalf("expected systemPrompt field in task json, got %s", string(raw))
+	}
+	if _, ok := payload["userPrompt"]; !ok {
+		t.Fatalf("expected userPrompt field in task json, got %s", string(raw))
+	}
+}
+
 func TestRunFailsWhenSourceFileMissing(t *testing.T) {
 	svc := newTestService()
 	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
@@ -3675,6 +3919,52 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 		if !strings.Contains(got, "Shared memory:") {
 			t.Fatalf("expected shared memory in translation context, got %q", got)
 		}
+	}
+}
+
+func TestRunExperimentalContextMemorySummaryRequestUsesSystemPromptOnly(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"welcome":"Welcome","bye":"Goodbye"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	var summarySystemPrompt string
+	var summaryUserPrompt string
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			summarySystemPrompt = req.SystemPrompt
+			summaryUserPrompt = req.UserPrompt
+			return "Shared memory", nil
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		ContextMemoryMaxChars:     1200,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if !strings.Contains(summarySystemPrompt, "Terminology") || !strings.Contains(summarySystemPrompt, "Do-not-translate") {
+		t.Fatalf("expected context-memory summary system prompt, got %q", summarySystemPrompt)
+	}
+	if summaryUserPrompt != "" {
+		t.Fatalf("expected empty summary user prompt, got %q", summaryUserPrompt)
 	}
 }
 

@@ -41,7 +41,6 @@ func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, er
 		Context:        requestContext,
 		ModelProvider:  task.Provider,
 		Model:          task.Model,
-		Prompt:         task.Prompt,
 		SystemPrompt:   task.SystemPrompt,
 		UserPrompt:     task.UserPrompt,
 	}

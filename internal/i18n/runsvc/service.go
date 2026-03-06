@@ -111,9 +111,9 @@ type Task struct {
 	ProfileName  string `json:"profileName"`
 	Provider     string `json:"provider"`
 	Model        string `json:"model"`
-	Prompt       string `json:"prompt"`
 	SystemPrompt string `json:"systemPrompt,omitempty"`
 	UserPrompt   string `json:"userPrompt,omitempty"`
+	LegacyPrompt bool   `json:"-"`
 	// ContextProvider/ContextModel are pre-resolved during planning.
 	// They always contain the provider/model used for context-memory generation.
 	ContextProvider string `json:"-"`
@@ -308,6 +308,13 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 						}
 						for _, key := range keys {
 							sourceText := sourceEntries[key]
+							legacyPrompt := renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText)
+							systemPrompt := renderPrompt(profile.SystemPrompt, cfg.Locales.Source, target, sourceText)
+							userPrompt := renderPrompt(profile.UserPrompt, cfg.Locales.Source, target, sourceText)
+							legacyPromptUsed := strings.TrimSpace(legacyPrompt) != "" && strings.TrimSpace(systemPrompt) == "" && strings.TrimSpace(userPrompt) == ""
+							if strings.TrimSpace(systemPrompt) == "" {
+								systemPrompt = legacyPrompt
+							}
 							tasks = append(tasks, Task{
 								SourceLocale:    cfg.Locales.Source,
 								TargetLocale:    target,
@@ -318,9 +325,9 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 								ProfileName:     profileName,
 								Provider:        profile.Provider,
 								Model:           profile.Model,
-								Prompt:          renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
-								SystemPrompt:    renderPrompt(profile.SystemPrompt, cfg.Locales.Source, target, sourceText),
-								UserPrompt:      renderPrompt(profile.UserPrompt, cfg.Locales.Source, target, sourceText),
+								SystemPrompt:    systemPrompt,
+								UserPrompt:      userPrompt,
+								LegacyPrompt:    legacyPromptUsed,
 								ContextProvider: contextProvider,
 								ContextModel:    contextModel,
 								GroupName:       groupName,

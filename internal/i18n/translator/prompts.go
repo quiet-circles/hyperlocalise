@@ -5,9 +5,6 @@ import "strings"
 func buildSystemPrompt(req Request) string {
 	base := strings.TrimSpace(req.SystemPrompt)
 	if base == "" {
-		base = strings.TrimSpace(req.Prompt)
-	}
-	if base == "" {
 		return "You are a translation assistant. Return only the translated text with no explanations, labels, markdown, or quotes unless the translated content itself requires them."
 	}
 

@@ -539,7 +539,9 @@ func TestResolveWorkerCount(t *testing.T) {
 }
 
 func TestExecuteSingleCapturesArtifacts(t *testing.T) {
+	var gotReq translator.Request
 	svc := &Service{translate: func(_ context.Context, req translator.Request) (string, error) {
+		gotReq = req
 		return fmt.Sprintf("%s->%s", req.Source, req.TargetLanguage), nil
 	}, qualityEvaluator: scoring.NewEvaluator()}
 
@@ -556,6 +558,12 @@ func TestExecuteSingleCapturesArtifacts(t *testing.T) {
 	}
 	if run.Profile != "default" || run.Provider != "openai" || run.Model != "m1" || run.Prompt != "p1" {
 		t.Fatalf("expected experiment identifiers to be captured, got %+v", run)
+	}
+	if gotReq.SystemPrompt != "p1" {
+		t.Fatalf("expected eval experiment prompt routed to system prompt, got %q", gotReq.SystemPrompt)
+	}
+	if gotReq.UserPrompt != "" {
+		t.Fatalf("expected no custom eval user prompt by default, got %q", gotReq.UserPrompt)
 	}
 }
 

@@ -374,7 +374,7 @@ func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experi
 		Context:        tc.Context,
 		ModelProvider:  exp.provider,
 		Model:          exp.model,
-		Prompt:         exp.prompt,
+		SystemPrompt:   exp.prompt,
 	}
 	start := time.Now()
 	translated, err := s.translate(ctx, req)

@@ -24,7 +24,6 @@ type Request struct {
 	Context        string
 	ModelProvider  string
 	Model          string
-	Prompt         string
 	SystemPrompt   string
 	UserPrompt     string
 }
