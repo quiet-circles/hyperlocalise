@@ -1,9 +1,12 @@
 package runsvc
 
 import (
+	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
@@ -37,7 +40,7 @@ func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[
 }
 
 func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, keep map[string]struct{}) ([]string, error) {
-	values, loadWarnings, err := s.loadExistingTargetWithWarnings(targetPath)
+	values, loadWarnings, err := s.loadExistingTargetWithWarnings(targetPath, output.targetLocale)
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +121,11 @@ func validatePruneLimit(in Input, candidates int) error {
 }
 
 func (s *Service) loadExistingTarget(path string) (map[string]string, error) {
-	entries, _, err := s.loadExistingTargetWithWarnings(path)
+	entries, _, err := s.loadExistingTargetWithWarnings(path, "")
 	return entries, err
 }
 
-func (s *Service) loadExistingTargetWithWarnings(path string) (map[string]string, []string, error) {
+func (s *Service) loadExistingTargetWithWarnings(path, targetLocale string) (map[string]string, []string, error) {
 	content, err := s.readFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -130,7 +133,7 @@ func (s *Service) loadExistingTargetWithWarnings(path string) (map[string]string
 		}
 		return nil, nil, fmt.Errorf("flush outputs: read target file %q: %w", path, err)
 	}
-	entries, err := s.newParser().Parse(path, content)
+	entries, err := parseExistingTargetEntries(path, content, targetLocale, s.newParser())
 	if err != nil {
 		if strings.EqualFold(filepath.Ext(path), ".json") {
 			// JSON targets may include non-translatable metadata fields (numbers, bools, arrays).
@@ -147,6 +150,27 @@ func (s *Service) loadExistingTargetWithWarnings(path string) (map[string]string
 		return nil, nil, fmt.Errorf("flush outputs: parse target file %q: %w", path, err)
 	}
 	return entries, nil, nil
+}
+
+func parseExistingTargetEntries(path string, content []byte, targetLocale string, parser *translationfileparser.Strategy) (map[string]string, error) {
+	if strings.EqualFold(filepath.Ext(path), ".csv") {
+		return parseCSVForTargetLocale(content, targetLocale)
+	}
+	return parser.Parse(path, content)
+}
+
+func parseCSVForTargetLocale(content []byte, targetLocale string) (map[string]string, error) {
+	locale := strings.TrimSpace(targetLocale)
+	if locale != "" {
+		hasColumn, err := csvHasColumn(content, locale)
+		if err != nil {
+			return nil, err
+		}
+		if hasColumn {
+			return (translationfileparser.CSVParser{ValueColumn: locale}).Parse(content)
+		}
+	}
+	return (translationfileparser.CSVParser{}).Parse(content)
 }
 
 func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string, pruneKeys map[string]struct{}) ([]byte, []string, error) {
@@ -178,7 +202,7 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 
 	switch ext {
 	case ".csv":
-		content, err := translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{})
+		content, err := marshalCSVTarget(template, values, targetLocale)
 		if err != nil {
 			return nil, nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}
@@ -186,6 +210,44 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	default:
 		return nil, nil, fmt.Errorf("flush outputs: unsupported target file extension %q for %q", ext, path)
 	}
+}
+
+func marshalCSVTarget(template []byte, values map[string]string, targetLocale string) ([]byte, error) {
+	locale := strings.TrimSpace(targetLocale)
+	if locale != "" {
+		hasColumn, err := csvHasColumn(template, locale)
+		if err != nil {
+			return nil, err
+		}
+		if hasColumn {
+			return translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{ValueColumn: locale})
+		}
+	}
+	return translationfileparser.MarshalCSV(template, values, translationfileparser.CSVParser{})
+}
+
+func csvHasColumn(content []byte, column string) (bool, error) {
+	normalizedColumn := strings.ToLower(strings.TrimSpace(column))
+	if normalizedColumn == "" {
+		return false, nil
+	}
+
+	reader := csv.NewReader(bytes.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
+	headers, err := reader.Read()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return false, nil
+		}
+		return false, err
+	}
+	for _, header := range headers {
+		if strings.ToLower(strings.TrimSpace(header)) == normalizedColumn {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {

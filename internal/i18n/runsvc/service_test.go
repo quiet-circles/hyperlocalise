@@ -1755,6 +1755,125 @@ func TestRunWritesCSVUsingSourceTemplateWhenTargetMissing(t *testing.T) {
 	}
 }
 
+func TestRunWritesCSVPerLocaleLayoutIntoTargetLocaleColumn(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.csv"
+	targetPath := "/tmp/out.csv"
+	source := "id,en,fr,notes\nhello,Hello,Hello,shared note\nbye,Goodbye,Goodbye,legacy note\n"
+	target := "id,en,fr,notes\nhello,Hello,Salut,shared note\nbye,Goodbye,Au revoir,legacy note\n"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source == "Hello" {
+			return "Bonjour", nil
+		}
+		if req.Source == "Goodbye" {
+			return "Au revoir", nil
+		}
+		return "", errors.New("unexpected source text")
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "id,en,fr,notes") {
+		t.Fatalf("expected csv headers preserved, got %q", out)
+	}
+	if !strings.Contains(out, "hello,Hello,Bonjour,shared note") {
+		t.Fatalf("expected fr column update for hello row, got %q", out)
+	}
+	if !strings.Contains(out, "bye,Goodbye,Au revoir,legacy note") {
+		t.Fatalf("expected fr column update for bye row, got %q", out)
+	}
+	if strings.Contains(out, "hello,Bonjour,Salut,shared note") || strings.Contains(out, "bye,Au revoir,Goodbye,legacy note") {
+		t.Fatalf("expected non-target columns untouched, got %q", out)
+	}
+}
+
+func TestRunPreservesExistingCSVTargetLocaleValuesForUnchangedKeys(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.csv"
+	targetPath := "/tmp/out.csv"
+	source := "id,en,fr,notes\nhello,Hello,Hello,shared note\nbye,Goodbye,Goodbye,legacy note\n"
+	target := "id,en,fr,notes\nhello,Hello,Salut,shared note\nbye,Goodbye,Au revoir,legacy note\n"
+
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(source), nil
+		case targetPath:
+			return []byte(target), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{RunCompleted: map[string]lockfile.RunCompletion{
+			taskIdentity(targetPath, "bye"): {CompletedAt: time.Now(), SourceHash: hashSourceText("Goodbye")},
+		}}, nil
+	}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if req.Source != "Hello" {
+			t.Fatalf("unexpected translation source: %q", req.Source)
+		}
+		return "Bonjour", nil
+	}
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path %q", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+
+	out := string(written)
+	if !strings.Contains(out, "hello,Hello,Bonjour,shared note") {
+		t.Fatalf("expected translated hello row in fr column, got %q", out)
+	}
+	if !strings.Contains(out, "bye,Goodbye,Au revoir,legacy note") {
+		t.Fatalf("expected existing fr value for locked key preserved, got %q", out)
+	}
+	if strings.Contains(out, "bye,Goodbye,Goodbye,legacy note") {
+		t.Fatalf("expected run not to overwrite fr with source-column value, got %q", out)
+	}
+}
+
 func TestRunReturnsFatalErrorWhenLockWriteFails(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.json"
