@@ -349,6 +349,28 @@ func TestXLIFFParserFallsBackToSourceWhenTargetIsEmpty(t *testing.T) {
 	}
 }
 
+func TestXLIFFParserFallsBackToSourceWhenTargetIsWhitespaceOnly(t *testing.T) {
+	content := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="en-US" target-language="fr">
+    <body>
+      <trans-unit id="hello">
+        <source>Hello</source>
+        <target>   </target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`)
+
+	got, err := (XLIFFParser{}).Parse(content)
+	if err != nil {
+		t.Fatalf("parse xliff: %v", err)
+	}
+	if got["hello"] != "Hello" {
+		t.Fatalf("expected whitespace-only target to fall back to source, got %#v", got["hello"])
+	}
+}
+
 func TestMarshalXLIFFSupportsNameAndResnameFallbackKeys(t *testing.T) {
 	template := []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <xliff version="1.2">

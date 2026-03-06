@@ -3,6 +3,7 @@ package translationfileparser
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -40,7 +41,7 @@ func (p XLIFFParser) Parse(content []byte) (map[string]string, error) {
 }
 
 func isEOFError(err error) bool {
-	return err != nil && err.Error() == "EOF"
+	return errors.Is(err, io.EOF)
 }
 
 func consumeXLIFFToken(tok xml.Token, out map[string]string, current **xliffUnit, contentState **xliffContentState) error {
@@ -161,7 +162,7 @@ func finalizeXLIFFUnit(out map[string]string, unit xliffUnit) {
 	}
 
 	value := unit.target.String()
-	if value == "" {
+	if strings.TrimSpace(value) == "" {
 		value = unit.source.String()
 	}
 	if value == "" {
