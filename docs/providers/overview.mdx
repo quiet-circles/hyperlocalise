@@ -33,11 +33,16 @@ Each `llm.profiles.<name>` entry requires:
 
 - `provider`
 - `model`
-- `prompt`
+
+Optional profile fields:
+
+- `system_prompt`
+- `user_prompt`
+- `prompt` (deprecated)
 
 ## Prompt variables
 
-These placeholders are available in `prompt`:
+These placeholders are available in `prompt`, `system_prompt`, and `user_prompt`:
 
 - `{{source}}`
 - `{{target}}`

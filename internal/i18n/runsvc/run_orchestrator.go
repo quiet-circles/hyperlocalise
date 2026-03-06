@@ -3,7 +3,9 @@ package runsvc
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/lockfile"
@@ -23,6 +25,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
+	legacyPromptWarnings := warningsForLegacyPrompts(planned)
 
 	state, err := s.loadLock(in.LockPath)
 	if err != nil {
@@ -37,6 +40,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 	report.GeneratedAt = s.now()
 	report.ConfigPath = in.ConfigPath
+	report.Warnings = append(report.Warnings, legacyPromptWarnings...)
 	if in.ExperimentalContextMemory {
 		scope, maxChars, normalizeErr := normalizeContextMemoryOptions(in)
 		if normalizeErr != nil {
@@ -103,6 +107,41 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	report.PruneApplied = len(report.PruneCandidates)
 	emitter.emit(completedEvent(report))
 	return report, nil
+}
+
+func warningsForLegacyPrompts(tasks []Task) []string {
+	seenProfiles := map[string]struct{}{}
+	for _, task := range tasks {
+		if strings.TrimSpace(task.Prompt) == "" {
+			continue
+		}
+		if strings.TrimSpace(task.SystemPrompt) != "" || strings.TrimSpace(task.UserPrompt) != "" {
+			continue
+		}
+		if strings.TrimSpace(task.ProfileName) == "" {
+			continue
+		}
+		seenProfiles[task.ProfileName] = struct{}{}
+	}
+	if len(seenProfiles) == 0 {
+		return nil
+	}
+
+	profiles := make([]string, 0, len(seenProfiles))
+	for profileName := range seenProfiles {
+		profiles = append(profiles, profileName)
+	}
+	sort.Strings(profiles)
+
+	warnings := make([]string, 0, len(profiles))
+	for _, profileName := range profiles {
+		warnings = append(warnings, fmt.Sprintf(
+			`legacy_prompt profile=%s message="llm.profiles.%s.prompt is deprecated; migrate to system_prompt and user_prompt"`,
+			profileName,
+			profileName,
+		))
+	}
+	return warnings
 }
 
 func initializeLockState(state *lockfile.File) {

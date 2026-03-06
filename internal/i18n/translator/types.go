@@ -25,6 +25,8 @@ type Request struct {
 	ModelProvider  string
 	Model          string
 	Prompt         string
+	SystemPrompt   string
+	UserPrompt     string
 }
 
 type Provider interface {

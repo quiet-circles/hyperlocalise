@@ -101,6 +101,15 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
+			name: "valid llm profile without prompts",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {"profiles": {"default": {"provider": "openai", "model": "x"}}}
+			}`,
+		},
+		{
 			name: "valid llm provider azure openai",
 			content: `{
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},
@@ -433,6 +442,38 @@ func TestLoadAcceptsBlockComments(t *testing.T) {
 
 	if _, err := Load(path); err != nil {
 		t.Fatalf("load config with block comments: %v", err)
+	}
+}
+
+func TestLoadAcceptsOptionalSystemAndUserPrompt(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locales": {"source": "en-US", "targets": ["fr-FR"]},
+	  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+	  "groups": {"g": {"targets": ["fr-FR"], "buckets": ["ui"]}},
+	  "llm": {
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "x",
+	        "prompt": "Translate {{input}}",
+	        "system_prompt": "System {{source}} -> {{target}}",
+	        "user_prompt": "User: {{input}}"
+	      }
+	    }
+	  }
+	}`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load config with optional prompt fields: %v", err)
+	}
+
+	profile := cfg.LLM.Profiles["default"]
+	if profile.SystemPrompt == "" {
+		t.Fatalf("expected system_prompt to be loaded")
+	}
+	if profile.UserPrompt == "" {
+		t.Fatalf("expected user_prompt to be loaded")
 	}
 }
 

@@ -47,7 +47,7 @@
     }
   },
   "llm": {
-    // Profiles define provider/model/prompt behavior.
+    // Profiles define provider/model and optional prompt behavior.
     // A default profile is required.
     // Supported providers: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, ollama.
     // Available vars: {{source}}, {{target}}, {{input}}.
@@ -56,8 +56,12 @@
         // Provider: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, or ollama.
         "provider": "openai",
         "model": "gpt-5.2",
-        // Prompt template used for each translation task.
-        "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
+        // Optional explicit system message template.
+        // "system_prompt": "You are a senior localization expert.",
+        // Optional explicit user message template.
+        // "user_prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}",
+        // Deprecated legacy prompt template (use system_prompt/user_prompt instead).
+        // "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}"
       }
     },
     // Rules connect groups to profiles.

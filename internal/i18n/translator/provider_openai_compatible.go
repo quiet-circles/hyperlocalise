@@ -14,7 +14,7 @@ func translateWithOpenAICompatibleClient(ctx context.Context, providerName strin
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.SystemMessage(buildSystemPrompt(req.Prompt)),
+			openai.SystemMessage(buildSystemPrompt(req)),
 			openai.UserMessage(buildUserPrompt(req)),
 		},
 		Model: openai.ChatModel(strings.TrimSpace(req.Model)),

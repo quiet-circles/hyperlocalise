@@ -41,7 +41,7 @@ func (p *BedrockProvider) Translate(ctx context.Context, req Request) (string, e
 	endpoint := fmt.Sprintf("https://bedrock-runtime.%s.amazonaws.com", region)
 	modelID := strings.TrimSpace(req.Model)
 	payload := bedrockConverseRequest{
-		System: []bedrockContent{{Text: buildSystemPrompt(req.Prompt)}},
+		System: []bedrockContent{{Text: buildSystemPrompt(req)}},
 		Messages: []bedrockMessage{
 			{
 				Role: "user",

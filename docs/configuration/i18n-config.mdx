@@ -62,7 +62,9 @@ For shared multi-locale CSV files, keep one key column and one target locale col
 
 - `provider`: `openai`, `azure_openai`, `anthropic`, `gemini`, `bedrock`, `lmstudio`, `groq`, or `ollama`
 - `model`: provider model id
-- `prompt`: translation prompt template
+- `system_prompt` (optional): explicit system-message template
+- `user_prompt` (optional): explicit user-message template
+- `prompt` (deprecated, optional): legacy prompt template used as system fallback
 
 Prompt variables:
 

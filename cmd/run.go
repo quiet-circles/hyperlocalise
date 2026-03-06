@@ -223,6 +223,11 @@ func writeRunReport(w io.Writer, report runsvc.Report, dryRun bool) error {
 				}
 			}
 		}
+		for _, warning := range report.Warnings {
+			if _, err := fmt.Fprintf(w, "warning=%s\n", warning); err != nil {
+				return err
+			}
+		}
 		_, err := fmt.Fprintln(w, "dry_run=true")
 		return err
 	}

@@ -112,6 +112,8 @@ type Task struct {
 	Provider      string `json:"provider"`
 	Model         string `json:"model"`
 	Prompt        string `json:"prompt"`
+	SystemPrompt  string `json:"systemPrompt,omitempty"`
+	UserPrompt    string `json:"userPrompt,omitempty"`
 	GroupName     string `json:"-"`
 	BucketName    string `json:"-"`
 	ContextKey    string `json:"-"`
@@ -312,6 +314,8 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 								Provider:     profile.Provider,
 								Model:        profile.Model,
 								Prompt:       renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
+								SystemPrompt: renderPrompt(profile.SystemPrompt, cfg.Locales.Source, target, sourceText),
+								UserPrompt:   renderPrompt(profile.UserPrompt, cfg.Locales.Source, target, sourceText),
 								GroupName:    groupName,
 								BucketName:   bucketName,
 							})

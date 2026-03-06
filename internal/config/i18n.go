@@ -64,11 +64,13 @@ type LLMConfig struct {
 	Rules    []LLMRule             `json:"rules,omitempty"`
 }
 
-// LLMProfile contains provider/model/prompt.
+// LLMProfile contains provider/model prompt configuration.
 type LLMProfile struct {
-	Provider string `json:"provider" jsonschema:"required"`
-	Model    string `json:"model" jsonschema:"required"`
-	Prompt   string `json:"prompt" jsonschema:"required"`
+	Provider     string `json:"provider" jsonschema:"required"`
+	Model        string `json:"model" jsonschema:"required"`
+	Prompt       string `json:"prompt,omitempty"`
+	SystemPrompt string `json:"system_prompt,omitempty"`
+	UserPrompt   string `json:"user_prompt,omitempty"`
 }
 
 // LLMRule applies a profile for a specific group.
@@ -440,10 +442,6 @@ func validateProfile(fieldPrefix string, profile LLMProfile) error {
 
 	if strings.TrimSpace(profile.Model) == "" {
 		return fmt.Errorf("%s.model: must not be empty", fieldPrefix)
-	}
-
-	if strings.TrimSpace(profile.Prompt) == "" {
-		return fmt.Errorf("%s.prompt: must not be empty", fieldPrefix)
 	}
 
 	return nil
