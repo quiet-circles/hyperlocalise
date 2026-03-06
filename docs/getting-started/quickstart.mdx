@@ -132,7 +132,7 @@ GROQ_API_KEY="your-groq-api-key"
 ## 3. Dry-run first
 
 ```bash
-hyperlocalise run --config i18n.jsonc --dry-run
+hyperlocalise run --dry-run
 ```
 
 Check `planned_total`, `executable_total`, and the listed `tasks`.
@@ -140,7 +140,7 @@ Check `planned_total`, `executable_total`, and the listed `tasks`.
 ## 4. Execute generation
 
 ```bash
-hyperlocalise run --config i18n.jsonc
+hyperlocalise run
 ```
 
 This writes translations and updates `.hyperlocalise.lock.json`. For details, see [Lockfile contract](/reference/lockfile-contract).
@@ -148,7 +148,7 @@ This writes translations and updates `.hyperlocalise.lock.json`. For details, se
 ## 5. Review status
 
 ```bash
-hyperlocalise status --config i18n.jsonc --output csv
+hyperlocalise status --output csv
 ```
 
 Use `needs_review` rows to identify entries that still need human curation.

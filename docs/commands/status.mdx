@@ -56,25 +56,25 @@ Use this mapping when your pipeline expects product-level labels:
 Block when any entries are `missing`:
 
 ```bash
-hyperlocalise status --config i18n.jsonc --output csv > status.csv
+hyperlocalise status --output csv > status.csv
 awk -F, 'NR>1 && $4=="untranslated"{bad=1} END{exit bad}' status.csv
 ```
 
 Block when `needs review` exceeds `20` rows:
 
 ```bash
-hyperlocalise status --config i18n.jsonc --output csv > status.csv
+hyperlocalise status --output csv > status.csv
 awk -F, 'NR>1 && $4=="needs_review"{count++} END{exit(count>20)}' status.csv
 ```
 
 ## Examples
 
 ```bash
-hyperlocalise status --config i18n.jsonc --locale es-ES --output csv
+hyperlocalise status --locale es-ES --output csv
 ```
 
 ```bash
-hyperlocalise status --config i18n.jsonc --group default --output csv -i
+hyperlocalise status --group default --output csv -i
 ```
 
 ## See also

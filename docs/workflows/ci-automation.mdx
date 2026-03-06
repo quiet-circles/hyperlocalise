@@ -17,13 +17,13 @@ For remote adapters, keep secrets in your CI secret manager and inject them only
 ### 1. Config + planning smoke test
 
 ```bash
-hyperlocalise run --config i18n.jsonc --dry-run
+hyperlocalise run --dry-run
 ```
 
 ### 2. Status snapshot
 
 ```bash
-hyperlocalise status --config i18n.jsonc --output csv
+hyperlocalise status --output csv
 ```
 
 Store CSV as a build artifact for trend tracking.
@@ -33,8 +33,8 @@ Store CSV as a build artifact for trend tracking.
 `sync pull` and `sync push` default to `--dry-run=true`, which is a safe CI baseline.
 
 ```bash
-hyperlocalise sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
-hyperlocalise sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+hyperlocalise sync pull --output json --fail-on-conflict --dry-run=true
+hyperlocalise sync push --output json --fail-on-conflict --dry-run=true
 ```
 
 Use `--dry-run=false` only in jobs that are explicitly authorized to write local files or remote systems.
@@ -66,13 +66,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+      - run: go run . sync pull --output json --fail-on-conflict --dry-run=true
 ```
 
 To apply remote changes to local files in CI, switch to:
 
 ```bash
-go run . sync pull --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+go run . sync pull --output json --fail-on-conflict --dry-run=false
 ```
 
 ### Scheduled push sync (write-enabled, active)
@@ -99,13 +99,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=false
+      - run: go run . sync push --output json --fail-on-conflict --dry-run=false
 ```
 
 For a non-mutating validation pass, use:
 
 ```bash
-go run . sync push --config i18n.jsonc --output json --fail-on-conflict --dry-run=true
+go run . sync push --output json --fail-on-conflict --dry-run=true
 ```
 
 For write-enabled jobs, prefer protected environments, approval gates, and least-privilege service credentials.

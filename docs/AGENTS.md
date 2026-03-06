@@ -31,3 +31,6 @@
 
 <!-- Define what should and shouldn't be documented -->
 <!-- Example: Don't document internal admin features -->
+
+- Unless the user explicitly asks for localized documentation updates, only edit the default English docs under `docs/`.
+- Do not modify files under locale directories such as `docs/zh-CN/` or `docs/vi-VN/` for routine docs cleanup or copy changes.
