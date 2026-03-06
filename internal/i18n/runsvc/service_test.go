@@ -1617,7 +1617,7 @@ func TestRunWritesMarkdownWithInsertedSectionWhenExistingTargetPresent(t *testin
 	sourcePath := "/tmp/source.md"
 	targetPath := "/tmp/out.md"
 	source := "# Guide\n\nExisting intro.\n\nNew section added.\n\nExisting outro.\n"
-	target := "# Guide\n\nIntro existant.\n\nConclusion existante.\n"
+	target := "# Guide\n\nIntro existent.\n\nConclusion existent.\n"
 
 	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
 		cfg := testConfig(sourcePath, targetPath)
@@ -1683,13 +1683,13 @@ func TestRunWritesMarkdownWithInsertedSectionWhenExistingTargetPresent(t *testin
 	}
 
 	out := string(written)
-	if !strings.Contains(out, "Intro existant.") {
+	if !strings.Contains(out, "Intro existent.") {
 		t.Fatalf("expected existing translated intro preserved, got %q", out)
 	}
 	if !strings.Contains(out, "Nouvelle section ajoutee.") {
 		t.Fatalf("expected inserted section translated, got %q", out)
 	}
-	if !strings.Contains(out, "Conclusion existante.") {
+	if !strings.Contains(out, "Conclusion existent.") {
 		t.Fatalf("expected existing translated outro preserved, got %q", out)
 	}
 }

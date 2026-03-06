@@ -379,7 +379,7 @@ func TestMarkdownParserParseSkipsMultiLineJSXAttributes(t *testing.T) {
 
 func TestMarshalMarkdownWithTargetFallbackIncludesInsertedSourceSegments(t *testing.T) {
 	source := []byte("# Guide\n\nExisting intro.\n\nNew section added.\n\nExisting outro.\n")
-	target := []byte("# Guide\n\nIntro existant.\n\nConclusion existante.\n")
+	target := []byte("# Guide\n\nIntro existent.\n\nConclusion existent.\n")
 
 	sourceEntries, err := (MarkdownParser{}).Parse(source)
 	if err != nil {
@@ -401,13 +401,13 @@ func TestMarshalMarkdownWithTargetFallbackIncludesInsertedSourceSegments(t *test
 		newKey: "Nouvelle section ajoutee.",
 	}))
 
-	if !strings.Contains(output, "Intro existant.") {
+	if !strings.Contains(output, "Intro existent.") {
 		t.Fatalf("expected existing translated intro preserved, got %q", output)
 	}
 	if !strings.Contains(output, "Nouvelle section ajoutee.") {
 		t.Fatalf("expected new inserted section translated, got %q", output)
 	}
-	if !strings.Contains(output, "Conclusion existante.") {
+	if !strings.Contains(output, "Conclusion existent.") {
 		t.Fatalf("expected existing translated outro preserved, got %q", output)
 	}
 }
@@ -440,7 +440,7 @@ func TestMarshalMarkdownWithTargetFallbackDoesNotBleedAcrossHeadings(t *testing.
 
 func TestAlignMarkdownTargetToSourceMapsBySourceKeys(t *testing.T) {
 	source := []byte("# Guide\n\nExisting intro.\n\nExisting outro.\n")
-	target := []byte("# Guide\n\nIntro existant.\n\nConclusion existante.\n")
+	target := []byte("# Guide\n\nIntro existent.\n\nConclusion existent.\n")
 
 	aligned := AlignMarkdownTargetToSource(source, target)
 	sourceEntries, err := (MarkdownParser{}).Parse(source)
@@ -454,17 +454,17 @@ func TestAlignMarkdownTargetToSourceMapsBySourceKeys(t *testing.T) {
 		t.Fatalf("expected source keys for intro/outro")
 	}
 
-	if got := strings.TrimSpace(aligned[introKey]); got != "Intro existant." {
+	if got := strings.TrimSpace(aligned[introKey]); got != "Intro existent." {
 		t.Fatalf("expected intro mapped to source key, got %q", got)
 	}
-	if got := strings.TrimSpace(aligned[outroKey]); got != "Conclusion existante." {
+	if got := strings.TrimSpace(aligned[outroKey]); got != "Conclusion existent." {
 		t.Fatalf("expected outro mapped to source key, got %q", got)
 	}
 }
 
 func TestAlignMarkdownTargetToSourceMapsInsertedSectionWhenPresent(t *testing.T) {
 	source := []byte("# Guide\n\nExisting intro.\n\nNew section added.\n\nExisting outro.\n")
-	target := []byte("# Guide\n\nIntro existant.\n\nNouvelle section ajoutee.\n\nConclusion existante.\n")
+	target := []byte("# Guide\n\nIntro existent.\n\nNouvelle section ajoutee.\n\nConclusion existent.\n")
 
 	aligned := AlignMarkdownTargetToSource(source, target)
 	sourceEntries, err := (MarkdownParser{}).Parse(source)
