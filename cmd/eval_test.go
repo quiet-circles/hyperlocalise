@@ -238,12 +238,39 @@ func TestEvalCompareFallsBackToHeuristicScoreWhenLLMAbsent(t *testing.T) {
 	}
 }
 
+func TestEvalCompareFailsOnMixedScoreSources(t *testing.T) {
+	dir := t.TempDir()
+	candidatePath := filepath.Join(dir, "candidate.json")
+	baselinePath := filepath.Join(dir, "baseline.json")
+
+	candidate := `{"aggregate":{"weightedScore":0.7},"llmEvaluation":{"enabled":true,"aggregateScore":0.91},"runs":[{"experimentId":"exp","quality":{"weightedAggregate":0.7},"latencyMs":12}]}`
+	baseline := `{"aggregate":{"weightedScore":0.9},"runs":[{"experimentId":"exp","quality":{"weightedAggregate":0.9},"latencyMs":10}]}`
+
+	if err := os.WriteFile(candidatePath, []byte(candidate), 0o600); err != nil {
+		t.Fatalf("write candidate: %v", err)
+	}
+	if err := os.WriteFile(baselinePath, []byte(baseline), 0o600); err != nil {
+		t.Fatalf("write baseline: %v", err)
+	}
+
+	cmd := newRootCmd("")
+	cmd.SetArgs([]string{"eval", "compare", "--candidate", candidatePath, "--baseline", baselinePath})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected mismatch error")
+	}
+	if !strings.Contains(err.Error(), "score source mismatch") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestEvalCompareFailsWhenLLMEnabledButAggregateMissing(t *testing.T) {
 	dir := t.TempDir()
 	candidatePath := filepath.Join(dir, "candidate.json")
 	baselinePath := filepath.Join(dir, "baseline.json")
 
-	candidate := `{"aggregate":{"weightedScore":0.7},"llmEvaluation":{"enabled":true},"runs":[{"experimentId":"exp","quality":{"weightedAggregate":0.7},"latencyMs":12}]}`
+	candidate := `{"aggregate":{"weightedScore":0.7},"llmEvaluation":{"enabled":true,"skippedRuns":1},"runs":[{"experimentId":"exp","quality":{"weightedAggregate":0.7},"latencyMs":12,"error":"translation failed"}]}`
 	baseline := `{"aggregate":{"weightedScore":0.9},"runs":[{"experimentId":"exp","quality":{"weightedAggregate":0.9},"latencyMs":10}]}`
 
 	if err := os.WriteFile(candidatePath, []byte(candidate), 0o600); err != nil {
@@ -260,7 +287,7 @@ func TestEvalCompareFailsWhenLLMEnabledButAggregateMissing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error")
 	}
-	if !strings.Contains(err.Error(), "aggregate score is unavailable") {
+	if !strings.Contains(err.Error(), "skipped due to translation errors") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

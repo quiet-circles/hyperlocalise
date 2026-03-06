@@ -80,6 +80,7 @@ type Report struct {
 }
 
 // LLMEvaluation summarizes the LLM judge lane.
+// SuccessfulJudges and FailedJudges count individual judge calls, not runs.
 type LLMEvaluation struct {
 	Enabled            bool               `json:"enabled"`
 	Provider           string             `json:"provider,omitempty"`
@@ -89,6 +90,7 @@ type LLMEvaluation struct {
 	AverageScoreByName map[string]float64 `json:"averageScoreByName,omitempty"`
 	SuccessfulJudges   int                `json:"successfulJudges,omitempty"`
 	FailedJudges       int                `json:"failedJudges,omitempty"`
+	SkippedRuns        int                `json:"skippedRuns,omitempty"`
 }
 
 // JudgeResult stores one judge outcome for a run.
@@ -216,6 +218,12 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	workerCount := resolveWorkerCount(in.Concurrency, s.numCPU)
 	referenceScorers := append([]ReferenceScorer(nil), s.referenceScorers...)
 	judgeScorers := s.resolveJudgeScorers(in)
+
+	// Initialize qualityEvaluator before spawning concurrent workers.
+	if s.qualityEvaluator == nil {
+		s.qualityEvaluator = scoring.NewEvaluator()
+	}
+
 	runs, err := s.execute(ctx, cases, experiments, referenceScorers, judgeScorers, workerCount)
 	if err != nil {
 		return Report{}, err
@@ -360,10 +368,6 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 }
 
 func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, referenceScorers []ReferenceScorer, judgeScorers []JudgeScorer) RunResult {
-	if s.qualityEvaluator == nil {
-		s.qualityEvaluator = scoring.NewEvaluator()
-	}
-
 	req := translator.Request{
 		Source:         tc.Source,
 		TargetLanguage: tc.TargetLocale,
@@ -414,6 +418,9 @@ func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experi
 			run.JudgeResults[scorer.Name()] = JudgeResult{Error: scoreErr.Error()}
 			continue
 		}
+		if judgeResult.Score == nil && strings.TrimSpace(judgeResult.Error) == "" {
+			judgeResult.Error = "judge returned no score"
+		}
 		run.JudgeResults[scorer.Name()] = judgeResult
 	}
 
@@ -437,6 +444,10 @@ func aggregateLLMEvaluation(in Input, runs []RunResult) *LLMEvaluation {
 	scoreSums := map[string]float64{}
 	scoreCounts := map[string]int{}
 	for _, run := range runs {
+		if strings.TrimSpace(run.Error) != "" {
+			llm.SkippedRuns++
+			continue
+		}
 		for name, result := range run.JudgeResults {
 			if result.Score != nil {
 				score := *result.Score

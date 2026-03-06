@@ -63,11 +63,11 @@ func newEvalRunCmd() *cobra.Command {
 		Short:        "execute experiments and write JSON report",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			prompts, err := resolvePrompts(o.prompt, o.promptFile)
+			prompts, err := resolvePrompts(o.prompt, o.promptFile, "--prompt", "--prompt-file")
 			if err != nil {
 				return err
 			}
-			evalPrompts, err := resolvePrompts(o.evalPrompt, o.evalPromptFile)
+			evalPrompts, err := resolvePrompts(o.evalPrompt, o.evalPromptFile, "--eval-prompt", "--eval-prompt-file")
 			if err != nil {
 				return fmt.Errorf("resolve eval prompt: %w", err)
 			}
@@ -146,6 +146,9 @@ func newEvalCompareCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("baseline report: %w", err)
 			}
+			if candidateSource != baselineSource {
+				return fmt.Errorf("score source mismatch: candidate uses %q, baseline uses %q; regenerate both reports with the same evaluation mode before comparing", candidateSource, baselineSource)
+			}
 			regression := baselineScore - candidateScore
 
 			if err := writeExperimentSummary(cmd.OutOrStdout(), summarizeExperiments(candidate.Runs), true); err != nil {
@@ -167,7 +170,7 @@ func newEvalCompareCmd() *cobra.Command {
 			}
 
 			if o.minScore > 0 && candidateScore < o.minScore {
-				return fmt.Errorf("candidate weighted score %.3f below min score %.3f", candidateScore, o.minScore)
+				return fmt.Errorf("candidate %s score %.3f below min score %.3f", candidateSource, candidateScore, o.minScore)
 			}
 			if o.maxRegression > 0 && regression > o.maxRegression {
 				return fmt.Errorf("score regression %.3f exceeds max regression %.3f", regression, o.maxRegression)
@@ -179,7 +182,7 @@ func newEvalCompareCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.candidatePath, "candidate", "", "candidate eval report JSON path")
 	cmd.Flags().StringVar(&o.baselinePath, "baseline", "", "baseline eval report JSON path")
-	cmd.Flags().Float64Var(&o.minScore, "min-score", 0, "minimum candidate weighted score")
+	cmd.Flags().Float64Var(&o.minScore, "min-score", 0, "minimum candidate score")
 	cmd.Flags().Float64Var(&o.maxRegression, "max-regression", 0, "maximum allowed score regression vs baseline")
 
 	return cmd
@@ -190,16 +193,28 @@ func selectCompareScore(report evalsvc.Report) (float64, string, error) {
 		if report.LLMEvaluation.AggregateScore != nil {
 			return *report.LLMEvaluation.AggregateScore, "llm", nil
 		}
-		return 0, "", fmt.Errorf("LLM evaluation enabled but aggregate score is unavailable")
+		return 0, "", llmAggregateUnavailableError(*report.LLMEvaluation)
 	}
 	return report.Aggregate.WeightedScore, "heuristic", nil
 }
 
-func resolvePrompts(prompt string, promptFile string) ([]string, error) {
+func llmAggregateUnavailableError(llm evalsvc.LLMEvaluation) error {
+	if llm.SuccessfulJudges == 0 && llm.FailedJudges == 0 && llm.SkippedRuns > 0 {
+		return fmt.Errorf("LLM evaluation enabled but aggregate score is unavailable: all %d run(s) were skipped due to translation errors before the judge ran", llm.SkippedRuns)
+	}
+	return fmt.Errorf(
+		"LLM evaluation enabled but aggregate score is unavailable: %d successful judge call(s), %d failed judge call(s), %d skipped run(s) due to translation errors",
+		llm.SuccessfulJudges,
+		llm.FailedJudges,
+		llm.SkippedRuns,
+	)
+}
+
+func resolvePrompts(prompt string, promptFile string, promptFlag string, promptFileFlag string) ([]string, error) {
 	inline := strings.TrimSpace(prompt)
 	file := strings.TrimSpace(promptFile)
 	if inline != "" && file != "" {
-		return nil, fmt.Errorf("--prompt and --prompt-file are mutually exclusive")
+		return nil, fmt.Errorf("%s and %s are mutually exclusive", promptFlag, promptFileFlag)
 	}
 	if inline != "" {
 		return []string{inline}, nil

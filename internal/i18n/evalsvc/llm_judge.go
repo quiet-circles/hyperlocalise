@@ -48,7 +48,7 @@ func (s *LLMJudgeScorer) ScoreJudge(ctx context.Context, in ScoreInput) (JudgeRe
 	}
 
 	resp, err := s.translate(ctx, translator.Request{
-		Source:         in.Translated,
+		Source:         in.Case.Source,
 		TargetLanguage: in.Case.TargetLocale,
 		Context:        in.Case.Context,
 		ModelProvider:  s.provider,
@@ -105,8 +105,18 @@ func parseJudgeResult(raw string) (JudgeResult, error) {
 	cleaned = strings.TrimSpace(cleaned)
 
 	if start := strings.Index(cleaned, "{"); start >= 0 {
-		if end := strings.LastIndex(cleaned, "}"); end >= start {
-			cleaned = cleaned[start : end+1]
+		var payload map[string]any
+		decoder := json.NewDecoder(strings.NewReader(cleaned[start:]))
+		if err := decoder.Decode(&payload); err == nil {
+			score, err := parseJudgeScoreValue(payload["score"])
+			if err != nil {
+				return JudgeResult{}, err
+			}
+			result := JudgeResult{Score: &score}
+			if rationale, ok := payload["rationale"].(string); ok {
+				result.Rationale = strings.TrimSpace(rationale)
+			}
+			return result, nil
 		}
 	}
 
