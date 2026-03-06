@@ -3732,6 +3732,106 @@ func TestRunExperimentalContextMemorySummaryFailureFallsBack(t *testing.T) {
 	}
 }
 
+func TestRunExperimentalContextMemoryUsesConfiguredProviderAndModel(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		cfg.LLM.ContextMemory = &config.LLMContextMemoryProfile{
+			Provider: "ollama",
+			Model:    "qwen2.5:7b",
+		}
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"welcome":"Welcome"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	contextProvider := ""
+	contextModel := ""
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			contextProvider = req.ModelProvider
+			contextModel = req.Model
+			return "Terminology: keep onboarding terms consistent.", nil
+		}
+		return "FR(" + req.Source + ")", nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		ContextMemoryMaxChars:     1200,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if contextProvider != "ollama" {
+		t.Fatalf("expected context memory provider override, got %q", contextProvider)
+	}
+	if contextModel != "qwen2.5:7b" {
+		t.Fatalf("expected context memory model override, got %q", contextModel)
+	}
+}
+
+func TestRunExperimentalContextMemoryOverrideDoesNotAffectTranslationModel(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		cfg.LLM.ContextMemory = &config.LLMContextMemoryProfile{
+			Provider: "ollama",
+			Model:    "qwen2.5:7b",
+		}
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"welcome":"Welcome"}`), nil
+		case targetPath:
+			return []byte(`{}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+
+	translationProvider := ""
+	translationModel := ""
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		if strings.HasPrefix(req.Source, "Representative source entries:") {
+			return "Terminology: keep onboarding terms consistent.", nil
+		}
+		translationProvider = req.ModelProvider
+		translationModel = req.Model
+		return "FR(" + req.Source + ")", nil
+	}
+
+	_, err := svc.Run(context.Background(), Input{
+		ExperimentalContextMemory: true,
+		ContextMemoryScope:        ContextMemoryScopeFile,
+		ContextMemoryMaxChars:     1200,
+	})
+	if err != nil {
+		t.Fatalf("run execution: %v", err)
+	}
+	if translationProvider != "openai" {
+		t.Fatalf("expected translation provider from profile, got %q", translationProvider)
+	}
+	if translationModel != "gpt-4.1-mini" {
+		t.Fatalf("expected translation model from profile, got %q", translationModel)
+	}
+}
+
 func TestRunExperimentalContextMemoryRejectsInvalidScope(t *testing.T) {
 	svc := newTestService()
 	_, err := svc.Run(context.Background(), Input{

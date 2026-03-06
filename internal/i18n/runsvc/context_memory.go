@@ -130,8 +130,8 @@ func (s *Service) resolveTaskContextMemory(ctx context.Context, task Task, state
 		Source:         group.Source,
 		TargetLanguage: group.Seed.SourceLocale,
 		Context:        fmt.Sprintf("Scope: %s\nSource locale: %s\nSource identifier: %s", state.contextPlan.Scope, group.Seed.SourceLocale, contextScopeValue(group.Seed, state.contextPlan.Scope)),
-		ModelProvider:  group.Seed.Provider,
-		Model:          group.Seed.Model,
+		ModelProvider:  contextMemoryProvider(group.Seed),
+		Model:          contextMemoryModel(group.Seed),
 		Prompt:         buildContextMemoryPrompt(group.Seed.SourceLocale),
 	}
 	memory, err := s.translateRequestWithRetry(translator.WithUsageCollector(groupCtx, &usage), request)
@@ -232,6 +232,20 @@ func ternary(ok bool, left, right string) string {
 		return left
 	}
 	return right
+}
+
+func contextMemoryProvider(task Task) string {
+	if v := strings.TrimSpace(task.ContextProvider); v != "" {
+		return v
+	}
+	return task.Provider
+}
+
+func contextMemoryModel(task Task) string {
+	if v := strings.TrimSpace(task.ContextModel); v != "" {
+		return v
+	}
+	return task.Model
 }
 
 func contextMemoryKey(task Task, scope string) string {

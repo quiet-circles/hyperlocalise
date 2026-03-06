@@ -227,6 +227,10 @@ Flags:
 - `model`
 - `prompt`
 
+Optional context-memory override for `run --experimental-context-memory`:
+- `llm.context_memory.provider`
+- `llm.context_memory.model`
+
 Prompt variables:
 - `{{source}}`
 - `{{target}}`

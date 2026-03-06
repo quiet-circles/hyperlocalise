@@ -60,8 +60,9 @@ type GroupConfig struct {
 
 // LLMConfig defines model defaults, locale groups, and override rules.
 type LLMConfig struct {
-	Profiles map[string]LLMProfile `json:"profiles" jsonschema:"required"`
-	Rules    []LLMRule             `json:"rules,omitempty"`
+	Profiles      map[string]LLMProfile    `json:"profiles" jsonschema:"required"`
+	ContextMemory *LLMContextMemoryProfile `json:"context_memory,omitempty"`
+	Rules         []LLMRule                `json:"rules,omitempty"`
 }
 
 // LLMProfile contains provider/model prompt configuration.
@@ -71,6 +72,12 @@ type LLMProfile struct {
 	Prompt       string `json:"prompt,omitempty"`
 	SystemPrompt string `json:"system_prompt,omitempty"`
 	UserPrompt   string `json:"user_prompt,omitempty"`
+}
+
+// LLMContextMemoryProfile configures provider/model for context memory building.
+type LLMContextMemoryProfile struct {
+	Provider string `json:"provider" jsonschema:"required"`
+	Model    string `json:"model" jsonschema:"required"`
 }
 
 // LLMRule applies a profile for a specific group.
@@ -424,6 +431,11 @@ func (c I18NConfig) validateLLM(groupSet map[string]struct{}) error {
 			return err
 		}
 	}
+	if c.LLM.ContextMemory != nil {
+		if err := validateContextMemoryProfile("llm.context_memory", *c.LLM.ContextMemory); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -445,6 +457,13 @@ func validateProfile(fieldPrefix string, profile LLMProfile) error {
 	}
 
 	return nil
+}
+
+func validateContextMemoryProfile(fieldPrefix string, profile LLMContextMemoryProfile) error {
+	return validateProfile(fieldPrefix, LLMProfile{
+		Provider: profile.Provider,
+		Model:    profile.Model,
+	})
 }
 
 func validateRule(index int, rule LLMRule, profiles map[string]LLMProfile, groupSet map[string]struct{}) error {
