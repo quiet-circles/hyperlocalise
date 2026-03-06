@@ -20,9 +20,9 @@ type markdownDocument struct {
 }
 
 type markdownParseState struct {
-	inJSXTag     bool
-	jsxQuote     byte
-	jsxEscaped   bool
+	inJSXTag      bool
+	jsxQuote      byte
+	jsxEscaped    bool
 	jsxBraceDepth int
 }
 
@@ -85,11 +85,11 @@ func parseMarkdownDocument(content []byte) (markdownDocument, map[string]string)
 				inFrontmatter = false
 				continue
 			}
-				emitFrontmatterLineParts(line, &doc, func(segment string) {
-					appendKey(markdownPart{source: segment})
-				})
-				continue
-			}
+			emitFrontmatterLineParts(line, &doc, func(segment string) {
+				appendKey(markdownPart{source: segment})
+			})
+			continue
+		}
 
 		if inFence {
 			doc.parts = append(doc.parts, markdownPart{literal: line})
@@ -839,11 +839,11 @@ func alignMarkdownFallback(sourceDoc markdownDocument, sourceEntries map[string]
 		// Only consume fallback translations for keys that are part of source extraction.
 		// This avoids injecting fallback text into non-translatable structural segments.
 		if _, ok := sourceEntries[part.key]; ok && sourceCtxIdx < len(sourceContexts) {
-				if fallback, ok := takeFallback(sourceContexts[sourceCtxIdx]); ok {
-					aligned[part.key] = renderMarkdownPart(part, fallback)
-					sourceCtxIdx++
-					continue
-				}
+			if fallback, ok := takeFallback(sourceContexts[sourceCtxIdx]); ok {
+				aligned[part.key] = renderMarkdownPart(part, fallback)
+				sourceCtxIdx++
+				continue
+			}
 		}
 		if sourceCtxIdx < len(sourceContexts) {
 			sourceCtxIdx++
