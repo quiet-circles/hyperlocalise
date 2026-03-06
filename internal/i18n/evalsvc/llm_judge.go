@@ -108,29 +108,8 @@ func parseJudgeResult(raw string) (JudgeResult, error) {
 		var payload map[string]any
 		decoder := json.NewDecoder(strings.NewReader(cleaned[start:]))
 		if err := decoder.Decode(&payload); err == nil {
-			score, err := parseJudgeScoreValue(payload["score"])
-			if err != nil {
-				return JudgeResult{}, err
-			}
-			result := JudgeResult{Score: &score}
-			if rationale, ok := payload["rationale"].(string); ok {
-				result.Rationale = strings.TrimSpace(rationale)
-			}
-			return result, nil
+			return payloadToJudgeResult(payload)
 		}
-	}
-
-	var payload map[string]any
-	if err := json.Unmarshal([]byte(cleaned), &payload); err == nil {
-		score, err := parseJudgeScoreValue(payload["score"])
-		if err != nil {
-			return JudgeResult{}, err
-		}
-		result := JudgeResult{Score: &score}
-		if rationale, ok := payload["rationale"].(string); ok {
-			result.Rationale = strings.TrimSpace(rationale)
-		}
-		return result, nil
 	}
 
 	score, err := strconv.ParseFloat(cleaned, 64)
@@ -163,4 +142,16 @@ func parseJudgeScoreValue(value any) (float64, error) {
 	default:
 		return 0, fmt.Errorf("parse judge response: missing score")
 	}
+}
+
+func payloadToJudgeResult(payload map[string]any) (JudgeResult, error) {
+	score, err := parseJudgeScoreValue(payload["score"])
+	if err != nil {
+		return JudgeResult{}, err
+	}
+	result := JudgeResult{Score: &score}
+	if rationale, ok := payload["rationale"].(string); ok {
+		result.Rationale = strings.TrimSpace(rationale)
+	}
+	return result, nil
 }
