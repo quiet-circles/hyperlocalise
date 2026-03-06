@@ -164,6 +164,9 @@ func TestLoadLegacyRunCompletedWithCompletedAt(t *testing.T) {
 	if strings.Contains(string(rewritten), "completed_at") {
 		t.Fatalf("expected rewritten lockfile to omit completed_at, got %s", string(rewritten))
 	}
+	if !strings.Contains(string(rewritten), "abc123") {
+		t.Fatalf("expected rewritten lockfile to preserve source_hash, got %s", string(rewritten))
+	}
 }
 
 func TestSaveDefaultPath(t *testing.T) {
