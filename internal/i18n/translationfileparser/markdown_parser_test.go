@@ -707,6 +707,22 @@ func TestMarshalMarkdownPreservesLiteralPlaceholderLookingText(t *testing.T) {
 	}
 }
 
+func TestMarshalMarkdownWithTargetFallbackExpandsTargetSpecificPlaceholders(t *testing.T) {
+	source := []byte("Open [docs](https://example.com/source-docs) and inspect <Badge text=\"beta\" />.\n")
+	target := []byte("Mo [tai lieu](https://example.com/vi-docs) va kiem tra <Badge text=\"ban dich\" />.\n")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if strings.Contains(output, "\x1eHLMDPH_") {
+		t.Fatalf("expected no raw placeholder control tokens in fallback output, got %q", output)
+	}
+	if !strings.Contains(output, "[tai lieu](https://example.com/vi-docs)") {
+		t.Fatalf("expected target link destination preserved, got %q", output)
+	}
+	if !strings.Contains(output, "<Badge text=\"ban dich\" />") {
+		t.Fatalf("expected target inline JSX preserved, got %q", output)
+	}
+}
+
 func TestMarshalMarkdownWithTargetFallbackPreservesMultiLineJSXStructure(t *testing.T) {
 	source := []byte("<Card\n  title=\"Replacement rules\"\n  href=\"/docs/rules\"\n>\n  Replace the sentence only.\n</Card>\n")
 	target := []byte("<Card\n  title=\"Quy tac thay the\"\n  href=\"/docs/rules\"\n>\n  Chi thay cau van.\n</Card>\n")
@@ -737,6 +753,22 @@ func TestMarkdownParserParseSkipsMultiLineJSXAttributesWithNestedBracesAndAngles
 	combined := strings.Join(mapValues(entries), "\n")
 	if combined != "Replace only the prose." {
 		t.Fatalf("expected only prose extracted from multiline JSX tag, got %q", combined)
+	}
+}
+
+func TestMarshalMarkdownWithTargetFallbackExpandsFallbackSpanPerTargetPart(t *testing.T) {
+	source := []byte("Alpha.\nInserted note.\nOmega.\n")
+	target := []byte("Mot [lien ket](https://example.com/vi).\nHai voi <Badge text=\"noi tuyen\" />.\n")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if strings.Contains(output, "\x1eHLMDPH_") {
+		t.Fatalf("expected no raw placeholder control tokens in fallback span output, got %q", output)
+	}
+	if !strings.Contains(output, "Mot [lien ket](https://example.com/vi).") {
+		t.Fatalf("expected first target part preserved in fallback span, got %q", output)
+	}
+	if !strings.Contains(output, "Hai voi <Badge text=\"noi tuyen\" />.") {
+		t.Fatalf("expected second target part preserved in fallback span, got %q", output)
 	}
 }
 
@@ -771,6 +803,27 @@ func TestMarshalMarkdownWithTargetFallbackKeepsInsertedSectionsOrderedAroundMult
 	last := strings.Index(output, "Ket hien co.")
 	if first < 0 || inserted <= first || last <= inserted {
 		t.Fatalf("expected inserted section to remain ordered between existing sections, got %q", output)
+	}
+}
+
+func TestAlignMarkdownTargetToSourceReturnsExpandedFallbackText(t *testing.T) {
+	source := []byte("Open [docs](https://example.com/source-docs) and inspect <Badge text=\"beta\" />.\n")
+	target := []byte("Mo [tai lieu](https://example.com/vi-docs) va kiem tra <Badge text=\"ban dich\" />.\n")
+
+	aligned := AlignMarkdownTargetToSource(source, target)
+	if len(aligned) != 1 {
+		t.Fatalf("expected one aligned entry, got %d", len(aligned))
+	}
+	for _, got := range aligned {
+		if strings.Contains(got, "\x1eHLMDPH_") {
+			t.Fatalf("expected expanded aligned fallback text, got %q", got)
+		}
+		if !strings.Contains(got, "[tai lieu](https://example.com/vi-docs)") {
+			t.Fatalf("expected aligned text to preserve target link destination, got %q", got)
+		}
+		if !strings.Contains(got, "<Badge text=\"ban dich\" />") {
+			t.Fatalf("expected aligned text to preserve target inline JSX, got %q", got)
+		}
 	}
 }
 

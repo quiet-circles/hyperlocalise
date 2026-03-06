@@ -47,7 +47,7 @@ func (d markdownDocument) keyContexts() []markdownKeyContext {
 		if i+1 < len(d.parts) && d.parts[i+1].key == "" {
 			next = d.parts[i+1].literal
 		}
-		out = append(out, markdownKeyContext{text: part.source, prevLiteral: prev, nextLiteral: next, partIndex: i})
+		out = append(out, markdownKeyContext{text: renderMarkdownPart(part, part.source), prevLiteral: prev, nextLiteral: next, partIndex: i})
 	}
 	return out
 }
@@ -441,6 +441,10 @@ func protectMarkdownInlineSyntax(segment string) (string, map[string]string, str
 			appendPlaceholder(segment[idx:end])
 			idx = end
 		case segment[idx] == '<' && looksLikeJSXTagStart(segment, idx):
+			// This protection pass is single-line in scope. If an inline JSX tag
+			// does not close within the current segment, the rest of the segment is
+			// protected here; multi-line inline JSX continuation is handled by the
+			// parser state in emitMarkdownLineParts.
 			end := findJSXTagEnd(segment, idx)
 			appendPlaceholder(segment[idx:end])
 			idx = end
@@ -968,7 +972,7 @@ func takeMarkdownFallbackSpan(targetDoc markdownDocument, targetPartUsed []bool,
 			b.WriteString(targetDoc.parts[i].literal)
 			continue
 		}
-		b.WriteString(targetDoc.parts[i].source)
+		b.WriteString(renderMarkdownPart(targetDoc.parts[i], targetDoc.parts[i].source))
 	}
 
 	nextCursor := startAt
