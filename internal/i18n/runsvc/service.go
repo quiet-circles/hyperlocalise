@@ -102,18 +102,20 @@ type Event struct {
 }
 
 type Task struct {
-	SourceLocale    string `json:"sourceLocale"`
-	TargetLocale    string `json:"targetLocale"`
-	SourcePath      string `json:"sourcePath"`
-	TargetPath      string `json:"targetPath"`
-	EntryKey        string `json:"entryKey"`
-	SourceText      string `json:"sourceText"`
-	ProfileName     string `json:"profileName"`
-	Provider        string `json:"provider"`
-	Model           string `json:"model"`
-	Prompt          string `json:"prompt"`
-	SystemPrompt    string `json:"systemPrompt,omitempty"`
-	UserPrompt      string `json:"userPrompt,omitempty"`
+	SourceLocale string `json:"sourceLocale"`
+	TargetLocale string `json:"targetLocale"`
+	SourcePath   string `json:"sourcePath"`
+	TargetPath   string `json:"targetPath"`
+	EntryKey     string `json:"entryKey"`
+	SourceText   string `json:"sourceText"`
+	ProfileName  string `json:"profileName"`
+	Provider     string `json:"provider"`
+	Model        string `json:"model"`
+	Prompt       string `json:"prompt"`
+	SystemPrompt string `json:"systemPrompt,omitempty"`
+	UserPrompt   string `json:"userPrompt,omitempty"`
+	// ContextProvider/ContextModel are pre-resolved during planning.
+	// They always contain the provider/model used for context-memory generation.
 	ContextProvider string `json:"-"`
 	ContextModel    string `json:"-"`
 	GroupName       string `json:"-"`
