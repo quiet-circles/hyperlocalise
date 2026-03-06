@@ -31,11 +31,21 @@ func (f fakeReferenceScorer) ScoreReference(_ context.Context, in ScoreInput) (f
 type fakeJudgeScorer struct{}
 
 func (f fakeJudgeScorer) Name() string { return "judge" }
-func (f fakeJudgeScorer) ScoreJudge(_ context.Context, in ScoreInput) (float64, error) {
+
+func scorePtr(v float64) *float64 { return &v }
+
+func (f fakeJudgeScorer) ScoreJudge(_ context.Context, in ScoreInput) (JudgeResult, error) {
 	if strings.Contains(in.Translated, "!") {
-		return 0.5, nil
+		return JudgeResult{Score: scorePtr(0.5), Rationale: "punctuation detected"}, nil
 	}
-	return 0.25, nil
+	return JudgeResult{Score: scorePtr(0.25), Rationale: "default"}, nil
+}
+
+type fakeFailingJudgeScorer struct{}
+
+func (f fakeFailingJudgeScorer) Name() string { return "judge" }
+func (f fakeFailingJudgeScorer) ScoreJudge(_ context.Context, _ ScoreInput) (JudgeResult, error) {
+	return JudgeResult{}, errors.New("judge failed")
 }
 
 func TestRunIsDeterministicWithSeed(t *testing.T) {
@@ -121,13 +131,14 @@ func TestRunAggregatesScorersAndPersistsReport(t *testing.T) {
 	svc.WithReferenceScorers(fakeReferenceScorer{}).WithJudgeScorers(fakeJudgeScorer{})
 
 	report, err := svc.Run(context.Background(), Input{
-		EvalSetPath:    "unused.json",
-		Profiles:       []string{"default"},
-		Providers:      []string{"openai", "anthropic"},
-		Models:         []string{"model-a"},
-		Prompts:        []string{"prompt A"},
-		OutputPath:     outputPath,
-		EnableLLMJudge: true,
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai", "anthropic"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		OutputPath:   outputPath,
+		EvalProvider: "openai",
+		EvalModel:    "gpt-4.1-mini",
 	})
 	if err != nil {
 		t.Fatalf("run: %v", err)
@@ -139,8 +150,19 @@ func TestRunAggregatesScorersAndPersistsReport(t *testing.T) {
 	if report.Aggregate.AverageScoreByName["reference"] != 1 {
 		t.Fatalf("unexpected reference aggregate score: %+v", report.Aggregate.AverageScoreByName)
 	}
-	if report.Aggregate.AverageScoreByName["judge"] != 0.25 {
-		t.Fatalf("unexpected judge aggregate score: %+v", report.Aggregate.AverageScoreByName)
+	if report.LLMEvaluation == nil || report.LLMEvaluation.AggregateScore == nil || *report.LLMEvaluation.AggregateScore != 0.25 {
+		t.Fatalf("expected llm aggregate score, got %+v", report.LLMEvaluation)
+	}
+	if report.LLMEvaluation.AverageScoreByName["judge"] != 0.25 {
+		t.Fatalf("unexpected llm judge aggregate score: %+v", report.LLMEvaluation)
+	}
+	if report.LLMEvaluation.Provider != "openai" || report.LLMEvaluation.Model != "gpt-4.1-mini" {
+		t.Fatalf("unexpected llm metadata: %+v", report.LLMEvaluation)
+	}
+	for _, run := range report.Runs {
+		if _, ok := run.JudgeResults["judge"]; !ok {
+			t.Fatalf("expected judge results on each run: %+v", run)
+		}
 	}
 	if len(report.CaseSummaries) != 2 {
 		t.Fatalf("expected 2 case summaries, got %d", len(report.CaseSummaries))
@@ -170,6 +192,105 @@ func TestRunJudgeScoringDisabledByDefault(t *testing.T) {
 		if _, ok := run.Scores["judge"]; ok {
 			t.Fatalf("expected judge scorer to be disabled by default")
 		}
+		if len(run.JudgeResults) > 0 {
+			t.Fatalf("expected judge results to be disabled by default")
+		}
+	}
+}
+
+func TestRunAllowsMissingReferenceInLLMMode(t *testing.T) {
+	svc := newTestService()
+	svc.loadEvalset = func(_ string) (*evalset.Dataset, error) {
+		return &evalset.Dataset{Cases: []evalset.Case{{ID: "a", Source: "hello", TargetLocale: "fr"}}}, nil
+	}
+	svc.WithJudgeScorers(fakeJudgeScorer{})
+
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "judge-model",
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if report.LLMEvaluation == nil || report.LLMEvaluation.AggregateScore == nil {
+		t.Fatalf("expected llm evaluation aggregate: %+v", report.LLMEvaluation)
+	}
+}
+
+func TestRunRecordsJudgeFailuresWithoutFailingReport(t *testing.T) {
+	svc := newTestService()
+	svc.WithJudgeScorers(fakeFailingJudgeScorer{})
+
+	report, err := svc.Run(context.Background(), Input{
+		EvalSetPath:  "unused.json",
+		Profiles:     []string{"default"},
+		Providers:    []string{"openai"},
+		Models:       []string{"model-a"},
+		Prompts:      []string{"prompt A"},
+		EvalProvider: "openai",
+		EvalModel:    "judge-model",
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if report.LLMEvaluation == nil {
+		t.Fatalf("expected llm evaluation metadata")
+	}
+	if report.LLMEvaluation.AggregateScore != nil {
+		t.Fatalf("expected no aggregate score on total judge failure: %+v", report.LLMEvaluation)
+	}
+	if report.LLMEvaluation.FailedJudges != len(report.Runs) {
+		t.Fatalf("expected failed judge count to match runs: %+v", report.LLMEvaluation)
+	}
+	for _, run := range report.Runs {
+		if run.JudgeResults["judge"].Error == "" {
+			t.Fatalf("expected judge failure recorded on run: %+v", run)
+		}
+	}
+}
+
+func TestInputValidateRejectsPartialEvalConfig(t *testing.T) {
+	err := (Input{EvalSetPath: "set.json", EvalProvider: "openai"}).Validate()
+	if err == nil || !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected paired evaluator flag error, got %v", err)
+	}
+}
+
+func TestInputValidateRejectsEvalPromptWithoutProviderAndModel(t *testing.T) {
+	err := (Input{EvalSetPath: "set.json", EvalPrompt: "judge this"}).Validate()
+	if err == nil || !strings.Contains(err.Error(), "required when using evaluator prompt overrides") {
+		t.Fatalf("expected evaluator prompt validation error, got %v", err)
+	}
+}
+
+func TestAggregateLLMEvaluationDeterministic(t *testing.T) {
+	in := Input{EvalSetPath: "set.json", EvalProvider: "openai", EvalModel: "judge-model"}
+	runs := []RunResult{
+		{JudgeResults: map[string]JudgeResult{"judge": {Score: scorePtr(0.2)}}},
+		{JudgeResults: map[string]JudgeResult{"judge": {Score: scorePtr(0.4)}}},
+		{JudgeResults: map[string]JudgeResult{"judge": {Error: "boom"}}},
+	}
+	got := aggregateLLMEvaluation(in, runs)
+	if got == nil || got.AggregateScore == nil || *got.AggregateScore != 0.3 {
+		t.Fatalf("unexpected llm aggregate: %+v", got)
+	}
+	if got.SuccessfulJudges != 2 || got.FailedJudges != 1 {
+		t.Fatalf("unexpected llm counters: %+v", got)
+	}
+}
+
+func TestParseJudgeResult(t *testing.T) {
+	got, err := parseJudgeResult("```json\n{\"score\":0.83,\"rationale\":\"good\"}\n```")
+	if err != nil {
+		t.Fatalf("parse judge result: %v", err)
+	}
+	if got.Score == nil || *got.Score != 0.83 || got.Rationale != "good" {
+		t.Fatalf("unexpected parsed judge result: %+v", got)
 	}
 }
 
@@ -242,7 +363,7 @@ func TestExecuteSingleCapturesArtifacts(t *testing.T) {
 		provider: "openai",
 		model:    "m1",
 		prompt:   "p1",
-	}, nil)
+	}, nil, nil)
 
 	if run.Translated == "" || run.LatencyMS < 0 {
 		t.Fatalf("expected translation artifacts, got %+v", run)

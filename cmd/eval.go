@@ -16,13 +16,17 @@ import (
 var evalRunFunc = evalsvc.Run
 
 type evalRunOptions struct {
-	evalSetPath string
-	profiles    []string
-	providers   []string
-	models      []string
-	promptFile  string
-	prompt      string
-	outputPath  string
+	evalSetPath    string
+	profiles       []string
+	providers      []string
+	models         []string
+	promptFile     string
+	prompt         string
+	evalProvider   string
+	evalModel      string
+	evalPromptFile string
+	evalPrompt     string
+	outputPath     string
 }
 
 type evalCompareOptions struct {
@@ -63,18 +67,31 @@ func newEvalRunCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if strings.TrimSpace(o.evalSetPath) == "" {
-				return fmt.Errorf("--eval-set is required")
+			evalPrompts, err := resolvePrompts(o.evalPrompt, o.evalPromptFile)
+			if err != nil {
+				return fmt.Errorf("resolve eval prompt: %w", err)
+			}
+			evalPrompt := ""
+			if len(evalPrompts) > 0 {
+				evalPrompt = evalPrompts[0]
 			}
 
-			report, err := evalRunFunc(backgroundContext(), evalsvc.Input{
-				EvalSetPath: o.evalSetPath,
-				Profiles:    o.profiles,
-				Providers:   o.providers,
-				Models:      o.models,
-				Prompts:     prompts,
-				OutputPath:  o.outputPath,
-			})
+			input := evalsvc.Input{
+				EvalSetPath:  o.evalSetPath,
+				Profiles:     o.profiles,
+				Providers:    o.providers,
+				Models:       o.models,
+				Prompts:      prompts,
+				EvalProvider: o.evalProvider,
+				EvalModel:    o.evalModel,
+				EvalPrompt:   evalPrompt,
+				OutputPath:   o.outputPath,
+			}
+			if err := input.Validate(); err != nil {
+				return err
+			}
+
+			report, err := evalRunFunc(backgroundContext(), input)
 			if err != nil {
 				return fmt.Errorf("run eval: %w", err)
 			}
@@ -89,6 +106,10 @@ func newEvalRunCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&o.models, "model", nil, "model override (repeatable)")
 	cmd.Flags().StringVar(&o.promptFile, "prompt-file", "", "path to prompt file override")
 	cmd.Flags().StringVar(&o.prompt, "prompt", "", "inline prompt override")
+	cmd.Flags().StringVar(&o.evalProvider, "eval-provider", "", "provider for LLM evaluation")
+	cmd.Flags().StringVar(&o.evalModel, "eval-model", "", "model for LLM evaluation")
+	cmd.Flags().StringVar(&o.evalPromptFile, "eval-prompt-file", "", "path to evaluation prompt file override")
+	cmd.Flags().StringVar(&o.evalPrompt, "eval-prompt", "", "inline evaluation prompt override")
 	cmd.Flags().StringVar(&o.outputPath, "output", "", "report output JSON path")
 
 	return cmd
@@ -117,8 +138,14 @@ func newEvalCompareCmd() *cobra.Command {
 				return err
 			}
 
-			candidateScore := candidate.Aggregate.WeightedScore
-			baselineScore := baseline.Aggregate.WeightedScore
+			candidateScore, candidateSource, err := selectCompareScore(candidate)
+			if err != nil {
+				return fmt.Errorf("candidate report: %w", err)
+			}
+			baselineScore, baselineSource, err := selectCompareScore(baseline)
+			if err != nil {
+				return fmt.Errorf("baseline report: %w", err)
+			}
 			regression := baselineScore - candidateScore
 
 			if err := writeExperimentSummary(cmd.OutOrStdout(), summarizeExperiments(candidate.Runs), true); err != nil {
@@ -127,12 +154,14 @@ func newEvalCompareCmd() *cobra.Command {
 
 			if _, err := fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"candidate_score=%.3f baseline_score=%.3f regression=%.3f min_score=%.3f max_regression=%.3f\n",
+				"candidate_score=%.3f baseline_score=%.3f regression=%.3f min_score=%.3f max_regression=%.3f candidate_score_source=%s baseline_score_source=%s\n",
 				candidateScore,
 				baselineScore,
 				regression,
 				o.minScore,
 				o.maxRegression,
+				candidateSource,
+				baselineSource,
 			); err != nil {
 				return err
 			}
@@ -154,6 +183,16 @@ func newEvalCompareCmd() *cobra.Command {
 	cmd.Flags().Float64Var(&o.maxRegression, "max-regression", 0, "maximum allowed score regression vs baseline")
 
 	return cmd
+}
+
+func selectCompareScore(report evalsvc.Report) (float64, string, error) {
+	if report.LLMEvaluation != nil && report.LLMEvaluation.Enabled {
+		if report.LLMEvaluation.AggregateScore != nil {
+			return *report.LLMEvaluation.AggregateScore, "llm", nil
+		}
+		return 0, "", fmt.Errorf("LLM evaluation enabled but aggregate score is unavailable")
+	}
+	return report.Aggregate.WeightedScore, "heuristic", nil
 }
 
 func resolvePrompts(prompt string, promptFile string) ([]string, error) {

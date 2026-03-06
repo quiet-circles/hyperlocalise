@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,15 +20,42 @@ import (
 
 // Input controls evaluation execution.
 type Input struct {
-	EvalSetPath    string
-	Profiles       []string
-	Providers      []string
-	Models         []string
-	Prompts        []string
-	Concurrency    int
-	Seed           int64
-	OutputPath     string
-	EnableLLMJudge bool
+	EvalSetPath  string
+	Profiles     []string
+	Providers    []string
+	Models       []string
+	Prompts      []string
+	Concurrency  int
+	Seed         int64
+	OutputPath   string
+	EvalProvider string
+	EvalModel    string
+	EvalPrompt   string
+}
+
+// Validate checks input semantics before execution.
+func (in Input) Validate() error {
+	if strings.TrimSpace(in.EvalSetPath) == "" {
+		return fmt.Errorf("--eval-set is required")
+	}
+
+	provider := strings.TrimSpace(in.EvalProvider)
+	model := strings.TrimSpace(in.EvalModel)
+	prompt := strings.TrimSpace(in.EvalPrompt)
+
+	if (provider == "") != (model == "") {
+		return fmt.Errorf("--eval-provider and --eval-model must be set together")
+	}
+	if prompt != "" && (provider == "" || model == "") {
+		return fmt.Errorf("--eval-provider and --eval-model are required when using evaluator prompt overrides")
+	}
+
+	return nil
+}
+
+// LLMEvaluationEnabled reports whether model-based evaluation is configured.
+func (in Input) LLMEvaluationEnabled() bool {
+	return strings.TrimSpace(in.EvalProvider) != "" && strings.TrimSpace(in.EvalModel) != ""
 }
 
 // Aggregate summarizes evaluation totals.
@@ -43,26 +71,47 @@ type Aggregate struct {
 
 // Report is the full result payload for an eval execution.
 type Report struct {
-	GeneratedAt   time.Time     `json:"generatedAt"`
-	Input         Input         `json:"input"`
-	Aggregate     Aggregate     `json:"aggregate"`
-	Runs          []RunResult   `json:"runs"`
-	CaseSummaries []CaseSummary `json:"caseSummaries"`
+	GeneratedAt   time.Time      `json:"generatedAt"`
+	Input         Input          `json:"input"`
+	Aggregate     Aggregate      `json:"aggregate"`
+	LLMEvaluation *LLMEvaluation `json:"llmEvaluation,omitempty"`
+	Runs          []RunResult    `json:"runs"`
+	CaseSummaries []CaseSummary  `json:"caseSummaries"`
+}
+
+// LLMEvaluation summarizes the LLM judge lane.
+type LLMEvaluation struct {
+	Enabled            bool               `json:"enabled"`
+	Provider           string             `json:"provider,omitempty"`
+	Model              string             `json:"model,omitempty"`
+	Prompt             string             `json:"prompt,omitempty"`
+	AggregateScore     *float64           `json:"aggregateScore,omitempty"`
+	AverageScoreByName map[string]float64 `json:"averageScoreByName,omitempty"`
+	SuccessfulJudges   int                `json:"successfulJudges,omitempty"`
+	FailedJudges       int                `json:"failedJudges,omitempty"`
+}
+
+// JudgeResult stores one judge outcome for a run.
+type JudgeResult struct {
+	Score     *float64 `json:"score,omitempty"`
+	Rationale string   `json:"rationale,omitempty"`
+	Error     string   `json:"error,omitempty"`
 }
 
 // RunResult captures one case/experiment translation attempt.
 type RunResult struct {
-	CaseID       string             `json:"caseId"`
-	ExperimentID string             `json:"experimentId"`
-	Profile      string             `json:"profile"`
-	Provider     string             `json:"provider"`
-	Model        string             `json:"model"`
-	Prompt       string             `json:"prompt"`
-	Translated   string             `json:"translated,omitempty"`
-	LatencyMS    float64            `json:"latencyMs"`
-	Error        string             `json:"error,omitempty"`
-	Scores       map[string]float64 `json:"scores,omitempty"`
-	Quality      scoring.Result     `json:"quality"`
+	CaseID       string                 `json:"caseId"`
+	ExperimentID string                 `json:"experimentId"`
+	Profile      string                 `json:"profile"`
+	Provider     string                 `json:"provider"`
+	Model        string                 `json:"model"`
+	Prompt       string                 `json:"prompt"`
+	Translated   string                 `json:"translated,omitempty"`
+	LatencyMS    float64                `json:"latencyMs"`
+	Error        string                 `json:"error,omitempty"`
+	Scores       map[string]float64     `json:"scores,omitempty"`
+	JudgeResults map[string]JudgeResult `json:"judgeResults,omitempty"`
+	Quality      scoring.Result         `json:"quality"`
 }
 
 // CaseSummary aggregates all runs for a single case.
@@ -93,7 +142,7 @@ type ReferenceScorer interface {
 // JudgeScorer computes a score via model-as-judge or similar heuristics.
 type JudgeScorer interface {
 	Name() string
-	ScoreJudge(ctx context.Context, in ScoreInput) (float64, error)
+	ScoreJudge(ctx context.Context, in ScoreInput) (JudgeResult, error)
 }
 
 type experiment struct {
@@ -102,11 +151,6 @@ type experiment struct {
 	provider string
 	model    string
 	prompt   string
-}
-
-type scoreAdapter struct {
-	name  string
-	score func(context.Context, ScoreInput) (float64, error)
 }
 
 type Service struct {
@@ -147,6 +191,10 @@ func (s *Service) WithJudgeScorers(scorers ...JudgeScorer) *Service {
 }
 
 func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
+	if err := in.Validate(); err != nil {
+		return Report{}, err
+	}
+
 	dataset, err := s.loadEvalset(in.EvalSetPath)
 	if err != nil {
 		return Report{}, fmt.Errorf("load evalset: %w", err)
@@ -166,12 +214,9 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	workerCount := resolveWorkerCount(in.Concurrency, s.numCPU)
-	judges := []JudgeScorer(nil)
-	if in.EnableLLMJudge {
-		judges = s.judgeScorers
-	}
-	scorers := adaptScorers(s.referenceScorers, judges)
-	runs, err := s.execute(ctx, cases, experiments, scorers, workerCount)
+	referenceScorers := append([]ReferenceScorer(nil), s.referenceScorers...)
+	judgeScorers := s.resolveJudgeScorers(in)
+	runs, err := s.execute(ctx, cases, experiments, referenceScorers, judgeScorers, workerCount)
 	if err != nil {
 		return Report{}, err
 	}
@@ -182,6 +227,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 		Runs:        runs,
 	}
 	report.Aggregate = aggregateRuns(runs)
+	report.LLMEvaluation = aggregateLLMEvaluation(in, runs)
 	report.CaseSummaries = summarizeCases(runs)
 
 	if in.OutputPath != "" {
@@ -195,6 +241,17 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	return report, nil
+}
+
+func (s *Service) resolveJudgeScorers(in Input) []JudgeScorer {
+	if !in.LLMEvaluationEnabled() {
+		return nil
+	}
+	if len(s.judgeScorers) > 0 {
+		return append([]JudgeScorer(nil), s.judgeScorers...)
+	}
+
+	return []JudgeScorer{NewLLMJudgeScorer(in.EvalProvider, in.EvalModel, in.EvalPrompt, s.translate)}
 }
 
 func resolveWorkerCount(requested int, numCPU func() int) int {
@@ -254,30 +311,7 @@ func normalizedOrDefault(values []string, fallback string) []string {
 	return out
 }
 
-func adaptScorers(reference []ReferenceScorer, judge []JudgeScorer) []scoreAdapter {
-	adapters := make([]scoreAdapter, 0, len(reference)+len(judge))
-	for _, scorer := range reference {
-		scorer := scorer
-		adapters = append(adapters, scoreAdapter{
-			name: scorer.Name(),
-			score: func(ctx context.Context, in ScoreInput) (float64, error) {
-				return scorer.ScoreReference(ctx, in)
-			},
-		})
-	}
-	for _, scorer := range judge {
-		scorer := scorer
-		adapters = append(adapters, scoreAdapter{
-			name: scorer.Name(),
-			score: func(ctx context.Context, in ScoreInput) (float64, error) {
-				return scorer.ScoreJudge(ctx, in)
-			},
-		})
-	}
-	return adapters
-}
-
-func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments []experiment, scorers []scoreAdapter, workerCount int) ([]RunResult, error) {
+func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments []experiment, referenceScorers []ReferenceScorer, judgeScorers []JudgeScorer, workerCount int) ([]RunResult, error) {
 	type job struct {
 		tc  evalset.Case
 		exp experiment
@@ -292,7 +326,7 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 		go func() {
 			defer wg.Done()
 			for item := range jobs {
-				results <- s.executeSingle(ctx, item.tc, item.exp, scorers)
+				results <- s.executeSingle(ctx, item.tc, item.exp, referenceScorers, judgeScorers)
 			}
 		}()
 	}
@@ -325,7 +359,7 @@ func (s *Service) execute(ctx context.Context, cases []evalset.Case, experiments
 	return runs, nil
 }
 
-func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, scorers []scoreAdapter) RunResult {
+func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experiment, referenceScorers []ReferenceScorer, judgeScorers []JudgeScorer) RunResult {
 	if s.qualityEvaluator == nil {
 		s.qualityEvaluator = scoring.NewEvaluator()
 	}
@@ -361,18 +395,74 @@ func (s *Service) executeSingle(ctx context.Context, tc evalset.Case, exp experi
 	run.Quality = s.qualityEvaluator.Evaluate(tc.Source, translated, tc.Reference)
 
 	scoreInput := ScoreInput{Case: tc, Request: req, Translated: translated}
-	for _, scorer := range scorers {
-		score, scoreErr := scorer.score(ctx, scoreInput)
+	for _, scorer := range referenceScorers {
+		score, scoreErr := scorer.ScoreReference(ctx, scoreInput)
 		if scoreErr != nil {
 			continue
 		}
 		if run.Scores == nil {
 			run.Scores = map[string]float64{}
 		}
-		run.Scores[scorer.name] = score
+		run.Scores[scorer.Name()] = score
+	}
+	for _, scorer := range judgeScorers {
+		judgeResult, scoreErr := scorer.ScoreJudge(ctx, scoreInput)
+		if run.JudgeResults == nil {
+			run.JudgeResults = map[string]JudgeResult{}
+		}
+		if scoreErr != nil {
+			run.JudgeResults[scorer.Name()] = JudgeResult{Error: scoreErr.Error()}
+			continue
+		}
+		run.JudgeResults[scorer.Name()] = judgeResult
 	}
 
 	return run
+}
+
+func aggregateLLMEvaluation(in Input, runs []RunResult) *LLMEvaluation {
+	if !in.LLMEvaluationEnabled() {
+		return nil
+	}
+
+	llm := &LLMEvaluation{
+		Enabled:  true,
+		Provider: strings.TrimSpace(in.EvalProvider),
+		Model:    strings.TrimSpace(in.EvalModel),
+		Prompt:   effectiveLLMJudgePrompt(strings.TrimSpace(in.EvalPrompt)),
+	}
+
+	total := 0.0
+	totalCount := 0
+	scoreSums := map[string]float64{}
+	scoreCounts := map[string]int{}
+	for _, run := range runs {
+		for name, result := range run.JudgeResults {
+			if result.Score != nil {
+				score := *result.Score
+				total += score
+				totalCount++
+				llm.SuccessfulJudges++
+				scoreSums[name] += score
+				scoreCounts[name]++
+				continue
+			}
+			if strings.TrimSpace(result.Error) != "" {
+				llm.FailedJudges++
+			}
+		}
+	}
+
+	if totalCount > 0 {
+		aggregateScore := round3(total / float64(totalCount))
+		llm.AggregateScore = &aggregateScore
+		llm.AverageScoreByName = map[string]float64{}
+		for name, sum := range scoreSums {
+			llm.AverageScoreByName[name] = round3(sum / float64(scoreCounts[name]))
+		}
+	}
+
+	return llm
 }
 
 func aggregateRuns(runs []RunResult) Aggregate {
