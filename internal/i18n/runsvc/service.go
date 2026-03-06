@@ -102,22 +102,26 @@ type Event struct {
 }
 
 type Task struct {
-	SourceLocale  string `json:"sourceLocale"`
-	TargetLocale  string `json:"targetLocale"`
-	SourcePath    string `json:"sourcePath"`
-	TargetPath    string `json:"targetPath"`
-	EntryKey      string `json:"entryKey"`
-	SourceText    string `json:"sourceText"`
-	ProfileName   string `json:"profileName"`
-	Provider      string `json:"provider"`
-	Model         string `json:"model"`
-	Prompt        string `json:"prompt"`
-	SystemPrompt  string `json:"systemPrompt,omitempty"`
-	UserPrompt    string `json:"userPrompt,omitempty"`
-	GroupName     string `json:"-"`
-	BucketName    string `json:"-"`
-	ContextKey    string `json:"-"`
-	ContextMemory string `json:"-"`
+	SourceLocale string `json:"sourceLocale"`
+	TargetLocale string `json:"targetLocale"`
+	SourcePath   string `json:"sourcePath"`
+	TargetPath   string `json:"targetPath"`
+	EntryKey     string `json:"entryKey"`
+	SourceText   string `json:"sourceText"`
+	ProfileName  string `json:"profileName"`
+	Provider     string `json:"provider"`
+	Model        string `json:"model"`
+	Prompt       string `json:"prompt"`
+	SystemPrompt string `json:"systemPrompt,omitempty"`
+	UserPrompt   string `json:"userPrompt,omitempty"`
+	// ContextProvider/ContextModel are pre-resolved during planning.
+	// They always contain the provider/model used for context-memory generation.
+	ContextProvider string `json:"-"`
+	ContextModel    string `json:"-"`
+	GroupName       string `json:"-"`
+	BucketName      string `json:"-"`
+	ContextKey      string `json:"-"`
+	ContextMemory   string `json:"-"`
 }
 
 type Failure struct {
@@ -249,6 +253,7 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 		if err != nil {
 			return nil, err
 		}
+		contextProvider, contextModel := resolveContextMemoryModel(profile, cfg.LLM.ContextMemory)
 
 		targets := group.Targets
 		if len(targets) == 0 {
@@ -304,20 +309,22 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 						for _, key := range keys {
 							sourceText := sourceEntries[key]
 							tasks = append(tasks, Task{
-								SourceLocale: cfg.Locales.Source,
-								TargetLocale: target,
-								SourcePath:   sourcePath,
-								TargetPath:   targetPath,
-								EntryKey:     key,
-								SourceText:   sourceText,
-								ProfileName:  profileName,
-								Provider:     profile.Provider,
-								Model:        profile.Model,
-								Prompt:       renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
-								SystemPrompt: renderPrompt(profile.SystemPrompt, cfg.Locales.Source, target, sourceText),
-								UserPrompt:   renderPrompt(profile.UserPrompt, cfg.Locales.Source, target, sourceText),
-								GroupName:    groupName,
-								BucketName:   bucketName,
+								SourceLocale:    cfg.Locales.Source,
+								TargetLocale:    target,
+								SourcePath:      sourcePath,
+								TargetPath:      targetPath,
+								EntryKey:        key,
+								SourceText:      sourceText,
+								ProfileName:     profileName,
+								Provider:        profile.Provider,
+								Model:           profile.Model,
+								Prompt:          renderPrompt(profile.Prompt, cfg.Locales.Source, target, sourceText),
+								SystemPrompt:    renderPrompt(profile.SystemPrompt, cfg.Locales.Source, target, sourceText),
+								UserPrompt:      renderPrompt(profile.UserPrompt, cfg.Locales.Source, target, sourceText),
+								ContextProvider: contextProvider,
+								ContextModel:    contextModel,
+								GroupName:       groupName,
+								BucketName:      bucketName,
 							})
 						}
 					}
@@ -492,6 +499,21 @@ func resolveProfile(cfg *config.I18NConfig, groupName string) (string, config.LL
 	}
 
 	return bestProfile, profile, nil
+}
+
+func resolveContextMemoryModel(profile config.LLMProfile, contextProfile *config.LLMContextMemoryProfile) (provider, model string) {
+	provider = strings.TrimSpace(profile.Provider)
+	model = strings.TrimSpace(profile.Model)
+	if contextProfile == nil {
+		return provider, model
+	}
+	if override := strings.TrimSpace(contextProfile.Provider); override != "" {
+		provider = override
+	}
+	if override := strings.TrimSpace(contextProfile.Model); override != "" {
+		model = override
+	}
+	return provider, model
 }
 
 func sortedGroupNames(groups map[string]config.GroupConfig) []string {

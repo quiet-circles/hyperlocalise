@@ -182,6 +182,18 @@ func TestLoad(t *testing.T) {
 			}`,
 		},
 		{
+			name: "valid llm context memory profile",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "context_memory": {"provider": "ollama", "model": "qwen2.5:7b"}
+			  }
+			}`,
+		},
+		{
 			name: "invalid unknown field rejected",
 			content: `{
 			  "locales": {"source": "en-US", "targets": ["es-ES"]},
@@ -322,6 +334,45 @@ func TestLoad(t *testing.T) {
 			  "llm": {"profiles": {"default": {"provider": "unsupported", "model": "x", "prompt": "p"}}}
 			}`,
 			errContains: "unsupported provider",
+		},
+		{
+			name: "invalid llm context memory missing model",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "context_memory": {"provider": "ollama"}
+			  }
+			}`,
+			errContains: "llm.context_memory.model: must not be empty",
+		},
+		{
+			name: "invalid llm context memory unsupported provider",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "context_memory": {"provider": "unsupported", "model": "m"}
+			  }
+			}`,
+			errContains: "llm.context_memory.provider: unsupported provider",
+		},
+		{
+			name: "invalid llm context memory empty provider",
+			content: `{
+			  "locales": {"source": "en-US", "targets": ["es-ES"]},
+			  "buckets": {"ui": {"files": [{"from": "a", "to": "b"}]}},
+			  "groups": {"g": {"targets": ["es-ES"], "buckets": ["ui"]}},
+			  "llm": {
+			    "profiles": {"default": {"provider": "openai", "model": "x", "prompt": "p"}},
+			    "context_memory": {"provider": "   ", "model": "m"}
+			  }
+			}`,
+			errContains: "llm.context_memory.provider: must not be empty",
 		},
 		{
 			name: "invalid llm rule unknown group",

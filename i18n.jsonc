@@ -169,6 +169,12 @@
         // "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}",
       },
     },
+    // Optional context-memory override for the experimental two-stage flow.
+    // When set, this provider/model pair is used only for context-memory building.
+    // "context_memory": {
+    //   "provider": "openai",
+    //   "model": "gpt-5.2",
+    // },
     // Rules connect groups to profiles.
     // If multiple rules match, the highest priority wins.
     "rules": [
