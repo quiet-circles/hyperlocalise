@@ -15,13 +15,14 @@ import (
 )
 
 func unmarshalJSONForPath(path string, content []byte, out any) error {
-	if err := json.Unmarshal(content, out); err == nil {
+	firstErr := json.Unmarshal(content, out)
+	if firstErr == nil {
 		return nil
 	}
 	if strings.EqualFold(filepath.Ext(path), ".jsonc") {
 		return json.Unmarshal(jsoncparser.ToJSON(content), out)
 	}
-	return json.Unmarshal(content, out)
+	return firstErr
 }
 func marshalJSONTarget(path string, template []byte, values map[string]string, pruneKeys map[string]struct{}) ([]byte, error) {
 	var payload map[string]any
@@ -54,6 +55,8 @@ func marshalJSONTarget(path string, template []byte, values map[string]string, p
 		applyNestedJSONTranslations(payload, allowedValues)
 	}
 
+	// Note: JSONC comments/trailing commas are not preserved on write-back.
+	// We always emit canonical JSON syntax (while allowing .jsonc extension).
 	content, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
