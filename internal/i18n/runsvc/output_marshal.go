@@ -12,11 +12,11 @@ import (
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translationfileparser"
 )
 
-func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string, pruneKeys map[string]struct{}) ([]byte, []string, error) {
+func (s *Service) marshalTargetFile(path, sourcePath, sourceLocale, targetLocale string, values map[string]string, stagedEntries map[string]string, pruneKeys map[string]struct{}) ([]byte, []string, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".xlf", ".xlif", ".xliff", ".po", ".md", ".mdx", ".strings", ".stringsdict", ".csv", ".arb":
-		return s.marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale, values, stagedEntries)
+		return s.marshalTemplateBasedTarget(ext, path, sourcePath, sourceLocale, targetLocale, values, stagedEntries)
 	case ".json":
 		content, err := s.marshalJSONTargetWithFallback(path, sourcePath, values, pruneKeys)
 		return content, nil, err
@@ -25,12 +25,12 @@ func (s *Service) marshalTargetFile(path, sourcePath, targetLocale string, value
 	}
 }
 
-func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, []string, error) {
+func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, sourceLocale, targetLocale string, values map[string]string, stagedEntries map[string]string) ([]byte, []string, error) {
 	if ext == ".md" || ext == ".mdx" {
 		return s.marshalMarkdownTarget(path, sourcePath, stagedEntries)
 	}
 	if ext == ".xlf" || ext == ".xlif" || ext == ".xliff" || ext == ".po" || ext == ".strings" || ext == ".stringsdict" || ext == ".arb" {
-		content, err := s.marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale, values)
+		content, err := s.marshalSourceTemplateTarget(ext, path, sourcePath, sourceLocale, targetLocale, values)
 		return content, nil, err
 	}
 
@@ -51,7 +51,7 @@ func (s *Service) marshalTemplateBasedTarget(ext, path, sourcePath, targetLocale
 	}
 }
 
-func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocale string, values map[string]string) ([]byte, error) {
+func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, sourceLocale, targetLocale string, values map[string]string) ([]byte, error) {
 	sourceTemplate, err := s.readFile(sourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("flush outputs: read template source %q: %w", sourcePath, err)
@@ -68,7 +68,7 @@ func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, targetLocal
 
 	switch ext {
 	case ".xlf", ".xlif", ".xliff":
-		content, err := translationfileparser.MarshalXLIFF(template, values, targetLocale)
+		content, err := translationfileparser.MarshalXLIFF(template, values, sourceLocale, targetLocale)
 		if err != nil {
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}

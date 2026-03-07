@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff version="1.2">
-  <file source-language="zh-CN" datatype="plaintext" original="messages">
+  <file source-language="en-US" datatype="plaintext" original="messages" target-language="zh-CN">
     <body>
       <trans-unit id="common.hello">
         <source>你好</source>

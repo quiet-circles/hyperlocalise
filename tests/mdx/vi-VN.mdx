@@ -1,5 +1,68 @@
+---
+title: "Kế hoạch phát hành tài liệu"
+description: "Xử lý thay thế văn bản MDX mà không làm thay đổi JSX, biểu thức hoặc import."
+---
+
 import { Callout } from "nextra/components";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# Chào mừng
+# Kế hoạch ra mắt tài liệu
 
-<Callout type="info">Xin chào từ Hyperlocalise.</Callout>
+<Callout type="warning">
+  Keep `projectId="docs"` unchanged when you update this page.
+</Callout>
+
+<Tabs items={["cli", "api"]}>
+  <Tab value="cli">
+    Run `hyperlocalise status --verbose` before publishing the docs portal.
+  </Tab>
+  <Tab value="api">
+    API users should keep the token name `HYPERLOCALISE_API_KEY`.
+  </Tab>
+</Tabs>
+
+<Card title="Replacement rules" href="/docs/rules">
+  Replace the sentence, not the `title` prop or `{locale.toUpperCase()}` expression.
+</Card>
+
+<Card
+  title="Nested checks"
+  href="/docs/nested(checks)"
+  icon={<Badge text="beta" />}
+>
+  <Callout type="info">
+    Keep [reference links][mdx-ref] stable and preserve literal text like `MDPH_0_END`.
+  </Callout>
+
+  - First nested item with `hyperlocalise sync pull`
+  - Second nested item with <Badge text="inline" /> markers
+</Card>
+
+Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
+
+Use <Badge text="stable" /> builds when the release branch is frozen.
+
+> Đoạn trích dẫn có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
+>
+> ![Hình ảnh sơ đồ](https://example.com/assets/quoted(flow).png)
+
+<Steps>
+  <Step title="Prepare">
+    Xem lại [Hướng dẫn CLI](https://example.com/docs/cli(reference)) trước khi xuất bản.
+  </Step>
+  <Step
+    title="Publish"
+    icon={<Badge text="go" />}
+  >
+    Ship the docs page and keep `docs/[locale]/index.mdx` untouched.
+  </Step>
+</Steps>
+
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+
+```ts
+export const projectId = "docs";
+```
+
+[mdx-ref]: https://example.com/docs/mdx(tham khảo)

@@ -20,9 +20,15 @@ func TestBuildSystemPromptPrefersSystemPrompt(t *testing.T) {
 func TestBuildSystemPromptUsesDefaultPolicyWhenNoPromptProvided(t *testing.T) {
 	t.Parallel()
 
-	got := buildSystemPrompt(Request{})
+	got := buildSystemPrompt(Request{TargetLanguage: "vi-VN"})
 	if !strings.Contains(got, "Return only the translated text") {
 		t.Fatalf("expected default policy suffix, got %q", got)
+	}
+	if !strings.Contains(got, "Translate the user-provided source text") {
+		t.Fatalf("expected default translation instruction, got %q", got)
+	}
+	if !strings.Contains(got, "Target language: vi-VN") {
+		t.Fatalf("expected target language in default system prompt, got %q", got)
 	}
 }
 
@@ -45,5 +51,32 @@ func TestBuildUserPromptPrefersUserPrompt(t *testing.T) {
 	})
 	if got != "custom user" {
 		t.Fatalf("expected custom user prompt, got %q", got)
+	}
+}
+
+func TestBuildSystemPromptAppendsRuntimeContextWithDefaultPrompt(t *testing.T) {
+	t.Parallel()
+
+	got := buildSystemPrompt(Request{
+		TargetLanguage: "fr",
+		RuntimeContext: "Entry key: common.hello",
+	})
+	if !strings.Contains(got, "Target language: fr") {
+		t.Fatalf("expected target language in default system prompt, got %q", got)
+	}
+	if !strings.Contains(got, "Runtime translation context (do not translate or repeat):\nEntry key: common.hello") {
+		t.Fatalf("expected runtime context block in system prompt, got %q", got)
+	}
+}
+
+func TestBuildSystemPromptAppendsRuntimeContextWithCustomSystemPrompt(t *testing.T) {
+	t.Parallel()
+
+	got := buildSystemPrompt(Request{
+		SystemPrompt:   "custom system",
+		RuntimeContext: "Entry key: common.hello",
+	})
+	if !strings.HasPrefix(got, "custom system\n\nRuntime translation context (do not translate or repeat):") {
+		t.Fatalf("expected runtime context appended to custom system prompt, got %q", got)
 	}
 }

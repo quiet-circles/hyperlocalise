@@ -182,7 +182,7 @@ func applyLockFilter(planned []Task, completed map[string]lockfile.RunCompletion
 		identity := taskIdentity(task.TargetPath, task.EntryKey)
 		sourceHash := hashSourceText(task.SourceText)
 		if cp, ok := checkpoints[identity]; ok && checkpointMatchesActiveRun(cp, activeRunID) && cp.SourceHash == sourceHash {
-			if err := stageTaskOutput(checkpointStaged, task.TargetPath, task.SourcePath, task.TargetLocale, task.EntryKey, cp.Value, nil); err != nil {
+			if err := stageTaskOutput(checkpointStaged, task.TargetPath, task.SourcePath, task.SourceLocale, task.TargetLocale, task.EntryKey, cp.Value, nil); err != nil {
 				return Report{}, nil, nil, fmt.Errorf("stage checkpoint output for %s: %w", identity, err)
 			}
 		}

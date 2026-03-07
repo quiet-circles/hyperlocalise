@@ -1,6 +1,6 @@
 {
   "checkout.submit": {
-    "defaultMessage": "Đặt hàng",
+    "defaultMessage": "Gửi đơn hàng",
     "description": "Checkout submit button"
   },
   "home.title": {

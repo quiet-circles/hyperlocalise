@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/openai/openai-go/v2"
@@ -21,6 +22,20 @@ func (p fakeProvider) Translate(_ context.Context, _ Request) (string, error) {
 		return "", p.err
 	}
 	return p.result, nil
+}
+
+type captureProvider struct {
+	name string
+	got  *Request
+}
+
+func (p captureProvider) Name() string { return p.name }
+
+func (p captureProvider) Translate(_ context.Context, req Request) (string, error) {
+	if p.got != nil {
+		*p.got = req
+	}
+	return "ok", nil
 }
 
 func TestRegisterRejectsDuplicateProvider(t *testing.T) {
@@ -202,5 +217,37 @@ func TestProviderErrorIsWrapped(t *testing.T) {
 	})
 	if !errors.Is(err, baseErr) {
 		t.Fatalf("expected wrapped provider error")
+	}
+}
+
+func TestTranslateComposesPromptsBeforeProviderCall(t *testing.T) {
+	t.Parallel()
+
+	tool := &Tool{providers: map[string]Provider{}}
+	var got Request
+	if err := tool.Register(captureProvider{name: ProviderOpenAI, got: &got}); err != nil {
+		t.Fatalf("register provider: %v", err)
+	}
+
+	_, err := tool.Translate(context.Background(), Request{
+		Source:         "hello",
+		TargetLanguage: "fr",
+		Model:          "gpt-5",
+		RuntimeContext: "Entry key: common.hello",
+	})
+	if err != nil {
+		t.Fatalf("translate: %v", err)
+	}
+	if got.SystemPrompt == "" || !strings.Contains(got.SystemPrompt, "Target language: fr") {
+		t.Fatalf("expected composed system prompt, got %q", got.SystemPrompt)
+	}
+	if !strings.Contains(got.SystemPrompt, "Runtime translation context (do not translate or repeat):\nEntry key: common.hello") {
+		t.Fatalf("expected runtime context in provider system prompt, got %q", got.SystemPrompt)
+	}
+	if !strings.Contains(got.UserPrompt, "Source text:\nhello") {
+		t.Fatalf("expected composed user prompt, got %q", got.UserPrompt)
+	}
+	if got.RuntimeContext != "" {
+		t.Fatalf("expected runtime context cleared before provider call, got %q", got.RuntimeContext)
 	}
 }

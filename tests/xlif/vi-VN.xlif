@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff version="1.2">
-  <file source-language="vi-VN" datatype="plaintext" original="messages">
+  <file source-language="en-US" datatype="plaintext" original="messages" target-language="vi-VN">
     <body>
       <trans-unit id="common.hello">
-        <source>Xin chào</source>
+        <source>Chào</source>
       </trans-unit>
       <trans-unit id="common.goodbye">
         <source>Tạm biệt</source>
