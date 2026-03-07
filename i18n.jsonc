@@ -145,6 +145,10 @@
     },
   },
   "llm": {
+    "context_memory": {
+      "provider": "ollama",
+      "model": "lfm2:24b",
+    },
     // Profiles define provider/model and optional prompt behavior.
     // A default profile is required.
     // Supported providers: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, ollama.
@@ -152,8 +156,8 @@
     "profiles": {
       "default": {
         // Provider: openai, azure_openai, anthropic, gemini, bedrock, lmstudio, groq, or ollama.
-        "provider": "openai",
-        "model": "gpt-5.2",
+        "provider": "ollama",
+        "model": "translategemma",
         // Optional explicit system message template.
         // "system_prompt": "You are a senior localization expert.",
         // Optional explicit user message template.
@@ -163,7 +167,6 @@
       },
       "ollama": {
         "provider": "ollama",
-        // "model": "hf.co/CohereLabs/tiny-aya-global-GGUF:F16",
         "model": "translategemma",
         // Deprecated legacy prompt template (optional fallback).
         // "prompt": "Translate from {{source}} to {{target}}:\n\n{{input}}",

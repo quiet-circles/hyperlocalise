@@ -1,5 +1,68 @@
+---
+title: "文档发布指南"
+description: "处理 MDX 文本替换，同时保持 JSX、表达式和导入不变。"
+---
+
 import { Callout } from "nextra/components";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# 欢迎
+# 文档发布指南
 
-<Callout type="info">来自 Hyperlocalise 的问候。</Callout>
+<Callout type="warning">
+  Keep `projectId="docs"` unchanged when you update this page.
+</Callout>
+
+<Tabs items={["cli", "api"]}>
+  <Tab value="cli">
+    在发布文档门户之前，请先运行 [md.e15c5f28a16a3477]
+  </Tab>
+  <Tab value="api">
+    API users should keep the token name `HYPERLOCALISE_API_KEY`.
+  </Tab>
+</Tabs>
+
+<Card title="Replacement rules" href="/docs/rules">
+  Replace the sentence, not the `title` prop or `{locale.toUpperCase()}` expression.
+</Card>
+
+<Card
+  title="Nested checks"
+  href="/docs/nested(checks)"
+  icon={<Badge text="beta" />}
+>
+  <Callout type="info">
+    Keep [reference links][mdx-ref] stable and preserve literal text like `MDPH_0_END`.
+  </Callout>
+
+  - First nested item with `hyperlocalise sync pull`
+  - Second nested item with <Badge text="inline" /> markers
+</Card>
+
+Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
+
+Use <Badge text="stable" /> builds when the release branch is frozen.
+
+> 代码块可以包含<Badge text="quoted" />和`inlineCode()`。
+>
+> ![引用图表](https://example.com/assets/quoted(flow).png)
+
+<Steps>
+  <Step title="Prepare">
+    Review the [CLI guide](https://example.com/docs/cli(reference)) before publishing.
+  </Step>
+  <Step
+    title="Publish"
+    icon={<Badge text="go" />}
+  >
+    Ship the docs page and keep `docs/[locale]/index.mdx` untouched.
+  </Step>
+</Steps>
+
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+
+```ts
+export const projectId = "docs";
+```
+
+[mdx-ref]: https://example.com/docs/mdx

@@ -31,7 +31,6 @@ var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
 
 func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, error) {
 	runtimeContext := buildTranslationRuntimeContext(task.EntryKey, task.ContextMemory)
-	systemPrompt := appendRuntimeContextToSystemPrompt(task.SystemPrompt, runtimeContext)
 	userPrompt := task.SourceText
 	if custom := strings.TrimSpace(task.UserPrompt); custom != "" {
 		userPrompt = custom
@@ -42,8 +41,9 @@ func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, er
 		TargetLanguage: task.TargetLocale,
 		ModelProvider:  task.Provider,
 		Model:          task.Model,
-		SystemPrompt:   systemPrompt,
+		SystemPrompt:   task.SystemPrompt,
 		UserPrompt:     userPrompt,
+		RuntimeContext: runtimeContext,
 	}
 
 	return s.translateRequestWithRetry(ctx, request)
@@ -58,20 +58,6 @@ func buildTranslationRuntimeContext(entryKey, sharedMemory string) string {
 		parts = append(parts, "Shared memory:\n"+memory)
 	}
 	return strings.TrimSpace(strings.Join(parts, "\n\n"))
-}
-
-func appendRuntimeContextToSystemPrompt(baseSystemPrompt, runtimeContext string) string {
-	base := strings.TrimSpace(baseSystemPrompt)
-	contextBlock := strings.TrimSpace(runtimeContext)
-	if contextBlock == "" {
-		return base
-	}
-
-	const header = "Runtime translation context (do not translate or repeat):"
-	if base == "" {
-		return header + "\n" + contextBlock
-	}
-	return base + "\n\n" + header + "\n" + contextBlock
 }
 
 func (s *Service) translateRequestWithRetry(ctx context.Context, request translator.Request) (string, error) {

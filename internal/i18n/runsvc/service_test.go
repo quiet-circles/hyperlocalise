@@ -135,9 +135,11 @@ func TestRunLegacyProfilePromptMapsToSystemPrompt(t *testing.T) {
 
 	var gotSystemPrompt string
 	var gotUserPrompt string
+	var gotRuntimeContext string
 	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
 		gotSystemPrompt = req.SystemPrompt
 		gotUserPrompt = req.UserPrompt
+		gotRuntimeContext = req.RuntimeContext
 		return "Bonjour", nil
 	}
 
@@ -148,11 +150,8 @@ func TestRunLegacyProfilePromptMapsToSystemPrompt(t *testing.T) {
 	if !strings.HasPrefix(gotSystemPrompt, "Translate en to fr: Hello") {
 		t.Fatalf("expected legacy prompt mapped to system prompt, got %q", gotSystemPrompt)
 	}
-	if !strings.Contains(gotSystemPrompt, "Runtime translation context (do not translate or repeat):") {
-		t.Fatalf("expected runtime context in system prompt, got %q", gotSystemPrompt)
-	}
-	if !strings.Contains(gotSystemPrompt, "Entry key: hello") {
-		t.Fatalf("expected entry key in system prompt, got %q", gotSystemPrompt)
+	if !strings.Contains(gotRuntimeContext, "Entry key: hello") {
+		t.Fatalf("expected entry key in runtime context, got %q", gotRuntimeContext)
 	}
 	if gotUserPrompt != "Hello" {
 		t.Fatalf("expected source payload in user prompt when not configured, got %q", gotUserPrompt)
@@ -185,8 +184,10 @@ func TestRunSystemPromptOverridesLegacyPrompt(t *testing.T) {
 	}
 
 	var gotSystemPrompt string
+	var gotRuntimeContext string
 	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
 		gotSystemPrompt = req.SystemPrompt
+		gotRuntimeContext = req.RuntimeContext
 		return "Bonjour", nil
 	}
 
@@ -197,8 +198,8 @@ func TestRunSystemPromptOverridesLegacyPrompt(t *testing.T) {
 	if !strings.HasPrefix(gotSystemPrompt, "System translate en->fr: Hello") {
 		t.Fatalf("expected explicit system prompt precedence, got %q", gotSystemPrompt)
 	}
-	if !strings.Contains(gotSystemPrompt, "Entry key: hello") {
-		t.Fatalf("expected entry key in system prompt, got %q", gotSystemPrompt)
+	if !strings.Contains(gotRuntimeContext, "Entry key: hello") {
+		t.Fatalf("expected entry key in runtime context, got %q", gotRuntimeContext)
 	}
 	if strings.Contains(strings.Join(report.Warnings, "\n"), "legacy_prompt profile=default") {
 		t.Fatalf("did not expect legacy prompt warning when system_prompt is set, got %+v", report.Warnings)
@@ -229,9 +230,11 @@ func TestRunPromptAndUserPromptNoLegacyWarningAndUsesUserPrompt(t *testing.T) {
 
 	var gotSystemPrompt string
 	var gotUserPrompt string
+	var gotRuntimeContext string
 	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
 		gotSystemPrompt = req.SystemPrompt
 		gotUserPrompt = req.UserPrompt
+		gotRuntimeContext = req.RuntimeContext
 		return "Bonjour", nil
 	}
 
@@ -242,8 +245,8 @@ func TestRunPromptAndUserPromptNoLegacyWarningAndUsesUserPrompt(t *testing.T) {
 	if !strings.HasPrefix(gotSystemPrompt, "Translate en to fr: Hello") {
 		t.Fatalf("expected legacy prompt to remain system fallback, got %q", gotSystemPrompt)
 	}
-	if !strings.Contains(gotSystemPrompt, "Entry key: hello") {
-		t.Fatalf("expected entry key in system prompt, got %q", gotSystemPrompt)
+	if !strings.Contains(gotRuntimeContext, "Entry key: hello") {
+		t.Fatalf("expected entry key in runtime context, got %q", gotRuntimeContext)
 	}
 	if gotUserPrompt != "Custom user fr: Hello" {
 		t.Fatalf("expected rendered user prompt, got %q", gotUserPrompt)
@@ -3896,7 +3899,7 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 		}
 	}
 
-	seenTranslationSystemPrompts := []string{}
+	seenTranslationRuntimeContexts := []string{}
 	var seenMu sync.Mutex
 	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
 		if strings.HasPrefix(req.UserPrompt, "Representative source entries:") {
@@ -3904,7 +3907,7 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 			return "Terminology: keep onboarding terms consistent.", nil
 		}
 		seenMu.Lock()
-		seenTranslationSystemPrompts = append(seenTranslationSystemPrompts, req.SystemPrompt)
+		seenTranslationRuntimeContexts = append(seenTranslationRuntimeContexts, req.RuntimeContext)
 		seenMu.Unlock()
 		translator.SetUsage(ctx, translator.Usage{PromptTokens: 10, CompletionTokens: 1, TotalTokens: 11})
 		return "FR(" + req.Source + ")", nil
@@ -3930,12 +3933,12 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 	}
 	seenMu.Lock()
 	defer seenMu.Unlock()
-	if len(seenTranslationSystemPrompts) != 2 {
-		t.Fatalf("expected 2 translation requests, got %d", len(seenTranslationSystemPrompts))
+	if len(seenTranslationRuntimeContexts) != 2 {
+		t.Fatalf("expected 2 translation requests, got %d", len(seenTranslationRuntimeContexts))
 	}
-	for _, got := range seenTranslationSystemPrompts {
+	for _, got := range seenTranslationRuntimeContexts {
 		if !strings.Contains(got, "Shared memory:") {
-			t.Fatalf("expected shared memory in translation system prompt, got %q", got)
+			t.Fatalf("expected shared memory in translation runtime context, got %q", got)
 		}
 	}
 }
@@ -4058,8 +4061,8 @@ func TestRunExperimentalContextMemorySummaryFailureFallsBack(t *testing.T) {
 		if strings.HasPrefix(req.UserPrompt, "Representative source entries:") {
 			return "", errors.New("summary unavailable")
 		}
-		if strings.Contains(req.SystemPrompt, "Shared memory:") {
-			t.Fatalf("did not expect shared memory when summary generation fails, got %q", req.SystemPrompt)
+		if strings.Contains(req.RuntimeContext, "Shared memory:") {
+			t.Fatalf("did not expect shared memory when summary generation fails, got %q", req.RuntimeContext)
 		}
 		return "FR(" + req.Source + ")", nil
 	}
@@ -4438,7 +4441,7 @@ func TestRunExperimentalContextMemoryIsSharedAcrossLocales(t *testing.T) {
 			return "MEMORY(shared)", nil
 		}
 
-		if !strings.Contains(req.SystemPrompt, "Shared memory:\nMEMORY(shared)") {
+		if !strings.Contains(req.RuntimeContext, "Shared memory:\nMEMORY(shared)") {
 			mu.Lock()
 			memoryMismatches++
 			mu.Unlock()

@@ -13,9 +13,9 @@
         <key>NSStringFormatValueTypeKey</key>
         <string>d</string>
         <key>one</key>
-        <string>%d mục</string>
+        <string>%d món</string>
         <key>other</key>
-        <string>%d mục</string>
+        <string>%d sản phẩm</string>
       </dict>
     </dict>
   </dict>

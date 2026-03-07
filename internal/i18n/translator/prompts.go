@@ -5,10 +5,19 @@ import "strings"
 func buildSystemPrompt(req Request) string {
 	base := strings.TrimSpace(req.SystemPrompt)
 	if base == "" {
-		return "You are a translation assistant. Return only the translated text with no explanations, labels, markdown, or quotes unless the translated content itself requires them."
+		b := strings.Builder{}
+		b.WriteString("You are a translation assistant. Translate the user-provided source text into the requested target language. Preserve meaning, placeholders, variables, and formatting. Return only the translated text with no explanations, labels, markdown, or quotes unless the translated content itself requires them.")
+
+		target := strings.TrimSpace(req.TargetLanguage)
+		if target != "" {
+			b.WriteString("\nTarget language: ")
+			b.WriteString(target)
+		}
+
+		base = b.String()
 	}
 
-	return base
+	return appendRuntimeContextToSystemPrompt(base, req.RuntimeContext)
 }
 
 func buildUserPrompt(req Request) string {
@@ -25,4 +34,18 @@ func buildUserPrompt(req Request) string {
 	b.WriteString("Source text:\n")
 	b.WriteString(req.Source)
 	return b.String()
+}
+
+func appendRuntimeContextToSystemPrompt(baseSystemPrompt, runtimeContext string) string {
+	base := strings.TrimSpace(baseSystemPrompt)
+	contextBlock := strings.TrimSpace(runtimeContext)
+	if contextBlock == "" {
+		return base
+	}
+
+	const header = "Runtime translation context (do not translate or repeat):"
+	if base == "" {
+		return header + "\n" + contextBlock
+	}
+	return base + "\n\n" + header + "\n" + contextBlock
 }

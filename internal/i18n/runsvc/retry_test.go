@@ -59,9 +59,11 @@ func TestTranslateWithRetryBuildsRequestWithoutContextMemory(t *testing.T) {
 	if got.ModelProvider != "openai" || got.Model != "gpt-4.1" {
 		t.Fatalf("request model provider/model mismatch: %+v", got)
 	}
-	wantSystem := "system\n\nRuntime translation context (do not translate or repeat):\nEntry key: checkout.title"
-	if got.SystemPrompt != wantSystem || got.UserPrompt != "user" {
+	if got.SystemPrompt != "system" || got.UserPrompt != "user" {
 		t.Fatalf("request prompts mismatch: %+v", got)
+	}
+	if got.RuntimeContext != "Entry key: checkout.title" {
+		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, "Entry key: checkout.title")
 	}
 }
 
@@ -85,9 +87,12 @@ func TestTranslateWithRetryBuildsRequestWithContextMemory(t *testing.T) {
 		t.Fatalf("translateWithRetry returned error: %v", err)
 	}
 
-	wantSystem := "Runtime translation context (do not translate or repeat):\nEntry key: checkout.title\n\nShared memory:\nShared context"
-	if got.SystemPrompt != wantSystem {
-		t.Fatalf("request system prompt = %q, want %q", got.SystemPrompt, wantSystem)
+	wantRuntime := "Entry key: checkout.title\n\nShared memory:\nShared context"
+	if got.SystemPrompt != "" {
+		t.Fatalf("request system prompt = %q, want empty string", got.SystemPrompt)
+	}
+	if got.RuntimeContext != wantRuntime {
+		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, wantRuntime)
 	}
 	if got.UserPrompt != "Checkout" {
 		t.Fatalf("request user prompt = %q, want Checkout", got.UserPrompt)
@@ -116,6 +121,9 @@ func TestTranslateWithRetryBuildsRequestWithEmptyEntryKey(t *testing.T) {
 	if got.SystemPrompt != "" {
 		t.Fatalf("request system prompt = %q, want empty string", got.SystemPrompt)
 	}
+	if got.RuntimeContext != "" {
+		t.Fatalf("request runtime context = %q, want empty string", got.RuntimeContext)
+	}
 	if got.UserPrompt != "Hello" {
 		t.Fatalf("request user prompt = %q, want Hello", got.UserPrompt)
 	}
@@ -140,9 +148,12 @@ func TestTranslateWithRetryBuildsRequestWithEmptyEntryKeyAndContextMemory(t *tes
 	if err != nil {
 		t.Fatalf("translateWithRetry returned error: %v", err)
 	}
-	wantSystem := "Runtime translation context (do not translate or repeat):\nShared memory:\nShared context"
-	if got.SystemPrompt != wantSystem {
-		t.Fatalf("request system prompt = %q, want %q", got.SystemPrompt, wantSystem)
+	wantRuntime := "Shared memory:\nShared context"
+	if got.SystemPrompt != "" {
+		t.Fatalf("request system prompt = %q, want empty string", got.SystemPrompt)
+	}
+	if got.RuntimeContext != wantRuntime {
+		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, wantRuntime)
 	}
 	if got.UserPrompt != "Hello" {
 		t.Fatalf("request user prompt = %q, want Hello", got.UserPrompt)
@@ -169,14 +180,14 @@ func TestTranslateWithRetrySanitizesEntryKeyInSystemPromptContext(t *testing.T) 
 	if err != nil {
 		t.Fatalf("translateWithRetry returned error: %v", err)
 	}
-	if !strings.HasPrefix(got.SystemPrompt, "Runtime translation context (do not translate or repeat):\nEntry key: ") {
-		t.Fatalf("unexpected system prompt prefix: %q", got.SystemPrompt)
+	if got.RuntimeContext == "" {
+		t.Fatalf("expected runtime context to be populated")
 	}
-	if strings.Contains(got.SystemPrompt, "\r") || strings.Contains(got.SystemPrompt, "\nnext") {
-		t.Fatalf("expected entry key newlines to be stripped in system prompt, got %q", got.SystemPrompt)
+	if strings.Contains(got.RuntimeContext, "\r") || strings.Contains(got.RuntimeContext, "\nnext") {
+		t.Fatalf("expected entry key newlines to be stripped in runtime context, got %q", got.RuntimeContext)
 	}
 
-	entryLine := strings.TrimPrefix(got.SystemPrompt, "Runtime translation context (do not translate or repeat):\nEntry key: ")
+	entryLine := strings.TrimPrefix(got.RuntimeContext, "Entry key: ")
 	if len([]rune(entryLine)) > maxScopeIdentifierLen {
 		t.Fatalf("expected entry key to be capped at %d runes, got %d", maxScopeIdentifierLen, len([]rune(entryLine)))
 	}

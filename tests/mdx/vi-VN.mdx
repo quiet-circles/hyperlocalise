@@ -1,5 +1,68 @@
+---
+title: "Hướng dẫn phát hành tài liệu"
+description: "Xử lý thay thế văn bản MDX mà không làm ảnh hưởng đến JSX, biểu thức hoặc import."
+---
+
 import { Callout } from "nextra/components";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# Chào mừng
+# Hướng dẫn khởi chạy tài liệu
 
-<Callout type="info">Xin chào từ Hyperlocalise.</Callout>
+<Callout type="warning">
+  Keep `projectId="docs"` unchanged when you update this page.
+</Callout>
+
+<Tabs items={["cli", "api"]}>
+  <Tab value="cli">
+    Vui lòng chạy [md.e15c5f28a16a3477] trước khi xuất bản cổng tài liệu.
+  </Tab>
+  <Tab value="api">
+    API users should keep the token name `HYPERLOCALISE_API_KEY`.
+  </Tab>
+</Tabs>
+
+<Card title="Replacement rules" href="/docs/rules">
+  Thay thế câu, chứ không thay thế thuộc tính [md.b5c6d7dc0db82f71] hoặc biểu thức [md.b5c6d7dc0db82f71].
+</Card>
+
+<Card
+  title="Nested checks"
+  href="/docs/nested(checks)"
+  icon={<Badge text="beta" />}
+>
+  <Callout type="info">
+    Keep [reference links][mdx-ref] stable and preserve literal text like `MDPH_0_END`.
+  </Callout>
+
+  - First nested item with `hyperlocalise sync pull`
+  - Second nested item with <Badge text="inline" /> markers
+</Card>
+
+Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
+
+Use <Badge text="stable" /> builds when the release branch is frozen.
+
+> Đoạn trích dẫn có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
+>
+> ![Biểu đồ trích dẫn](https://example.com/assets/quoted(flow).png)
+
+<Steps>
+  <Step title="Prepare">
+    Review the [CLI guide](https://example.com/docs/cli(reference)) before publishing.
+  </Step>
+  <Step
+    title="Publish"
+    icon={<Badge text="go" />}
+  >
+    Gửi trang tài liệu và giữ lại [md.04d61b99d0f1d0b1] không bị thay đổi.
+  </Step>
+</Steps>
+
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+> Repeat this warning: preserve `href="/docs/rules"` exactly.
+
+```ts
+export const projectId = "docs";
+```
+
+[mdx-ref]: https://example.com/docs/mdx

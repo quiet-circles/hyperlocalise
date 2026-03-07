@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Tool struct {
@@ -76,10 +77,19 @@ func (t *Tool) Translate(ctx context.Context, req Request) (string, error) {
 		return "", fmt.Errorf("translate: unknown model provider %q", providerName)
 	}
 
+	systemPrompt := buildSystemPrompt(req)
+	userPrompt := buildUserPrompt(req)
+	logPromptCall(req, providerName, systemPrompt, userPrompt)
+
+	start := time.Now()
 	translated, err := provider.Translate(ctx, req)
+	duration := time.Since(start)
 	if err != nil {
+		logPromptResult(req, providerName, "", err, duration)
 		return "", fmt.Errorf("translate with provider %q: %w", providerName, err)
 	}
 
-	return strings.TrimSpace(translated), nil
+	translated = strings.TrimSpace(translated)
+	logPromptResult(req, providerName, translated, nil, duration)
+	return translated, nil
 }
