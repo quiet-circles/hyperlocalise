@@ -564,6 +564,7 @@ Luu y cuoi cung: "Tom tat dong bo" phai khop giua danh sach kiem tra va bao cao.
 
 	t.Run("mdx", func(t *testing.T) {
 		source := readFixture(t, "tests/mdx/en-US.mdx")
+		brokenTarget := readFixture(t, "tests/mdx/zh-CN.mdx")
 		target := []byte(`---
 title: "So tay phat hanh tai lieu"
 description: "Xu ly thay the van ban MDX ma khong dong vao JSX, bieu thuc hoac import."
@@ -670,6 +671,55 @@ export const projectId = "docs";
 		}
 		if !strings.Contains(output, "```ts\nexport const projectId = \"docs\";\n```") {
 			t.Fatalf("expected fenced code block preserved, got %q", output)
+		}
+
+		brokenOutput := string(MarshalMarkdownWithTargetFallback(source, brokenTarget, map[string]string{}))
+		if !strings.Contains(brokenOutput, "[mdx-ref]: https://example.com/docs/mdx(reference)") {
+			t.Fatalf("expected source mdx reference destination used when target destination changed, got %q", brokenOutput)
+		}
+	})
+}
+
+func TestMarshalMarkdownWithTargetFallbackPreservesSourceReferenceDefinitionDestination(t *testing.T) {
+	source := []byte("See [docs][mdx-ref].\n\n[mdx-ref]: https://example.com/docs/mdx(reference)\n")
+	target := []byte("Xem [tai lieu][mdx-ref].\n\n[mdx-ref]: https://example.com/docs/mdx(ban-dich)\n")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if !strings.Contains(output, "Xem [tai lieu][mdx-ref].") {
+		t.Fatalf("expected translated reference link text preserved, got %q", output)
+	}
+	if !strings.Contains(output, "[mdx-ref]: https://example.com/docs/mdx(reference)") {
+		t.Fatalf("expected source reference destination preserved, got %q", output)
+	}
+}
+
+func TestMarshalMarkdownWithTargetFallbackFixturesRepairDanglingInlineLinkClosersFromZhCNDocs(t *testing.T) {
+	t.Run("workflows/local-generation", func(t *testing.T) {
+		source := readFixture(t, "docs/workflows/local-generation.mdx")
+		target := readFixture(t, "docs/zh-CN/workflows/local-generation.mdx")
+
+		output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+		if strings.Contains(output, "[锁文件合约](/reference/lockfile-contract)]") {
+			t.Fatalf("expected dangling bracket after inline link repaired, got %q", output)
+		}
+		if !strings.Contains(output, "[锁文件合约](/reference/lockfile-contract)") {
+			t.Fatalf("expected reconstructed inline link destination preserved, got %q", output)
+		}
+	})
+
+	t.Run("index/common-next-steps", func(t *testing.T) {
+		source := readFixture(t, "docs/index.mdx")
+		target := readFixture(t, "docs/zh-CN/index.mdx")
+
+		output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+		if strings.Contains(output, "[命令概览](/commands/overview)].") {
+			t.Fatalf("expected dangling bracket repaired for commands overview link, got %q", output)
+		}
+		if strings.Contains(output, "[提供商凭据](/configuration/provider-credentials)]") {
+			t.Fatalf("expected dangling bracket repaired for provider credentials link, got %q", output)
+		}
+		if strings.Contains(output, "[稳定性矩阵](/reference/stability-matrix)]") {
+			t.Fatalf("expected dangling bracket repaired for stability matrix link, got %q", output)
 		}
 	})
 }
