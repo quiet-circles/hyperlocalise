@@ -1,12 +1,12 @@
 ---
-title: "文档发布指南"
-description: "处理 MDX 文本替换，同时保持 JSX、表达式和导入不变。"
+title: "文档发布流程"
+description: "在不修改 JSX、表达式或导入的情况下，处理 MDX 段落替换。"
 ---
 
 import { Callout } from "nextra/components";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# 文档发布指南
+# 发布文档操作指南
 
 <Callout type="warning">
   Keep `projectId="docs"` unchanged when you update this page.
@@ -14,7 +14,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 <Tabs items={["cli", "api"]}>
   <Tab value="cli">
-    在发布文档门户之前，请先运行 [md.e15c5f28a16a3477]
+    Run `hyperlocalise status --verbose` before publishing the docs portal.
   </Tab>
   <Tab value="api">
     API users should keep the token name `HYPERLOCALISE_API_KEY`.
@@ -22,7 +22,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 </Tabs>
 
 <Card title="Replacement rules" href="/docs/rules">
-  Replace the sentence, not the `title` prop or `{locale.toUpperCase()}` expression.
+  替换句子，而不是 `title` 属性或 `{locale.toUpperCase()}` 表达式。
 </Card>
 
 <Card
@@ -35,26 +35,26 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
   </Callout>
 
   - First nested item with `hyperlocalise sync pull`
-  - Second nested item with <Badge text="inline" /> markers
+  - 第二个嵌套项目，包含<Badge text="inline" />标记
 </Card>
 
-Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
+备用路由：{locale === "vi-VN" ? "/vi-VN" : "/"} 在运行时计算。
 
-Use <Badge text="stable" /> builds when the release branch is frozen.
+当发布分支冻结时，<Badge text="stable" /> 才能构建。
 
-> 代码块可以包含<Badge text="quoted" />和`inlineCode()`。
+> 代码块可以包含 <Badge text="quoted" /> 和 `inlineCode()`。
 >
 > ![引用图表](https://example.com/assets/quoted(flow).png)
 
 <Steps>
   <Step title="Prepare">
-    Review the [CLI guide](https://example.com/docs/cli(reference)) before publishing.
+    在发布之前，请查看 [CLI 指南](https://example.com/docs/cli(reference))]。
   </Step>
   <Step
     title="Publish"
     icon={<Badge text="go" />}
   >
-    Ship the docs page and keep `docs/[locale]/index.mdx` untouched.
+    发布文档页面，并保留`docs/[locale]/index.mdx`不变。
   </Step>
 </Steps>
 
@@ -65,4 +65,4 @@ Use <Badge text="stable" /> builds when the release branch is frozen.
 export const projectId = "docs";
 ```
 
-[mdx-ref]: https://example.com/docs/mdx
+[mdx-ref]: https://example.com/docs/mdx(参考)

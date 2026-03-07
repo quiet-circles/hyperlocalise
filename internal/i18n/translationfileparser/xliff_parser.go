@@ -183,7 +183,7 @@ func attrValue(attrs []xml.Attr, name string) string {
 
 // MarshalXLIFF rewrites XLIFF source/target text using values keyed by unit id/name/resname.
 // If a unit has <target>, only target text is updated; otherwise source text is updated.
-func MarshalXLIFF(template []byte, values map[string]string, targetLocale string) ([]byte, error) {
+func MarshalXLIFF(template []byte, values map[string]string, sourceLocale, targetLocale string) ([]byte, error) {
 	// TODO: XLIFF 2.x units may contain multiple segments. We currently rewrite at
 	// the unit-level by replacing the active source/target element content in stream
 	// order, rather than aligning translations per segment.
@@ -218,7 +218,7 @@ func MarshalXLIFF(template []byte, values map[string]string, targetLocale string
 
 		switch t := tok.(type) {
 		case xml.StartElement:
-			t = rewriteXLIFFLocaleAttrs(t, targetLocale)
+			t = rewriteXLIFFLocaleAttrs(t, sourceLocale, targetLocale)
 			if textState != nil {
 				textState.depth++
 				if textState.replace && textState.hasValue {
@@ -396,20 +396,29 @@ func collectXLIFFUnitTargets(template []byte) (map[string]bool, error) {
 	}
 }
 
-func rewriteXLIFFLocaleAttrs(start xml.StartElement, locale string) xml.StartElement {
-	loc := strings.TrimSpace(locale)
-	if loc == "" {
+func rewriteXLIFFLocaleAttrs(start xml.StartElement, sourceLocale, targetLocale string) xml.StartElement {
+	src := strings.TrimSpace(sourceLocale)
+	trg := strings.TrimSpace(targetLocale)
+	if src == "" && trg == "" {
 		return start
 	}
 
 	switch start.Name.Local {
 	case "file":
-		if attrValue(start.Attr, "source-language") != "" {
-			start.Attr = upsertXLIFFAttr(start.Attr, "target-language", loc)
+		if src != "" {
+			start.Attr = upsertXLIFFAttr(start.Attr, "source-language", src)
+		}
+		if trg != "" && attrValue(start.Attr, "source-language") != "" {
+			start.Attr = upsertXLIFFAttr(start.Attr, "target-language", trg)
 		}
 	case "xliff":
 		if isXLIFF20Root(start.Attr) {
-			start.Attr = upsertXLIFFAttr(start.Attr, "trgLang", loc)
+			if src != "" {
+				start.Attr = upsertXLIFFAttr(start.Attr, "srcLang", src)
+			}
+			if trg != "" {
+				start.Attr = upsertXLIFFAttr(start.Attr, "trgLang", trg)
+			}
 		}
 	}
 	return start

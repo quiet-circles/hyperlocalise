@@ -1,12 +1,12 @@
 ---
-title: "Hướng dẫn phát hành tài liệu"
-description: "Xử lý thay thế văn bản MDX mà không làm ảnh hưởng đến JSX, biểu thức hoặc import."
+title: "Kế hoạch phát hành tài liệu"
+description: "Xử lý thay thế văn bản MDX mà không làm thay đổi JSX, biểu thức hoặc import."
 ---
 
 import { Callout } from "nextra/components";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# Hướng dẫn khởi chạy tài liệu
+# Kế hoạch ra mắt tài liệu
 
 <Callout type="warning">
   Keep `projectId="docs"` unchanged when you update this page.
@@ -14,7 +14,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 <Tabs items={["cli", "api"]}>
   <Tab value="cli">
-    Vui lòng chạy [md.e15c5f28a16a3477] trước khi xuất bản cổng tài liệu.
+    Run `hyperlocalise status --verbose` before publishing the docs portal.
   </Tab>
   <Tab value="api">
     API users should keep the token name `HYPERLOCALISE_API_KEY`.
@@ -22,7 +22,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 </Tabs>
 
 <Card title="Replacement rules" href="/docs/rules">
-  Thay thế câu, chứ không thay thế thuộc tính [md.b5c6d7dc0db82f71] hoặc biểu thức [md.b5c6d7dc0db82f71].
+  Replace the sentence, not the `title` prop or `{locale.toUpperCase()}` expression.
 </Card>
 
 <Card
@@ -44,17 +44,17 @@ Use <Badge text="stable" /> builds when the release branch is frozen.
 
 > Đoạn trích dẫn có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
 >
-> ![Biểu đồ trích dẫn](https://example.com/assets/quoted(flow).png)
+> ![Hình ảnh sơ đồ](https://example.com/assets/quoted(flow).png)
 
 <Steps>
   <Step title="Prepare">
-    Review the [CLI guide](https://example.com/docs/cli(reference)) before publishing.
+    Xem lại [Hướng dẫn CLI](https://example.com/docs/cli(reference)) trước khi xuất bản.
   </Step>
   <Step
     title="Publish"
     icon={<Badge text="go" />}
   >
-    Gửi trang tài liệu và giữ lại [md.04d61b99d0f1d0b1] không bị thay đổi.
+    Ship the docs page and keep `docs/[locale]/index.mdx` untouched.
   </Step>
 </Steps>
 
@@ -65,4 +65,4 @@ Use <Badge text="stable" /> builds when the release branch is frozen.
 export const projectId = "docs";
 ```
 
-[mdx-ref]: https://example.com/docs/mdx
+[mdx-ref]: https://example.com/docs/mdx(tham khảo)

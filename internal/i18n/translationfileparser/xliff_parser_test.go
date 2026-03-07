@@ -40,7 +40,7 @@ func TestMarshalXLIFFReplacesTargetWhenPresent(t *testing.T) {
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestMarshalXLIFFPreservesInlineMarkupWhenReplacingTarget(t *testing.T) {
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": `Bonjour <ph id="1"></ph> monde`}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": `Bonjour <ph id="1"></ph> monde`}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestMarshalXLIFF20PreservesSrcLangAndRewritesTrgLang(t *testing.T) {
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestMarshalXLIFFAddsMissingTargetLocaleAttrs(t *testing.T) {
   </file>
 </xliff>`)
 
-	out12, err := MarshalXLIFF(xliff12, map[string]string{"hello": "Bonjour"}, "fr-FR")
+	out12, err := MarshalXLIFF(xliff12, map[string]string{"hello": "Bonjour"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff 1.2: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestMarshalXLIFFAddsMissingTargetLocaleAttrs(t *testing.T) {
   </file>
 </xliff>`)
 
-	out20, err := MarshalXLIFF(xliff20, map[string]string{"hello": "Bonjour"}, "fr-FR")
+	out20, err := MarshalXLIFF(xliff20, map[string]string{"hello": "Bonjour"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff 2.0: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestMarshalXLIFFReplacesSourceWhenTargetMissing(t *testing.T) {
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": "Bonjour"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestMarshalXLIFFReplacesSourceWithInlineMarkupWhenTargetMissing(t *testing.
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": `Bonjour <g id="1">monde</g>`}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": `Bonjour <g id="1">monde</g>`}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestMarshalXLIFFEscapesPlainTextReplacementWhenFragmentInvalid(t *testing.T
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"math": "2 < 3 & 4"}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"math": "2 < 3 & 4"}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -239,7 +239,7 @@ func TestMarshalXLIFFClearsTargetWhenReplacementEmpty(t *testing.T) {
   </file>
 </xliff>`)
 
-	out, err := MarshalXLIFF(template, map[string]string{"hello": ""}, "fr-FR")
+	out, err := MarshalXLIFF(template, map[string]string{"hello": ""}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -391,7 +391,7 @@ func TestMarshalXLIFFSupportsNameAndResnameFallbackKeys(t *testing.T) {
 	out, err := MarshalXLIFF(template, map[string]string{
 		"welcome": "Bienvenue",
 		"goodbye": "Au revoir",
-	}, "fr-FR")
+	}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestMarshalXLIFFPreservesInlineMarkupWithNamespaceReplacement(t *testing.T)
 
 	out, err := MarshalXLIFF(template, map[string]string{
 		"hello": `Bonjour <ph xmlns="urn:test:inline" id="1"></ph> monde`,
-	}, "fr-FR")
+	}, "en-US", "fr-FR")
 	if err != nil {
 		t.Fatalf("marshal xliff: %v", err)
 	}
@@ -450,5 +450,32 @@ func TestMarshalXLIFFPreservesInlineMarkupWithNamespaceReplacement(t *testing.T)
 	content := string(out)
 	if !strings.Contains(content, `<target>Bonjour `) || !strings.Contains(content, `<ph xmlns="urn:test:inline"`) || !strings.Contains(content, `id="1"></ph> monde</target>`) {
 		t.Fatalf("expected namespace-qualified inline replacement preserved, got %q", content)
+	}
+}
+
+func TestMarshalXLIFFOverridesWrongSourceLanguageFromTemplate(t *testing.T) {
+	template := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2">
+  <file source-language="vi-VN" target-language="vi-VN" datatype="plaintext" original="messages">
+    <body>
+      <trans-unit id="hello">
+        <source>Hello</source>
+        <target>Hello</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`)
+
+	out, err := MarshalXLIFF(template, map[string]string{"hello": "Xin chao"}, "en-US", "vi-VN")
+	if err != nil {
+		t.Fatalf("marshal xliff: %v", err)
+	}
+
+	content := string(out)
+	if !strings.Contains(content, `source-language="en-US"`) {
+		t.Fatalf("expected source-language rewritten from configured source locale, got %q", content)
+	}
+	if !strings.Contains(content, `target-language="vi-VN"`) {
+		t.Fatalf("expected target-language to match target locale, got %q", content)
 	}
 }

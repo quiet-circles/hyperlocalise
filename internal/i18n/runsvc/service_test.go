@@ -2723,7 +2723,7 @@ func TestMarshalTargetFileDispatchParity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		content, warnings, err := svc.marshalTargetFile(tc.target, tc.source, "fr", map[string]string{"hello": "Bonjour"}, map[string]string{"hello": "Bonjour"}, nil)
+		content, warnings, err := svc.marshalTargetFile(tc.target, tc.source, "en", "fr", map[string]string{"hello": "Bonjour"}, map[string]string{"hello": "Bonjour"}, nil)
 		if err != nil {
 			t.Fatalf("marshal %s: %v", tc.target, err)
 		}
@@ -2768,7 +2768,7 @@ func TestMarshalTargetFileJSONPrefersValidTargetTemplateAndPreservesMetadata(t *
 		}
 	}
 
-	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", map[string]string{
+	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", map[string]string{
 		"checkout.title":    "Titre caisse",
 		"checkout.cta":      "Valider",
 		"checkout.subtitle": "Paiement sécurisé",
@@ -2829,7 +2829,7 @@ func TestMarshalTargetFileJSONFallsBackToSourceTemplateWhenTargetMissingOrUnpars
 		}
 	}
 
-	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", map[string]string{
+	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", map[string]string{
 		"home.title": "Bienvenue",
 	}, map[string]string{
 		"home.title": "Bienvenue",
@@ -2861,7 +2861,7 @@ func TestMarshalTargetFileJSONFallsBackToSourceTemplateWhenTargetMissingOrUnpars
 			return nil, os.ErrNotExist
 		}
 	}
-	content, _, err = svc.marshalTargetFile(targetPath, sourcePath, "fr", map[string]string{
+	content, _, err = svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", map[string]string{
 		"home.title": "Bienvenue",
 	}, map[string]string{
 		"home.title": "Bienvenue",
@@ -2913,7 +2913,7 @@ func TestMarshalTargetFileJSONPruneRemovesStaleStringsAndPreservesNonStrings(t *
 		"hello":        {},
 		"nested.title": {},
 	}
-	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", values, values, pruneKeys)
+	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", values, values, pruneKeys)
 	if err != nil {
 		t.Fatalf("marshal target file with prune: %v", err)
 	}
@@ -2969,7 +2969,7 @@ func TestMarshalTargetFileJSONReturnsBothErrorsWhenTargetAndSourceTemplatesFail(
 		}
 	}
 
-	_, _, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"}, map[string]string{"hello": "Salut"}, nil)
+	_, _, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"}, map[string]string{"hello": "Salut"}, nil)
 	if err == nil {
 		t.Fatalf("expected marshal error when both templates are invalid")
 	}
@@ -3014,7 +3014,7 @@ func TestMarshalTargetFileFormatJSPruneKeepsValidUntranslatedEntries(t *testing.
 		"a": {},
 		"b": {},
 	}
-	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", values, values, pruneKeys)
+	content, _, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", values, values, pruneKeys)
 	if err != nil {
 		t.Fatalf("marshal target file formatjs prune: %v", err)
 	}
@@ -3060,7 +3060,7 @@ func TestMarshalTargetFileReportsMarkdownPlaceholderFallbackWarning(t *testing.T
 		key, value = k, v
 	}
 
-	content, warnings, err := svc.marshalTargetFile(targetPath, sourcePath, "fr", map[string]string{key: strings.Replace(value, "HLMDPH_", "NOTPH_", 1)}, map[string]string{key: strings.Replace(value, "HLMDPH_", "NOTPH_", 1)}, nil)
+	content, warnings, err := svc.marshalTargetFile(targetPath, sourcePath, "en", "fr", map[string]string{key: strings.Replace(value, "HLMDPH_", "NOTPH_", 1)}, map[string]string{key: strings.Replace(value, "HLMDPH_", "NOTPH_", 1)}, nil)
 	if err != nil {
 		t.Fatalf("marshal markdown target: %v", err)
 	}
@@ -3105,7 +3105,7 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForXLIFFWhenAllKeysPres
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3138,7 +3138,7 @@ msgstr "Bonjour"
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3165,7 +3165,7 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForStringsWhenAllKeysPr
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3206,7 +3206,7 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForStringsdictWhenAllKe
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3245,7 +3245,7 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForARBWhenAllKeysPresen
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".arb", targetPath, sourcePath, "fr", map[string]string{"hello": "Salut"})
+	content, err := svc.marshalSourceTemplateTarget(".arb", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Salut"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3292,7 +3292,7 @@ msgstr "Supprimer"
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{"keep": "Garder"})
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "en", "fr", map[string]string{"keep": "Garder"})
 	if err != nil {
 		t.Fatalf("marshal source-template target: %v", err)
 	}
@@ -3330,7 +3330,7 @@ msgstr "Supprimer"
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "en", "fr", map[string]string{
 		"keep":    "Garder",
 		"new_key": "Nouvelle valeur",
 	})
@@ -3369,7 +3369,7 @@ msgstr "New value"
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "en", "fr", map[string]string{
 		"keep":    "Garder",
 		"new_key": "Nouvelle valeur",
 	})
@@ -3418,7 +3418,7 @@ func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForXLIFF(t *testing.T) {
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "fr", map[string]string{
+	content, err := svc.marshalSourceTemplateTarget(".xlf", targetPath, sourcePath, "en", "fr", map[string]string{
 		"keep":    "Garder",
 		"new_key": "Nouvelle valeur",
 	})
@@ -3455,7 +3455,7 @@ func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForStrings(t *testing.T)
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "fr", map[string]string{
+	content, err := svc.marshalSourceTemplateTarget(".strings", targetPath, sourcePath, "en", "fr", map[string]string{
 		"keep":    "Garder",
 		"new_key": "Nouvelle valeur",
 	})
@@ -3504,7 +3504,7 @@ func TestMarshalSourceTemplateTargetDeletesAndInsertsKeyForStringsdict(t *testin
 		}
 	}
 
-	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "fr", map[string]string{
+	content, err := svc.marshalSourceTemplateTarget(".stringsdict", targetPath, sourcePath, "en", "fr", map[string]string{
 		"keep":    "Garder",
 		"new_key": "Nouvelle valeur",
 	})

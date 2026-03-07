@@ -80,6 +80,9 @@ func (t *Tool) Translate(ctx context.Context, req Request) (string, error) {
 	systemPrompt := buildSystemPrompt(req)
 	userPrompt := buildUserPrompt(req)
 	logPromptCall(req, providerName, systemPrompt, userPrompt)
+	req.SystemPrompt = systemPrompt
+	req.UserPrompt = userPrompt
+	req.RuntimeContext = ""
 
 	start := time.Now()
 	translated, err := provider.Translate(ctx, req)

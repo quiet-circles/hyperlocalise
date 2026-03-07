@@ -57,7 +57,7 @@ func (s *Service) flushOutputForTarget(targetPath string, output stagedOutput, k
 		}
 	}
 
-	content, warnings, err := s.marshalTargetFile(targetPath, output.sourcePath, output.targetLocale, values, output.entries, keep)
+	content, warnings, err := s.marshalTargetFile(targetPath, output.sourcePath, output.sourceLocale, output.targetLocale, values, output.entries, keep)
 	if err != nil {
 		return nil, err
 	}

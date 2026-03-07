@@ -12,7 +12,7 @@ import (
 
 func TestMarshalTargetFileUnsupportedExtension(t *testing.T) {
 	svc := newTestService()
-	_, _, err := svc.marshalTargetFile("/tmp/out.txt", "/tmp/src.txt", "fr", map[string]string{"hello": "Bonjour"}, nil, nil)
+	_, _, err := svc.marshalTargetFile("/tmp/out.txt", "/tmp/src.txt", "en", "fr", map[string]string{"hello": "Bonjour"}, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported target file extension") {
 		t.Fatalf("expected unsupported extension error, got %v", err)
 	}
@@ -30,7 +30,7 @@ func TestMarshalTemplateBasedTargetUnsupportedExtension(t *testing.T) {
 			return nil, os.ErrNotExist
 		}
 	}
-	_, _, err := svc.marshalTemplateBasedTarget(".bin", "/tmp/target.bin", "/tmp/source.bin", "fr", nil, nil)
+	_, _, err := svc.marshalTemplateBasedTarget(".bin", "/tmp/target.bin", "/tmp/source.bin", "en", "fr", nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported target file extension") {
 		t.Fatalf("expected unsupported extension error, got %v", err)
 	}
@@ -167,7 +167,7 @@ func TestMarshalSourceTemplateTargetFallsBackToSourceOnKeyMismatch(t *testing.T)
 
 	svc := newTestService()
 	svc.readFile = os.ReadFile
-	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "fr", map[string]string{"hello": "Bonjour"})
+	content, err := svc.marshalSourceTemplateTarget(".po", targetPath, sourcePath, "en", "fr", map[string]string{"hello": "Bonjour"})
 	if err != nil {
 		t.Fatalf("marshal source template target: %v", err)
 	}
