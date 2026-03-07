@@ -2,11 +2,13 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/config"
+	"gorm.io/gorm"
 )
 
 func TestNewFromConfigDisabled(t *testing.T) {
@@ -162,5 +164,54 @@ func TestL1PutPersistsMetadataColumns(t *testing.T) {
 	}
 	if row.SourceLocale != "en-US" || row.TargetLocale != "fr-FR" || row.Provider != "openai" || row.Model != "gpt-5.2" || row.SourceHash != "source-hash" {
 		t.Fatalf("unexpected metadata row: %+v", row)
+	}
+}
+
+func TestL1GetReturnsCachedValueEvenWhenTouchUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	dbPath := filepath.Join(t.TempDir(), "cache.sqlite")
+	svc, err := NewFromConfig(config.CacheConfig{
+		Enabled: true,
+		DBPath:  dbPath,
+		SQLite:  config.CacheSQLiteConfig{MaxOpenConns: 1, MaxIdleConns: 1, ConnMaxLifetime: 5},
+		L1:      config.CacheTierConfig{Enabled: true, MaxItems: 10},
+	})
+	if err != nil {
+		t.Fatalf("new cache service: %v", err)
+	}
+	t.Cleanup(func() { _ = svc.Close() })
+
+	if err := svc.L1.Put(context.Background(), ExactCacheWrite{
+		Key:          "k-touch-fail",
+		Value:        "v-touch-fail",
+		SourceLocale: "en",
+		TargetLocale: "fr",
+		Provider:     "openai",
+		Model:        "gpt",
+		SourceHash:   "hash",
+	}); err != nil {
+		t.Fatalf("seed cache entry: %v", err)
+	}
+
+	callbackName := "test:force_touch_update_failure"
+	if err := svc.db.Callback().Update().Before("gorm:update").Register(callbackName, func(db *gorm.DB) {
+		db.AddError(errors.New("forced update failure"))
+	}); err != nil {
+		t.Fatalf("register update callback: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = svc.db.Callback().Update().Remove(callbackName)
+	})
+
+	value, hit, err := svc.L1.Get(context.Background(), "k-touch-fail")
+	if err != nil {
+		t.Fatalf("get cache entry: %v", err)
+	}
+	if !hit {
+		t.Fatal("expected cache hit")
+	}
+	if value != "v-touch-fail" {
+		t.Fatalf("value=%q, want %q", value, "v-touch-fail")
 	}
 }

@@ -342,11 +342,7 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 								GroupName:       groupName,
 								BucketName:      bucketName,
 								ParserMode:      parserMode,
-								PromptVersion: cacheHash(strings.Join([]string{
-									"profile=" + profileName,
-									"provider=" + profile.Provider,
-									"model=" + profile.Model,
-									"legacy=" + fmt.Sprintf("%t", legacyPromptUsed),
+								PromptVersion: hashSourceText(strings.Join([]string{
 									"prompt_template=" + strings.TrimSpace(profile.Prompt),
 									"system_template=" + strings.TrimSpace(profile.SystemPrompt),
 									"user_template=" + strings.TrimSpace(profile.UserPrompt),
@@ -419,7 +415,7 @@ func resolveRetrievalSnapshot(cfg *config.I18NConfig) string {
 	if version != "" {
 		return version
 	}
-	return cacheHash(strings.Join([]string{
+	return hashSourceText(strings.Join([]string{
 		"snapshot=none",
 		"rag_enabled=" + fmt.Sprintf("%t", cfg.Cache.RAG.Enabled),
 		"rag_top_k=" + fmt.Sprintf("%d", cfg.Cache.RAG.TopK),
@@ -604,11 +600,6 @@ func taskIdentity(targetPath, entryKey string) string {
 
 func hashSourceText(source string) string {
 	sum := sha512.Sum512([]byte(source))
-	return fmt.Sprintf("%x", sum)
-}
-
-func cacheHash(input string) string {
-	sum := sha512.Sum512([]byte(input))
 	return fmt.Sprintf("%x", sum)
 }
 

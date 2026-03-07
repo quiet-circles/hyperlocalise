@@ -11,7 +11,7 @@ func normalizeSourceForCache(source string) string {
 }
 
 func contextMemoryFingerprint(task Task) string {
-	return cacheHash(strings.Join([]string{
+	return hashSourceText(strings.Join([]string{
 		"context_key=" + strings.TrimSpace(task.ContextKey),
 		"context_memory=" + normalizeSourceForCache(task.ContextMemory),
 	}, "\n"))
@@ -19,7 +19,7 @@ func contextMemoryFingerprint(task Task) string {
 
 func exactCacheKey(task Task) string {
 	canonical := strings.Join([]string{
-		"source_norm_hash=" + cacheHash(normalizeSourceForCache(task.SourceText)),
+		"source_norm_hash=" + hashSourceText(normalizeSourceForCache(task.SourceText)),
 		"source_locale=" + strings.TrimSpace(task.SourceLocale),
 		"target_locale=" + strings.TrimSpace(task.TargetLocale),
 		"provider=" + strings.TrimSpace(task.Provider),
@@ -31,5 +31,5 @@ func exactCacheKey(task Task) string {
 		"context_memory_fingerprint=" + contextMemoryFingerprint(task),
 		"retrieval_corpus_snapshot_version=" + strings.TrimSpace(task.RAGSnapshot),
 	}, "\n")
-	return cacheHash(canonical)
+	return hashSourceText(canonical)
 }
