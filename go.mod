@@ -16,6 +16,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/subosito/gotenv v1.4.1
 	github.com/tidwall/jsonc v0.3.2
+	gorm.io/driver/sqlite v1.6.0
+	gorm.io/gorm v1.31.1
 )
 
 require (
@@ -131,6 +133,8 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jgautheron/goconst v1.8.2 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jjti/go-spancheck v0.6.5 // indirect
 	github.com/julz/importas v0.2.0 // indirect
 	github.com/karamaru-alpha/copyloopvar v1.2.2 // indirect
@@ -157,6 +161,7 @@ require (
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-runewidth v0.0.20 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.14.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

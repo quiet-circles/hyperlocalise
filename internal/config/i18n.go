@@ -13,6 +13,12 @@ import (
 
 const (
 	defaultConfigPath      = "i18n.jsonc"
+	DefaultCacheDBPath     = ".hyperlocalise/cache/cache.sqlite"
+	DefaultCacheMaxOpen    = 1
+	DefaultCacheMaxIdle    = 1
+	DefaultCacheMaxLifeSec = 300
+	DefaultCacheL1MaxItems = 50000
+	DefaultCacheRAGTopK    = 5
 	llmProviderOpenAI      = "openai"
 	llmProviderAzureOpenAI = "azure_openai"
 	llmProviderAnthropic   = "anthropic"
@@ -32,6 +38,7 @@ type I18NConfig struct {
 	Groups  map[string]GroupConfig  `json:"groups" jsonschema:"required"`
 	LLM     LLMConfig               `json:"llm" jsonschema:"required"`
 	Storage *StorageConfig          `json:"storage,omitempty"`
+	Cache   CacheConfig             `json:"cache,omitempty"`
 }
 
 // LocaleConfig configures source/target locales and fallback hierarchy.
@@ -93,6 +100,35 @@ type StorageConfig struct {
 	Config  json.RawMessage `json:"config,omitempty"`
 }
 
+// CacheConfig configures local cache foundation (L1/L2/RAG wiring + SQLite bootstrap).
+type CacheConfig struct {
+	Enabled bool                 `json:"enabled,omitempty"`
+	DBPath  string               `json:"db_path,omitempty"`
+	SQLite  CacheSQLiteConfig    `json:"sqlite,omitempty"`
+	L1      CacheTierConfig      `json:"l1,omitempty"`
+	L2      CacheTierConfig      `json:"l2,omitempty"`
+	RAG     CacheRetrieverConfig `json:"rag,omitempty"`
+}
+
+// CacheSQLiteConfig controls sqlite connection pool tuning.
+type CacheSQLiteConfig struct {
+	MaxOpenConns    int `json:"max_open_conns,omitempty"`
+	MaxIdleConns    int `json:"max_idle_conns,omitempty"`
+	ConnMaxLifetime int `json:"conn_max_lifetime_seconds,omitempty"`
+}
+
+// CacheTierConfig configures a cache tier toggle and capacity hints.
+type CacheTierConfig struct {
+	Enabled  bool `json:"enabled,omitempty"`
+	MaxItems int  `json:"max_items,omitempty"`
+}
+
+// CacheRetrieverConfig configures optional retrieval augmentation settings.
+type CacheRetrieverConfig struct {
+	Enabled bool `json:"enabled,omitempty"`
+	TopK    int  `json:"top_k,omitempty"`
+}
+
 // Load parses and validates i18n configuration from path.
 // When path is empty, it defaults to i18n.jsonc in the current working directory.
 func Load(path string) (*I18NConfig, error) {
@@ -112,6 +148,7 @@ func Load(path string) (*I18NConfig, error) {
 	if err := decoder.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decode i18n config: %w", err)
 	}
+	cfg.applyDefaults()
 
 	if err := expectEOF(decoder); err != nil {
 		return nil, err
@@ -152,8 +189,36 @@ func (c I18NConfig) Validate() error {
 	if err := c.validateStorage(); err != nil {
 		return err
 	}
+	if err := c.validateCache(); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (c *I18NConfig) applyDefaults() {
+	c.Cache.applyDefaults()
+}
+
+func (c *CacheConfig) applyDefaults() {
+	if strings.TrimSpace(c.DBPath) == "" {
+		c.DBPath = DefaultCacheDBPath
+	}
+	if c.SQLite.MaxOpenConns == 0 {
+		c.SQLite.MaxOpenConns = DefaultCacheMaxOpen
+	}
+	if c.SQLite.MaxIdleConns == 0 {
+		c.SQLite.MaxIdleConns = DefaultCacheMaxIdle
+	}
+	if c.SQLite.ConnMaxLifetime == 0 {
+		c.SQLite.ConnMaxLifetime = DefaultCacheMaxLifeSec
+	}
+	if c.L1.MaxItems == 0 {
+		c.L1.MaxItems = DefaultCacheL1MaxItems
+	}
+	if c.RAG.TopK == 0 {
+		c.RAG.TopK = DefaultCacheRAGTopK
+	}
 }
 
 func expectEOF(decoder *json.Decoder) error {
@@ -499,5 +564,27 @@ func (c I18NConfig) validateStorage() error {
 		return fmt.Errorf("storage.adapter: must not be empty")
 	}
 
+	return nil
+}
+
+func (c I18NConfig) validateCache() error {
+	if strings.TrimSpace(c.Cache.DBPath) == "" {
+		return fmt.Errorf("cache.db_path: must not be empty")
+	}
+	if c.Cache.SQLite.MaxOpenConns < 0 {
+		return fmt.Errorf("cache.sqlite.max_open_conns: must be >= 0")
+	}
+	if c.Cache.SQLite.MaxIdleConns < 0 {
+		return fmt.Errorf("cache.sqlite.max_idle_conns: must be >= 0")
+	}
+	if c.Cache.SQLite.ConnMaxLifetime < 0 {
+		return fmt.Errorf("cache.sqlite.conn_max_lifetime_seconds: must be >= 0")
+	}
+	if c.Cache.L1.MaxItems < 0 {
+		return fmt.Errorf("cache.l1.max_items: must be >= 0")
+	}
+	if c.Cache.RAG.TopK < 0 {
+		return fmt.Errorf("cache.rag.top_k: must be >= 0")
+	}
 	return nil
 }
