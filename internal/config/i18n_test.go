@@ -780,6 +780,106 @@ func TestLoadRejectsEmptyStorageAdapter(t *testing.T) {
 	}
 }
 
+func TestLoadAppliesCacheDefaultsWhenOmitted(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locales": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "json": {
+	      "files": [
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
+	      ]
+	    }
+	  },
+	  "groups": {
+	    "default": {
+	      "targets": ["fr-FR"],
+	      "buckets": ["json"]
+	    }
+	  },
+	  "llm": {
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "gpt-4.1-mini",
+	        "prompt": "Translate"
+	      }
+	    }
+	  }
+	}`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	if cfg.Cache.Enabled {
+		t.Fatal("cache should be disabled by default")
+	}
+	if cfg.Cache.DBPath != DefaultCacheDBPath {
+		t.Fatalf("unexpected cache.db_path default: %q", cfg.Cache.DBPath)
+	}
+	if cfg.Cache.SQLite.MaxOpenConns != DefaultCacheMaxOpen {
+		t.Fatalf("unexpected cache.sqlite.max_open_conns default: %d", cfg.Cache.SQLite.MaxOpenConns)
+	}
+	if cfg.Cache.SQLite.MaxIdleConns != DefaultCacheMaxIdle {
+		t.Fatalf("unexpected cache.sqlite.max_idle_conns default: %d", cfg.Cache.SQLite.MaxIdleConns)
+	}
+	if cfg.Cache.SQLite.ConnMaxLifetime != DefaultCacheMaxLifeSec {
+		t.Fatalf("unexpected cache.sqlite.conn_max_lifetime_seconds default: %d", cfg.Cache.SQLite.ConnMaxLifetime)
+	}
+	if cfg.Cache.L1.MaxItems != DefaultCacheL1MaxItems {
+		t.Fatalf("unexpected cache.l1.max_items default: %d", cfg.Cache.L1.MaxItems)
+	}
+	if cfg.Cache.RAG.TopK != DefaultCacheRAGTopK {
+		t.Fatalf("unexpected cache.rag.top_k default: %d", cfg.Cache.RAG.TopK)
+	}
+}
+
+func TestLoadRejectsInvalidCacheConfig(t *testing.T) {
+	path := writeConfigFile(t, `{
+	  "locales": {
+	    "source": "en-US",
+	    "targets": ["fr-FR"]
+	  },
+	  "buckets": {
+	    "json": {
+	      "files": [
+	        {"from": "lang/{{source}}.json", "to": "lang/{{target}}.json"}
+	      ]
+	    }
+	  },
+	  "groups": {
+	    "default": {
+	      "targets": ["fr-FR"],
+	      "buckets": ["json"]
+	    }
+	  },
+	  "llm": {
+	    "profiles": {
+	      "default": {
+	        "provider": "openai",
+	        "model": "gpt-4.1-mini",
+	        "prompt": "Translate"
+	      }
+	    }
+	  },
+	  "cache": {
+	    "enabled": true,
+	    "sqlite": {
+	      "max_open_conns": -1
+	    }
+	  }
+	}`)
+
+	_, err := Load(path)
+	if err == nil || !strings.Contains(err.Error(), "cache.sqlite.max_open_conns") {
+		t.Fatalf("expected cache sqlite validation error, got %v", err)
+	}
+}
+
 func writeConfigFile(t *testing.T, content string) string {
 	t.Helper()
 

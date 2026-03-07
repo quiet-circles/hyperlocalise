@@ -20,6 +20,17 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	if err != nil {
 		return Report{}, fmt.Errorf("load config: %w", err)
 	}
+	if s.newCache != nil {
+		cacheSvc, cacheErr := s.newCache(cfg.Cache)
+		if cacheErr != nil {
+			return Report{}, fmt.Errorf("initialize cache service: %w", cacheErr)
+		}
+		defer func() {
+			if cacheSvc != nil {
+				_ = cacheSvc.Close()
+			}
+		}()
+	}
 
 	planned, err := s.planTasks(cfg, in.Bucket, in.Group, in.TargetLocales)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/quiet-circles/hyperlocalise/internal/config"
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/cache"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/lockfile"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/pathresolver"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translationfileparser"
@@ -180,6 +181,7 @@ type Service struct {
 	writeFile  func(path string, content []byte) error
 	translate  func(ctx context.Context, req translator.Request) (string, error)
 	newParser  func() *translationfileparser.Strategy
+	newCache   func(cfg config.CacheConfig) (*cache.Service, error)
 	now        func() time.Time
 	numCPU     func() int
 
@@ -198,6 +200,7 @@ func New() *Service {
 		},
 		translate: translator.Translate,
 		newParser: translationfileparser.NewDefaultStrategy,
+		newCache:  cache.NewFromConfig,
 		now:       func() time.Time { return time.Now().UTC() },
 		numCPU:    runtime.NumCPU,
 
