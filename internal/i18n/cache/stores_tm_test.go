@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/quiet-circles/hyperlocalise/internal/config"
@@ -306,6 +307,52 @@ func TestTMLookupPrefersDraftOverUnknownWhenSimilarityComparable(t *testing.T) {
 	}
 }
 
+func TestTMLookupPrefersCuratedOverLLMWhenSimilarityComparable(t *testing.T) {
+	t.Parallel()
+
+	svc := newTMTestService(t)
+	entries := []TMWrite{
+		{
+			SourceLocale:   "en",
+			TargetLocale:   "fr",
+			SourceText:     "Privacy preference A",
+			TranslatedText: "Préférence confidentialité (llm)",
+			Score:          0.95,
+			Metadata: TMMetadata{
+				Provenance: TMProvenanceLLM,
+				Source:     TMSourceRun,
+			},
+		},
+		{
+			SourceLocale:   "en",
+			TargetLocale:   "fr",
+			SourceText:     "Privacy preference B",
+			TranslatedText: "Préférences confidentialité (curated)",
+			Score:          0.7,
+			Metadata: TMMetadata{
+				Provenance: TMProvenanceCurated,
+				Source:     TMSourceSyncPull,
+			},
+		},
+	}
+	for _, entry := range entries {
+		if err := svc.L2.Upsert(context.Background(), entry); err != nil {
+			t.Fatalf("upsert tm entry: %v", err)
+		}
+	}
+
+	results, err := svc.L2.Lookup(context.Background(), "en", "fr", "Privacy preference C", 1)
+	if err != nil {
+		t.Fatalf("lookup tm entry: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("results=%d, want 1", len(results))
+	}
+	if results[0].Metadata.Provenance != TMProvenanceCurated {
+		t.Fatalf("provenance=%q, want %q", results[0].Metadata.Provenance, TMProvenanceCurated)
+	}
+}
+
 func TestTMUpsertRejectsInvalidMetadataValues(t *testing.T) {
 	t.Parallel()
 
@@ -373,6 +420,71 @@ func TestTMUpsertSupportsLegacyFlatMetadataFields(t *testing.T) {
 	}
 	if results[0].Provenance != TMProvenanceCurated || results[0].Source != TMSourceLegacy {
 		t.Fatalf("unexpected legacy metadata projection: provenance=%q source=%q", results[0].Provenance, results[0].Source)
+	}
+}
+
+func TestTMUpsertConcurrentWritersKeepSingleCanonicalRow(t *testing.T) {
+	t.Parallel()
+
+	svc := newTMTestService(t)
+	const writers = 24
+	const writesPerWriter = 25
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, writers*writesPerWriter)
+	for i := 0; i < writers; i++ {
+		writerID := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < writesPerWriter; j++ {
+				write := TMWrite{
+					SourceLocale:   "en",
+					TargetLocale:   "fr",
+					SourceText:     "Concurrent key",
+					TranslatedText: "Bonjour",
+					Score:          0.8,
+					Metadata: TMMetadata{
+						Provenance: TMProvenanceCurated,
+						Source:     TMSourceSyncPull,
+					},
+				}
+				if (writerID+j)%2 == 0 {
+					write.TranslatedText = "Salut"
+					write.Metadata.Provenance = TMProvenanceDraft
+					write.Metadata.Source = TMSourceRun
+				}
+				if err := svc.L2.Upsert(context.Background(), write); err != nil {
+					errCh <- err
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		t.Fatalf("concurrent upsert failed: %v", err)
+	}
+
+	var rows []TranslationMemoryEntry
+	if err := svc.db.Where("source_locale = ? AND target_locale = ? AND source_text = ?", "en", "fr", "Concurrent key").Find(&rows).Error; err != nil {
+		t.Fatalf("load concurrent tm rows: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("rows=%d, want 1", len(rows))
+	}
+
+	got := rows[0]
+	if got.TranslatedText != "Bonjour" && got.TranslatedText != "Salut" {
+		t.Fatalf("unexpected translated_text=%q", got.TranslatedText)
+	}
+	if got.Provenance != TMProvenanceCurated && got.Provenance != TMProvenanceDraft {
+		t.Fatalf("unexpected provenance=%q", got.Provenance)
+	}
+	if got.Source != TMSourceSyncPull && got.Source != TMSourceRun {
+		t.Fatalf("unexpected source=%q", got.Source)
 	}
 }
 

@@ -3885,12 +3885,15 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 	}
 
 	seenTranslationContexts := []string{}
+	var seenMu sync.Mutex
 	svc.translate = func(ctx context.Context, req translator.Request) (string, error) {
 		if strings.HasPrefix(req.Source, "Representative source entries:") {
 			translator.SetUsage(ctx, translator.Usage{PromptTokens: 3, CompletionTokens: 2, TotalTokens: 5})
 			return "Terminology: keep onboarding terms consistent.", nil
 		}
+		seenMu.Lock()
 		seenTranslationContexts = append(seenTranslationContexts, req.Context)
+		seenMu.Unlock()
 		translator.SetUsage(ctx, translator.Usage{PromptTokens: 10, CompletionTokens: 1, TotalTokens: 11})
 		return "FR(" + req.Source + ")", nil
 	}
@@ -3913,6 +3916,8 @@ func TestRunExperimentalContextMemoryGeneratesAndInjectsSharedMemory(t *testing.
 	if report.PromptTokens != 23 || report.CompletionTokens != 4 || report.TotalTokens != 27 {
 		t.Fatalf("unexpected token totals with context memory: %+v", report.TokenUsage)
 	}
+	seenMu.Lock()
+	defer seenMu.Unlock()
 	if len(seenTranslationContexts) != 2 {
 		t.Fatalf("expected 2 translation requests, got %d", len(seenTranslationContexts))
 	}

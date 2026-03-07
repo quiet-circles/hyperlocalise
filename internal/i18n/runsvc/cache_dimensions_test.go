@@ -20,6 +20,13 @@ func TestParserModeForSourceDetectsPlainJSONByContent(t *testing.T) {
 	}
 }
 
+func TestParserModeForSourceDetectsARBByExtension(t *testing.T) {
+	mode := parserModeForSource("tests/misc/app_en.arb", []byte(`{"hello":"Hello","@hello":{"description":"Greeting"}}`))
+	if mode != "arb" {
+		t.Fatalf("mode=%q, want arb", mode)
+	}
+}
+
 func TestResolveRetrievalSnapshotUsesExplicitVersion(t *testing.T) {
 	cfg := &config.I18NConfig{}
 	cfg.Cache.RetrievalCorpusSnapshotVersion = "snapshot-v42"
