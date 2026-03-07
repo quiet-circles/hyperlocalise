@@ -83,6 +83,10 @@ func resolveTargetPath(sourcePattern, targetPattern, sourcePath string) (string,
 	if err != nil {
 		return "", err
 	}
+	parentPrefix := ".." + string(filepath.Separator)
+	if relative == ".." || strings.HasPrefix(relative, parentPrefix) {
+		return "", fmt.Errorf("source path %q escapes source base %q", sourcePath, sourceBase)
+	}
 	return filepath.Join(targetBase, relative), nil
 }
 
