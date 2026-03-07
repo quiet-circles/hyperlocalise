@@ -67,6 +67,32 @@ func TestTranslateWithRetryBuildsRequestWithoutContextMemory(t *testing.T) {
 	}
 }
 
+func TestTranslateWithRetryBuildsRequestWithSourceContext(t *testing.T) {
+	svc := &Service{}
+	var got translator.Request
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		got = req
+		return "Bonjour", nil
+	}
+
+	task := Task{
+		EntryKey:      "checkout.title",
+		SourceText:    "Checkout",
+		TargetLocale:  "fr",
+		SourceContext: "Checkout submit button",
+	}
+
+	_, err := svc.translateWithRetry(context.Background(), task)
+	if err != nil {
+		t.Fatalf("translateWithRetry returned error: %v", err)
+	}
+
+	wantRuntime := "Entry key: checkout.title\n\nSource context:\nCheckout submit button"
+	if got.RuntimeContext != wantRuntime {
+		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, wantRuntime)
+	}
+}
+
 func TestTranslateWithRetryBuildsRequestWithContextMemory(t *testing.T) {
 	svc := &Service{}
 	var got translator.Request
@@ -79,6 +105,7 @@ func TestTranslateWithRetryBuildsRequestWithContextMemory(t *testing.T) {
 		EntryKey:      "checkout.title",
 		SourceText:    "Checkout",
 		TargetLocale:  "fr",
+		SourceContext: "Checkout submit button",
 		ContextMemory: "Shared context",
 	}
 
@@ -87,7 +114,7 @@ func TestTranslateWithRetryBuildsRequestWithContextMemory(t *testing.T) {
 		t.Fatalf("translateWithRetry returned error: %v", err)
 	}
 
-	wantRuntime := "Entry key: checkout.title\n\nShared memory:\nShared context"
+	wantRuntime := "Entry key: checkout.title\n\nSource context:\nCheckout submit button\n\nShared memory:\nShared context"
 	if got.SystemPrompt != "" {
 		t.Fatalf("request system prompt = %q, want empty string", got.SystemPrompt)
 	}
@@ -421,3 +448,10 @@ var (
 	_ net.Error = timeoutNetError{}
 	_ net.Error = nonTimeoutNetError{}
 )
+
+func TestSanitizePromptContext(t *testing.T) {
+	got := sanitizePromptContext(" line 1\n\n line 2 \r\n", 0)
+	if got != "line 1\nline 2" {
+		t.Fatalf("sanitizePromptContext() = %q, want %q", got, "line 1\nline 2")
+	}
+}

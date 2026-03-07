@@ -91,3 +91,27 @@ func TestMarshalARBPreservesMetadataAndICUContent(t *testing.T) {
 		t.Fatalf("expected @hello.description metadata preserved, got %#v", metaHello["description"])
 	}
 }
+
+func TestARBParserParseWithContextIncludesDescriptions(t *testing.T) {
+	content := []byte(`{
+  "hello": "Hello",
+  "@hello": {
+    "description": "Greeting"
+  },
+  "bye": "Bye"
+}`)
+
+	messages, contextByKey, err := (ARBParser{}).ParseWithContext(content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if messages["hello"] != "Hello" {
+		t.Fatalf("unexpected hello translation: %q", messages["hello"])
+	}
+	if contextByKey["hello"] != "Greeting" {
+		t.Fatalf("unexpected hello context: %q", contextByKey["hello"])
+	}
+	if _, ok := contextByKey["bye"]; ok {
+		t.Fatalf("did not expect context for bye")
+	}
+}

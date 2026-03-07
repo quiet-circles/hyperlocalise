@@ -11,15 +11,24 @@ import (
 type ARBParser struct{}
 
 func (p ARBParser) Parse(content []byte) (map[string]string, error) {
+	values, _, err := p.ParseWithContext(content)
+	if err != nil {
+		return nil, err
+	}
+	return values, nil
+}
+
+func (p ARBParser) ParseWithContext(content []byte) (map[string]string, map[string]string, error) {
 	var payload map[string]any
 	if err := json.Unmarshal(content, &payload); err != nil {
-		return nil, fmt.Errorf("arb decode: %w", err)
+		return nil, nil, fmt.Errorf("arb decode: %w", err)
 	}
 	if payload == nil {
-		return map[string]string{}, nil
+		return map[string]string{}, nil, nil
 	}
 
 	out := map[string]string{}
+	descriptions := map[string]string{}
 	for _, key := range sortedMapKeys(payload) {
 		if isARBMetadataKey(key) {
 			continue
@@ -27,11 +36,37 @@ func (p ARBParser) Parse(content []byte) (map[string]string, error) {
 
 		value, ok := payload[key].(string)
 		if !ok {
-			return nil, fmt.Errorf("arb key %q must be string, got %T", key, payload[key])
+			return nil, nil, fmt.Errorf("arb key %q must be string, got %T", key, payload[key])
 		}
 		out[key] = value
+		if description := parseARBDescription(payload, key); description != "" {
+			descriptions[key] = description
+		}
 	}
-	return out, nil
+	if len(descriptions) == 0 {
+		return out, nil, nil
+	}
+	return out, descriptions, nil
+}
+
+func parseARBDescription(payload map[string]any, key string) string {
+	raw, ok := payload["@"+key]
+	if !ok {
+		return ""
+	}
+	meta, ok := raw.(map[string]any)
+	if !ok {
+		return ""
+	}
+	descRaw, ok := meta["description"]
+	if !ok {
+		return ""
+	}
+	description, ok := descRaw.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(description)
 }
 
 // MarshalARB preserves metadata keys and rewrites only translatable message keys.

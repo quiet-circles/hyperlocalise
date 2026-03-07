@@ -125,6 +125,7 @@ type Task struct {
 	BucketName      string `json:"-"`
 	ContextKey      string `json:"-"`
 	ContextMemory   string `json:"-"`
+	SourceContext   string `json:"-"`
 	ParserMode      string `json:"-"`
 	PromptVersion   string `json:"-"`
 	GlossaryVersion string `json:"-"`
@@ -305,7 +306,7 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 					if shouldIgnoreSourcePath(sourcePath, cfg.Locales.Targets) {
 						continue
 					}
-					sourceEntries, parserMode, err := s.loadSourceEntries(parser, sourcePath)
+					sourceEntries, sourceContextByKey, parserMode, err := s.loadSourceEntries(parser, sourcePath)
 					if err != nil {
 						return nil, err
 					}
@@ -338,6 +339,7 @@ func (s *Service) planTasks(cfg *config.I18NConfig, onlyBucket, onlyGroup string
 								SystemPrompt:    systemPrompt,
 								UserPrompt:      userPrompt,
 								LegacyPrompt:    legacyPromptUsed,
+								SourceContext:   sourceContextByKey[key],
 								ContextProvider: contextProvider,
 								ContextModel:    contextModel,
 								GroupName:       groupName,
@@ -430,21 +432,21 @@ func resolveRetrievalSnapshot(cfg *config.I18NConfig) string {
 	return hashSourceText(strings.Join(parts, "\n"))
 }
 
-func (s *Service) loadSourceEntries(parser *translationfileparser.Strategy, sourcePath string) (map[string]string, string, error) {
+func (s *Service) loadSourceEntries(parser *translationfileparser.Strategy, sourcePath string) (map[string]string, map[string]string, string, error) {
 	content, err := s.readFile(sourcePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, "", fmt.Errorf("planning tasks: source file %q does not exist", sourcePath)
+			return nil, nil, "", fmt.Errorf("planning tasks: source file %q does not exist", sourcePath)
 		}
-		return nil, "", fmt.Errorf("planning tasks: read source file %q: %w", sourcePath, err)
+		return nil, nil, "", fmt.Errorf("planning tasks: read source file %q: %w", sourcePath, err)
 	}
 
-	entries, err := parser.Parse(sourcePath, content)
+	entries, entryContext, err := parser.ParseWithContext(sourcePath, content)
 	if err != nil {
-		return nil, "", fmt.Errorf("planning tasks: parse source file %q: %w", sourcePath, err)
+		return nil, nil, "", fmt.Errorf("planning tasks: parse source file %q: %w", sourcePath, err)
 	}
 
-	return entries, parserModeForSource(sourcePath, content), nil
+	return entries, entryContext, parserModeForSource(sourcePath, content), nil
 }
 
 type eventEmitter struct {

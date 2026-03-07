@@ -4,35 +4,44 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // JSONParser parses translation JSON files.
 type JSONParser struct{}
 
 func (p JSONParser) Parse(content []byte) (map[string]string, error) {
+	values, _, err := p.ParseWithContext(content)
+	if err != nil {
+		return nil, err
+	}
+	return values, nil
+}
+
+func (p JSONParser) ParseWithContext(content []byte) (map[string]string, map[string]string, error) {
 	var payload map[string]any
 	if err := json.Unmarshal(content, &payload); err != nil {
-		return nil, fmt.Errorf("json decode: %w", err)
+		return nil, nil, fmt.Errorf("json decode: %w", err)
 	}
 
 	if payload == nil {
-		return map[string]string{}, nil
+		return map[string]string{}, nil, nil
 	}
 
 	out := make(map[string]string)
 	formatJS, err := parseStrictFormatJSMessages(out, payload)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if formatJS {
-		return out, nil
+		return out, parseFormatJSDescriptions(payload), nil
 	}
 
 	if err := flattenJSON(out, "", payload); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return out, nil
+	return out, nil, nil
 }
 
 func parseStrictFormatJSMessages(out map[string]string, payload map[string]any) (bool, error) {
@@ -56,6 +65,33 @@ func parseStrictFormatJSMessages(out map[string]string, payload map[string]any) 
 	}
 
 	return true, nil
+}
+
+func parseFormatJSDescriptions(payload map[string]any) map[string]string {
+	out := make(map[string]string)
+	for key, value := range payload {
+		message, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		raw, ok := message["description"]
+		if !ok {
+			continue
+		}
+		description, ok := raw.(string)
+		if !ok {
+			continue
+		}
+		description = strings.TrimSpace(description)
+		if description == "" {
+			continue
+		}
+		out[key] = description
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func isStrictFormatJSRoot(payload map[string]any) (bool, error) {

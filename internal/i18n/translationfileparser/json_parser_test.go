@@ -71,3 +71,29 @@ func TestJSONParserMixedShapeFallsBackToStandardJSONFlattening(t *testing.T) {
 		t.Fatalf("unexpected top-level meta key in flattened output")
 	}
 }
+
+func TestJSONParserParseWithContextIncludesFormatJSDescriptions(t *testing.T) {
+	content := []byte(`{
+  "checkout.submit": {
+    "defaultMessage": "Submit order",
+    "description": "Checkout submit button"
+  },
+  "home.title": {
+    "defaultMessage": "Welcome"
+  }
+}`)
+
+	messages, contextByKey, err := (JSONParser{}).ParseWithContext(content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if messages["checkout.submit"] != "Submit order" {
+		t.Fatalf("unexpected checkout.submit translation: %q", messages["checkout.submit"])
+	}
+	if contextByKey["checkout.submit"] != "Checkout submit button" {
+		t.Fatalf("unexpected checkout.submit context: %q", contextByKey["checkout.submit"])
+	}
+	if _, ok := contextByKey["home.title"]; ok {
+		t.Fatalf("did not expect context for home.title")
+	}
+}

@@ -16,6 +16,7 @@ const (
 	translationRetryMaxAttempts = 5
 	translationRetryBaseDelay   = 250 * time.Millisecond
 	translationRetryMaxDelay    = 5 * time.Second
+	maxSourceContextLen         = 800
 )
 
 var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
@@ -30,7 +31,7 @@ var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
 }
 
 func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, error) {
-	runtimeContext := buildTranslationRuntimeContext(task.EntryKey, task.ContextMemory)
+	runtimeContext := buildTranslationRuntimeContext(task.EntryKey, task.SourceContext, task.ContextMemory)
 	userPrompt := strings.TrimSpace(task.UserPrompt)
 
 	request := translator.Request{
@@ -46,10 +47,13 @@ func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, er
 	return s.translateRequestWithRetry(ctx, request)
 }
 
-func buildTranslationRuntimeContext(entryKey, sharedMemory string) string {
+func buildTranslationRuntimeContext(entryKey, sourceContext, sharedMemory string) string {
 	parts := make([]string, 0, 2)
 	if key := sanitizeScopeIdentifier(entryKey); key != "" {
 		parts = append(parts, "Entry key: "+key)
+	}
+	if context := sanitizePromptContext(sourceContext, maxSourceContextLen); context != "" {
+		parts = append(parts, "Source context:\n"+context)
 	}
 	if memory := strings.TrimSpace(sharedMemory); memory != "" {
 		parts = append(parts, "Shared memory:\n"+memory)
@@ -124,4 +128,28 @@ func translationRetryDelay(attempt int) time.Duration {
 		return translationRetryMaxDelay
 	}
 	return delay
+}
+
+func sanitizePromptContext(value string, maxLen int) string {
+	clean := strings.ReplaceAll(value, "\r", "\n")
+	lines := strings.Split(clean, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		out = append(out, trimmed)
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	joined := strings.Join(out, "\n")
+	if maxLen > 0 {
+		runes := []rune(joined)
+		if len(runes) > maxLen {
+			joined = strings.TrimSpace(string(runes[:maxLen]))
+		}
+	}
+	return joined
 }

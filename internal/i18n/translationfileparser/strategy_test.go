@@ -210,6 +210,24 @@ hello,bonjour
 	}
 }
 
+func TestStrategyParseWithContextIncludesFormatJSDescriptions(t *testing.T) {
+	s := NewDefaultStrategy()
+
+	messages, contextByKey, err := s.ParseWithContext("fr.json", []byte(`{
+  "checkout.submit": {"defaultMessage": "Submit", "description": "Checkout CTA"},
+  "home.title": {"defaultMessage": "Home"}
+}`))
+	if err != nil {
+		t.Fatalf("parse with context: %v", err)
+	}
+	if messages["checkout.submit"] != "Submit" {
+		t.Fatalf("unexpected message: %q", messages["checkout.submit"])
+	}
+	if contextByKey["checkout.submit"] != "Checkout CTA" {
+		t.Fatalf("unexpected context: %q", contextByKey["checkout.submit"])
+	}
+}
+
 func TestStrategyUnsupportedExtension(t *testing.T) {
 	s := NewDefaultStrategy()
 
