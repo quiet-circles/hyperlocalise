@@ -564,6 +564,7 @@ Luu y cuoi cung: "Tom tat dong bo" phai khop giua danh sach kiem tra va bao cao.
 
 	t.Run("mdx", func(t *testing.T) {
 		source := readFixture(t, "tests/mdx/en-US.mdx")
+		brokenTarget := readFixture(t, "tests/mdx/zh-CN.mdx")
 		target := []byte(`---
 title: "So tay phat hanh tai lieu"
 description: "Xu ly thay the van ban MDX ma khong dong vao JSX, bieu thuc hoac import."
@@ -671,7 +672,25 @@ export const projectId = "docs";
 		if !strings.Contains(output, "```ts\nexport const projectId = \"docs\";\n```") {
 			t.Fatalf("expected fenced code block preserved, got %q", output)
 		}
+
+		brokenOutput := string(MarshalMarkdownWithTargetFallback(source, brokenTarget, map[string]string{}))
+		if !strings.Contains(brokenOutput, "[mdx-ref]: https://example.com/docs/mdx(reference)") {
+			t.Fatalf("expected source mdx reference destination used when target destination changed, got %q", brokenOutput)
+		}
 	})
+}
+
+func TestMarshalMarkdownWithTargetFallbackPreservesSourceReferenceDefinitionDestination(t *testing.T) {
+	source := []byte("See [docs][mdx-ref].\n\n[mdx-ref]: https://example.com/docs/mdx(reference)\n")
+	target := []byte("Xem [tai lieu][mdx-ref].\n\n[mdx-ref]: https://example.com/docs/mdx(ban-dich)\n")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if !strings.Contains(output, "Xem [tai lieu][mdx-ref].") {
+		t.Fatalf("expected translated reference link text preserved, got %q", output)
+	}
+	if !strings.Contains(output, "[mdx-ref]: https://example.com/docs/mdx(reference)") {
+		t.Fatalf("expected source reference destination preserved, got %q", output)
+	}
 }
 
 func TestMarshalMarkdownWithTargetFallbackKeepsMdxSentenceBoundariesAroundExpressions(t *testing.T) {

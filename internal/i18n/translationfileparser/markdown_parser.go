@@ -423,6 +423,16 @@ func protectMarkdownInlineSyntax(segment string) (string, map[string]string, str
 	}
 
 	for idx := 0; idx < len(segment); {
+		if idx == 0 {
+			if start, end, ok := findMarkdownReferenceDefinitionDestination(segment); ok {
+				rendered.WriteString(segment[idx:start])
+				plain.WriteString(segment[idx:start])
+				appendPlaceholder(segment[start:end])
+				idx = end
+				continue
+			}
+		}
+
 		switch {
 		case segment[idx] == '`':
 			run := 0
@@ -475,6 +485,41 @@ func protectMarkdownInlineSyntax(segment string) (string, map[string]string, str
 		return segment, nil, segment
 	}
 	return rendered.String(), placeholders, plain.String()
+}
+
+func findMarkdownReferenceDefinitionDestination(segment string) (int, int, bool) {
+	trimmed := strings.TrimLeft(segment, " \t")
+	leading := len(segment) - len(trimmed)
+	if !strings.HasPrefix(trimmed, "[") {
+		return 0, 0, false
+	}
+	closeBracket := strings.IndexByte(trimmed, ']')
+	if closeBracket <= 1 || closeBracket+1 >= len(trimmed) || trimmed[closeBracket+1] != ':' {
+		return 0, 0, false
+	}
+
+	destStart := closeBracket + 2
+	for destStart < len(trimmed) && (trimmed[destStart] == ' ' || trimmed[destStart] == '\t') {
+		destStart++
+	}
+	if destStart >= len(trimmed) {
+		return 0, 0, false
+	}
+
+	destEnd := destStart
+	if trimmed[destStart] == '<' {
+		destEnd = strings.IndexByte(trimmed[destStart+1:], '>')
+		if destEnd < 0 {
+			return 0, 0, false
+		}
+		destEnd += destStart + 2
+	} else {
+		for destEnd < len(trimmed) && trimmed[destEnd] != ' ' && trimmed[destEnd] != '\t' {
+			destEnd++
+		}
+	}
+
+	return leading + destStart, leading + destEnd, true
 }
 
 func consumeLeadingJSXLiteral(body string, state *markdownParseState) (string, string, bool) {
@@ -693,6 +738,7 @@ func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, dia
 	}
 	rendered = expandMarkdownPlaceholders(rendered, part.placeholders)
 	rendered = normalizeMarkdownPlaceholders(rendered, part.placeholders)
+	rendered = restoreSourceReferenceDefinitionDestination(part, rendered)
 	if strings.ContainsRune(rendered, '\x1e') || strings.ContainsRune(rendered, '\x1f') {
 		// If a translation corrupts placeholder sentinels beyond recovery, emit the
 		// original source markdown for this segment instead of leaking control tokens.
@@ -702,6 +748,27 @@ func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, dia
 		return expandMarkdownPlaceholders(part.source, part.placeholders)
 	}
 	return rendered
+}
+
+func restoreSourceReferenceDefinitionDestination(part markdownPart, rendered string) string {
+	sourceStart, sourceEnd, ok := findMarkdownReferenceDefinitionDestination(part.source)
+	if !ok {
+		return rendered
+	}
+	sourceDestination := part.source[sourceStart:sourceEnd]
+	if expanded, ok := part.placeholders[sourceDestination]; ok {
+		sourceDestination = expanded
+	}
+
+	renderedStart, renderedEnd, ok := findMarkdownReferenceDefinitionDestination(rendered)
+	if !ok {
+		return rendered
+	}
+	if rendered[renderedStart:renderedEnd] == sourceDestination {
+		return rendered
+	}
+
+	return rendered[:renderedStart] + sourceDestination + rendered[renderedEnd:]
 }
 
 func expandMarkdownPlaceholders(rendered string, placeholders map[string]string) string {
