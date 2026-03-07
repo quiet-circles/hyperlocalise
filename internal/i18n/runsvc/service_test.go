@@ -153,8 +153,8 @@ func TestRunLegacyProfilePromptMapsToSystemPrompt(t *testing.T) {
 	if !strings.Contains(gotRuntimeContext, "Entry key: hello") {
 		t.Fatalf("expected entry key in runtime context, got %q", gotRuntimeContext)
 	}
-	if gotUserPrompt != "Hello" {
-		t.Fatalf("expected source payload in user prompt when not configured, got %q", gotUserPrompt)
+	if gotUserPrompt != "" {
+		t.Fatalf("expected empty user prompt when not configured, got %q", gotUserPrompt)
 	}
 	if len(report.Warnings) == 0 || !strings.Contains(strings.Join(report.Warnings, "\n"), "legacy_prompt profile=default") {
 		t.Fatalf("expected legacy prompt warning, got %+v", report.Warnings)

@@ -94,8 +94,8 @@ func TestTranslateWithRetryBuildsRequestWithContextMemory(t *testing.T) {
 	if got.RuntimeContext != wantRuntime {
 		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, wantRuntime)
 	}
-	if got.UserPrompt != "Checkout" {
-		t.Fatalf("request user prompt = %q, want Checkout", got.UserPrompt)
+	if got.UserPrompt != "" {
+		t.Fatalf("request user prompt = %q, want empty string", got.UserPrompt)
 	}
 }
 
@@ -124,8 +124,8 @@ func TestTranslateWithRetryBuildsRequestWithEmptyEntryKey(t *testing.T) {
 	if got.RuntimeContext != "" {
 		t.Fatalf("request runtime context = %q, want empty string", got.RuntimeContext)
 	}
-	if got.UserPrompt != "Hello" {
-		t.Fatalf("request user prompt = %q, want Hello", got.UserPrompt)
+	if got.UserPrompt != "" {
+		t.Fatalf("request user prompt = %q, want empty string", got.UserPrompt)
 	}
 }
 
@@ -155,8 +155,8 @@ func TestTranslateWithRetryBuildsRequestWithEmptyEntryKeyAndContextMemory(t *tes
 	if got.RuntimeContext != wantRuntime {
 		t.Fatalf("request runtime context = %q, want %q", got.RuntimeContext, wantRuntime)
 	}
-	if got.UserPrompt != "Hello" {
-		t.Fatalf("request user prompt = %q, want Hello", got.UserPrompt)
+	if got.UserPrompt != "" {
+		t.Fatalf("request user prompt = %q, want empty string", got.UserPrompt)
 	}
 }
 

@@ -31,10 +31,7 @@ var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
 
 func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, error) {
 	runtimeContext := buildTranslationRuntimeContext(task.EntryKey, task.ContextMemory)
-	userPrompt := task.SourceText
-	if custom := strings.TrimSpace(task.UserPrompt); custom != "" {
-		userPrompt = custom
-	}
+	userPrompt := strings.TrimSpace(task.UserPrompt)
 
 	request := translator.Request{
 		Source:         task.SourceText,
