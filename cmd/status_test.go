@@ -235,7 +235,7 @@ func TestStatusCommandUnknownBucket(t *testing.T) {
 	configPath := filepath.Join(dir, "i18n.jsonc")
 	content := `{
   "locales": {"source":"en","targets":["fr"]},
-  "buckets": {"ui":{"files":[{"from":"ui","to":"lang/[locale].json"}]}},
+  "buckets": {"ui":{"files":[{"from":"ui.json","to":"lang/[locale].json"}]}},
   "groups": {"default":{"targets":["fr"],"buckets":["ui"]}},
   "llm": {"profiles":{"default":{"provider":"openai","model":"gpt-4.1-mini","prompt":"Translate"}}}
 }`
