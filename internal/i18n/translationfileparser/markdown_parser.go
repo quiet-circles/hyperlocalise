@@ -738,6 +738,7 @@ func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, dia
 	}
 	rendered = expandMarkdownPlaceholders(rendered, part.placeholders)
 	rendered = normalizeMarkdownPlaceholders(rendered, part.placeholders)
+	rendered = normalizeUnexpectedMarkdownLinkClosers(part, rendered)
 	rendered = restoreSourceReferenceDefinitionDestination(part, rendered)
 	if strings.ContainsRune(rendered, '\x1e') || strings.ContainsRune(rendered, '\x1f') {
 		// If a translation corrupts placeholder sentinels beyond recovery, emit the
@@ -746,6 +747,19 @@ func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, dia
 			diags.SourceFallbackKeys = append(diags.SourceFallbackKeys, part.key)
 		}
 		return expandMarkdownPlaceholders(part.source, part.placeholders)
+	}
+	return rendered
+}
+
+func normalizeUnexpectedMarkdownLinkClosers(part markdownPart, rendered string) string {
+	for placeholder, original := range part.placeholders {
+		if !strings.HasPrefix(original, "](") {
+			continue
+		}
+		if strings.Contains(part.source, placeholder+"]") {
+			continue
+		}
+		rendered = strings.ReplaceAll(rendered, original+"]", original)
 	}
 	return rendered
 }

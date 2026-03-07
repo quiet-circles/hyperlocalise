@@ -693,6 +693,37 @@ func TestMarshalMarkdownWithTargetFallbackPreservesSourceReferenceDefinitionDest
 	}
 }
 
+func TestMarshalMarkdownWithTargetFallbackFixturesRepairDanglingInlineLinkClosersFromZhCNDocs(t *testing.T) {
+	t.Run("workflows/local-generation", func(t *testing.T) {
+		source := readFixture(t, "docs/workflows/local-generation.mdx")
+		target := readFixture(t, "docs/zh-CN/workflows/local-generation.mdx")
+
+		output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+		if strings.Contains(output, "[锁文件合约](/reference/lockfile-contract)]") {
+			t.Fatalf("expected dangling bracket after inline link repaired, got %q", output)
+		}
+		if !strings.Contains(output, "[锁文件合约](/reference/lockfile-contract)") {
+			t.Fatalf("expected reconstructed inline link destination preserved, got %q", output)
+		}
+	})
+
+	t.Run("index/common-next-steps", func(t *testing.T) {
+		source := readFixture(t, "docs/index.mdx")
+		target := readFixture(t, "docs/zh-CN/index.mdx")
+
+		output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+		if strings.Contains(output, "[命令概览](/commands/overview)].") {
+			t.Fatalf("expected dangling bracket repaired for commands overview link, got %q", output)
+		}
+		if strings.Contains(output, "[提供商凭据](/configuration/provider-credentials)]") {
+			t.Fatalf("expected dangling bracket repaired for provider credentials link, got %q", output)
+		}
+		if strings.Contains(output, "[稳定性矩阵](/reference/stability-matrix)]") {
+			t.Fatalf("expected dangling bracket repaired for stability matrix link, got %q", output)
+		}
+	})
+}
+
 func TestMarshalMarkdownWithTargetFallbackKeepsMdxSentenceBoundariesAroundExpressions(t *testing.T) {
 	source := []byte("Fallback route: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} is computed at runtime.\nUse <Badge text=\"stable\" /> builds when the release branch is frozen.\n")
 	target := []byte("Duong dan du phong: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} duoc tinh khi chay.\nDung ban build <Badge text=\"stable\" /> khi nhanh phat hanh da dong bang.\n")
