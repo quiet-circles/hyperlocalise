@@ -199,11 +199,16 @@ func (s *Service) precomputeContextMemory(ctx context.Context, state *executorSt
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for key := range jobs {
-				if ctx.Err() != nil {
+			for {
+				select {
+				case <-ctx.Done():
 					return
+				case key, ok := <-jobs:
+					if !ok {
+						return
+					}
+					_ = s.resolveTaskContextMemory(ctx, Task{ContextKey: key}, state, emitter)
 				}
-				_ = s.resolveTaskContextMemory(ctx, Task{ContextKey: key}, state, emitter)
 			}
 		}()
 	}
