@@ -84,7 +84,7 @@ func TestFlushOutputsSortedUniqueTargets(t *testing.T) {
 		paths[1]: {"k": {}},
 	}
 
-	_, err := svc.flushOutputs(staged, prune)
+	_, err := svc.flushOutputs(staged, prune, nil)
 	if err != nil {
 		t.Fatalf("flush outputs: %v", err)
 	}
@@ -194,11 +194,46 @@ func TestFlushOutputsPruneOnlyMissingTargetAfterScan(t *testing.T) {
 
 	_, err := svc.flushOutputs(nil, map[string]map[string]struct{}{
 		targetPath: {"hello": {}},
-	})
+	}, nil)
 	if err == nil {
 		t.Fatalf("expected error for missing target with no source template")
 	}
 	if !strings.Contains(err.Error(), "read template source") {
 		t.Fatalf("expected source template read error, got %v", err)
+	}
+}
+
+func TestFlushOutputsPruneOnlyUsesPlannedMetadata(t *testing.T) {
+	targetPath := filepath.Join(t.TempDir(), "fr.json")
+	sourcePath := filepath.Join(t.TempDir(), "en.json")
+	if err := os.WriteFile(targetPath, []byte(`{"hello":"Bonjour","legacy":"Ancien"}`), 0o644); err != nil {
+		t.Fatalf("write target file: %v", err)
+	}
+	if err := os.WriteFile(sourcePath, []byte(`{"hello":"Hello"}`), 0o644); err != nil {
+		t.Fatalf("write source file: %v", err)
+	}
+
+	svc := newTestService()
+	svc.readFile = os.ReadFile
+
+	var written []byte
+	svc.writeFile = func(path string, content []byte) error {
+		if path != targetPath {
+			t.Fatalf("unexpected write path: %s", path)
+		}
+		written = append([]byte(nil), content...)
+		return nil
+	}
+
+	_, err := svc.flushOutputs(nil, map[string]map[string]struct{}{
+		targetPath: {"hello": {}},
+	}, map[string]stagedOutput{
+		targetPath: {entries: map[string]string{}, sourcePath: sourcePath, sourceLocale: "en", targetLocale: "fr"},
+	})
+	if err != nil {
+		t.Fatalf("flush outputs prune-only with metadata: %v", err)
+	}
+	if strings.Contains(string(written), "legacy") {
+		t.Fatalf("expected legacy key pruned, got %s", written)
 	}
 }

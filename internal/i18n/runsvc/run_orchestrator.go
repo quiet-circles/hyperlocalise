@@ -67,7 +67,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 	emitter.emit(Event{Kind: EventPlanned, PlannedTotal: report.PlannedTotal, SkippedByLock: report.SkippedByLock, ExecutableTotal: report.ExecutableTotal})
 
-	pruneTargets, err := s.collectPruneTargets(in, planned, &report, emitter)
+	pruneTargets, pruneMetadata, err := s.collectPruneTargets(in, planned, &report, emitter)
 	if err != nil {
 		return report, err
 	}
@@ -111,7 +111,8 @@ func (s *Service) Run(ctx context.Context, in Input) (Report, error) {
 	}
 
 	emitter.emit(Event{Kind: EventPhase, Phase: PhaseFinalizingOutput})
-	flushWarnings, err := s.flushOutputs(staged, remainingPruneTargets(pruneTargets, flushedTargets))
+	remainingPruneTargets, remainingPruneMetadata := remainingPruneTargets(pruneTargets, pruneMetadata, flushedTargets)
+	flushWarnings, err := s.flushOutputs(staged, remainingPruneTargets, remainingPruneMetadata)
 	report.Warnings = append(report.Warnings, flushWarnings...)
 	if err != nil {
 		emitter.emit(completedEvent(report))
@@ -222,34 +223,44 @@ func (s *Service) clearRunCheckpoints(lockPath string, state *lockfile.File) err
 	return nil
 }
 
-func (s *Service) collectPruneTargets(in Input, planned []Task, report *Report, emitter *eventEmitter) (map[string]map[string]struct{}, error) {
+func (s *Service) collectPruneTargets(in Input, planned []Task, report *Report, emitter *eventEmitter) (map[string]map[string]struct{}, map[string]stagedOutput, error) {
 	pruneTargets := map[string]map[string]struct{}{}
+	pruneMetadata := map[string]stagedOutput{}
 	if !in.Prune {
-		return pruneTargets, nil
+		return pruneTargets, pruneMetadata, nil
 	}
 
 	emitter.emit(Event{Kind: EventPhase, Phase: PhaseScanningPrune})
+	var err error
+	pruneMetadata, err = buildPlannedTargetMetadata(planned)
+	if err != nil {
+		return nil, nil, err
+	}
 	pruneTargets = buildPlannedTargetKeySet(planned)
 	candidates, err := s.planPruneCandidates(pruneTargets)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	report.PruneCandidates = candidates
 	if err := validatePruneLimit(in, len(report.PruneCandidates)); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return pruneTargets, nil
+	return pruneTargets, pruneMetadata, nil
 }
 
-func remainingPruneTargets(pruneTargets map[string]map[string]struct{}, flushedTargets map[string]struct{}) map[string]map[string]struct{} {
+func remainingPruneTargets(pruneTargets map[string]map[string]struct{}, pruneMetadata map[string]stagedOutput, flushedTargets map[string]struct{}) (map[string]map[string]struct{}, map[string]stagedOutput) {
 	remaining := map[string]map[string]struct{}{}
+	remainingMetadata := map[string]stagedOutput{}
 	for path, keep := range pruneTargets {
 		if _, alreadyFlushed := flushedTargets[path]; alreadyFlushed {
 			continue
 		}
 		remaining[path] = keep
+		if metadata, ok := pruneMetadata[path]; ok {
+			remainingMetadata[path] = metadata
+		}
 	}
-	return remaining
+	return remaining, remainingMetadata
 }
 
 func completedEvent(report Report) Event {
