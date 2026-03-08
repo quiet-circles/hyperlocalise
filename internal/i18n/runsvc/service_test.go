@@ -2199,6 +2199,52 @@ func TestRunDryRunReportsPruneCandidates(t *testing.T) {
 	}
 }
 
+func TestRunPruneWithZeroCandidatesAndNoExecutableDoesNotFail(t *testing.T) {
+	svc := newTestService()
+	sourcePath := "/tmp/source.json"
+	targetPath := "/tmp/out.json"
+	svc.loadConfig = func(_ string) (*config.I18NConfig, error) {
+		cfg := testConfig(sourcePath, targetPath)
+		return &cfg, nil
+	}
+	svc.readFile = func(path string) ([]byte, error) {
+		switch path {
+		case sourcePath:
+			return []byte(`{"hello":"Hello"}`), nil
+		case targetPath:
+			return []byte(`{"hello":"Bonjour"}`), nil
+		default:
+			return nil, filepath.ErrBadPattern
+		}
+	}
+	svc.loadLock = func(_ string) (*lockfile.File, error) {
+		return &lockfile.File{
+			RunCompleted: map[string]lockfile.RunCompletion{
+				taskIdentity(targetPath, "hello"): {SourceHash: hashSourceText("Hello")},
+			},
+		}, nil
+	}
+	svc.translate = func(_ context.Context, _ translator.Request) (string, error) {
+		t.Fatalf("did not expect translation call with zero executable tasks")
+		return "", nil
+	}
+	svc.writeFile = func(_ string, _ []byte) error {
+		t.Fatalf("did not expect writes when no prune candidates exist")
+		return nil
+	}
+
+	report, err := svc.Run(context.Background(), Input{Prune: true})
+	if err != nil {
+		t.Fatalf("run prune with zero candidates: %v", err)
+	}
+	if len(report.PruneCandidates) != 0 {
+		t.Fatalf("expected zero prune candidates, got %+v", report.PruneCandidates)
+	}
+	if report.PruneApplied != 0 {
+		t.Fatalf("expected prune_applied=0, got %+v", report)
+	}
+}
+
 func TestNormalizeTargetLocalesRejectsEmptyValuesWithoutPlanningPrefix(t *testing.T) {
 	_, err := normalizeTargetLocales([]string{" ", "de"})
 	if err == nil {
