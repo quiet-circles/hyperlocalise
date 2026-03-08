@@ -25,6 +25,25 @@ func TestBuildPlannedTargetKeySet(t *testing.T) {
 	}
 }
 
+func TestBuildPlannedTargetMetadata(t *testing.T) {
+	planned := []Task{
+		{TargetPath: "/tmp/a.json", SourcePath: "/tmp/en.json", SourceLocale: "en", TargetLocale: "fr"},
+		{TargetPath: "/tmp/a.json", SourcePath: "/tmp/en.json", SourceLocale: "en", TargetLocale: "fr"},
+		{TargetPath: "/tmp/b.json", SourcePath: "/tmp/en-2.json", SourceLocale: "en", TargetLocale: "de"},
+	}
+
+	got, err := buildPlannedTargetMetadata(planned)
+	if err != nil {
+		t.Fatalf("build planned target metadata: %v", err)
+	}
+	if got["/tmp/a.json"].sourcePath != "/tmp/en.json" || got["/tmp/a.json"].targetLocale != "fr" {
+		t.Fatalf("unexpected metadata for a: %+v", got["/tmp/a.json"])
+	}
+	if got["/tmp/b.json"].sourcePath != "/tmp/en-2.json" || got["/tmp/b.json"].targetLocale != "de" {
+		t.Fatalf("unexpected metadata for b: %+v", got["/tmp/b.json"])
+	}
+}
+
 func TestPlanPruneCandidatesSorted(t *testing.T) {
 	svc := newTestService()
 	svc.readFile = func(path string) ([]byte, error) {

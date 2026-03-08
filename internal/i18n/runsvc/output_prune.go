@@ -7,6 +7,32 @@ import (
 	"slices"
 )
 
+func buildPlannedTargetMetadata(planned []Task) (map[string]stagedOutput, error) {
+	metadata := make(map[string]stagedOutput, len(planned))
+	for _, task := range planned {
+		existing, ok := metadata[task.TargetPath]
+		if !ok {
+			metadata[task.TargetPath] = stagedOutput{
+				entries:      map[string]string{},
+				sourcePath:   task.SourcePath,
+				sourceLocale: task.SourceLocale,
+				targetLocale: task.TargetLocale,
+			}
+			continue
+		}
+		if existing.sourcePath != task.SourcePath {
+			return nil, fmt.Errorf("output staging conflict: %s has conflicting source paths", task.TargetPath)
+		}
+		if existing.sourceLocale != "" && existing.sourceLocale != task.SourceLocale {
+			return nil, fmt.Errorf("output staging conflict: %s has conflicting source locales", task.TargetPath)
+		}
+		if existing.targetLocale != "" && existing.targetLocale != task.TargetLocale {
+			return nil, fmt.Errorf("output staging conflict: %s has conflicting target locales", task.TargetPath)
+		}
+	}
+	return metadata, nil
+}
+
 func buildPlannedTargetKeySet(planned []Task) map[string]map[string]struct{} {
 	keep := map[string]map[string]struct{}{}
 	for _, task := range planned {

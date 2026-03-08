@@ -13,7 +13,7 @@ import (
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translationfileparser"
 )
 
-func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[string]map[string]struct{}) ([]string, error) {
+func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[string]map[string]struct{}, pruneMetadata map[string]stagedOutput) ([]string, error) {
 	targetPaths := make([]string, 0, len(staged)+len(pruneTargets))
 	for path := range staged {
 		targetPaths = append(targetPaths, path)
@@ -26,7 +26,11 @@ func (s *Service) flushOutputs(staged map[string]stagedOutput, pruneTargets map[
 
 	var warnings []string
 	for _, targetPath := range targetPaths {
-		targetWarnings, err := s.flushOutputForTarget(targetPath, staged[targetPath], pruneTargets[targetPath])
+		output, ok := staged[targetPath]
+		if !ok {
+			output = pruneMetadata[targetPath]
+		}
+		targetWarnings, err := s.flushOutputForTarget(targetPath, output, pruneTargets[targetPath])
 		if err != nil {
 			return nil, err
 		}
