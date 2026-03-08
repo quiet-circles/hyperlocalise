@@ -259,6 +259,25 @@ func TestTranslateWithRetryAcceptsPluralPoundForPluralArg(t *testing.T) {
 	}
 }
 
+func TestTranslateWithRetryAcceptsPluralPoundWhenSourceOmitsExplicitCount(t *testing.T) {
+	svc := &Service{}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "{count, plural, one {# 件} other {# 件}}", nil
+	}
+
+	got, err := svc.translateWithRetry(context.Background(), Task{
+		EntryKey:     "itemCount",
+		SourceText:   "{count, plural, one {a single item} other {many items}}",
+		TargetLocale: "zh-CN",
+	})
+	if err != nil {
+		t.Fatalf("expected valid plural rewrite, got %v", err)
+	}
+	if got == "" {
+		t.Fatalf("expected translated text")
+	}
+}
+
 func TestTranslateWithRetrySanitizesEntryKeyInSystemPromptContext(t *testing.T) {
 	svc := &Service{}
 	var got translator.Request

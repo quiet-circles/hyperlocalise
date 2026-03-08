@@ -1,6 +1,8 @@
 package icuparser
 
 import (
+	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -44,6 +46,29 @@ func ParseInvariant(s string) (Invariant, error) {
 
 func SamePlaceholderSet(a, b []string) bool {
 	return slicesEqual(uniqueStrings(a), uniqueStrings(b))
+}
+
+func SameICUBlocks(a, b []BlockSignature) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Arg != b[i].Arg || a[i].Type != b[i].Type || !slicesEqual(a[i].Options, b[i].Options) {
+			return false
+		}
+	}
+	return true
+}
+
+func FormatICUBlocks(blocks []BlockSignature) string {
+	if len(blocks) == 0 {
+		return "[]"
+	}
+	parts := make([]string, 0, len(blocks))
+	for _, b := range blocks {
+		parts = append(parts, fmt.Sprintf("%s:%s%v", b.Arg, b.Type, b.Options))
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 func normalizeMustachePlaceholders(s string) string {
@@ -131,6 +156,7 @@ func appendPluralBlockInvariant(inv *Invariant, v PluralElement) {
 	if v.Type() == TypeSelectOrdinal {
 		blockType = "selectordinal"
 	}
+	appendPlaceholder(inv, v.Value)
 
 	inv.ICUBlocks = append(inv.ICUBlocks, BlockSignature{
 		Arg:     v.Value,
@@ -164,9 +190,11 @@ func uniqueStrings(values []string) []string {
 	if len(values) == 0 {
 		return nil
 	}
-	out := make([]string, 0, len(values))
+	sorted := append([]string(nil), values...)
+	slices.Sort(sorted)
+	out := make([]string, 0, len(sorted))
 	var last string
-	for i, value := range values {
+	for i, value := range sorted {
 		if i == 0 || value != last {
 			out = append(out, value)
 			last = value

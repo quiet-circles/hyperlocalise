@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"slices"
 	"strings"
 	"time"
 
@@ -30,6 +29,22 @@ var sleepWithContext = func(ctx context.Context, delay time.Duration) error {
 	case <-t.C:
 		return nil
 	}
+}
+
+type invariantViolationError struct {
+	msg   string
+	cause error
+}
+
+func (e *invariantViolationError) Error() string {
+	if e.cause == nil {
+		return e.msg
+	}
+	return e.msg + ": " + e.cause.Error()
+}
+
+func (e *invariantViolationError) Unwrap() error {
+	return e.cause
 }
 
 func (s *Service) translateWithRetry(ctx context.Context, task Task) (string, error) {
@@ -100,7 +115,8 @@ func isRetryableTranslateAttemptError(err error) bool {
 	if err == nil {
 		return false
 	}
-	if strings.Contains(err.Error(), "translation invariant violation:") {
+	var invErr *invariantViolationError
+	if errors.As(err, &invErr) {
 		return true
 	}
 	return isRetryableTranslateError(err)
@@ -120,52 +136,28 @@ func validateTranslatedInvariant(source, translated string) error {
 
 	translatedInv, translatedErr := icuparser.ParseInvariant(translated)
 	if translatedErr != nil {
-		return fmt.Errorf(
-			"translation invariant violation: invalid ICU/braces structure: %w | %s",
-			translatedErr,
-			formatInvariantDebugContext(source, translated),
-		)
+		return &invariantViolationError{
+			msg:   fmt.Sprintf("translation invariant violation: invalid ICU/braces structure | %s", formatInvariantDebugContext(source, translated)),
+			cause: translatedErr,
+		}
 	}
 	if !icuparser.SamePlaceholderSet(srcInv.Placeholders, translatedInv.Placeholders) {
-		return fmt.Errorf(
+		return &invariantViolationError{msg: fmt.Sprintf(
 			"translation invariant violation: placeholder parity mismatch (expected %v, got %v) | %s",
 			srcInv.Placeholders,
 			translatedInv.Placeholders,
 			formatInvariantDebugContext(source, translated),
-		)
+		)}
 	}
-	if !sameICUBlocks(srcInv.ICUBlocks, translatedInv.ICUBlocks) {
-		return fmt.Errorf(
+	if !icuparser.SameICUBlocks(srcInv.ICUBlocks, translatedInv.ICUBlocks) {
+		return &invariantViolationError{msg: fmt.Sprintf(
 			"translation invariant violation: ICU parity mismatch (expected %s, got %s) | %s",
-			formatICUBlocks(srcInv.ICUBlocks),
-			formatICUBlocks(translatedInv.ICUBlocks),
+			icuparser.FormatICUBlocks(srcInv.ICUBlocks),
+			icuparser.FormatICUBlocks(translatedInv.ICUBlocks),
 			formatInvariantDebugContext(source, translated),
-		)
+		)}
 	}
 	return nil
-}
-
-func sameICUBlocks(a, b []icuparser.BlockSignature) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i].Arg != b[i].Arg || a[i].Type != b[i].Type || !slices.Equal(a[i].Options, b[i].Options) {
-			return false
-		}
-	}
-	return true
-}
-
-func formatICUBlocks(blocks []icuparser.BlockSignature) string {
-	if len(blocks) == 0 {
-		return "[]"
-	}
-	parts := make([]string, 0, len(blocks))
-	for _, b := range blocks {
-		parts = append(parts, fmt.Sprintf("%s:%s%v", b.Arg, b.Type, b.Options))
-	}
-	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 func formatInvariantDebugContext(source, translated string) string {
