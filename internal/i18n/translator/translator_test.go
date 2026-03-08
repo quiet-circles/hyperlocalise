@@ -92,7 +92,10 @@ func TestTranslateUsesRegisteredProvider(t *testing.T) {
 func TestNewRegistersDefaultProviders(t *testing.T) {
 	t.Parallel()
 
-	tool := New()
+	tool, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
 
 	if _, ok := tool.providers[ProviderOpenAI]; !ok {
 		t.Fatalf("expected %q provider to be registered", ProviderOpenAI)

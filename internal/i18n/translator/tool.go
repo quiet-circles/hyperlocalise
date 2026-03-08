@@ -14,23 +14,29 @@ type Tool struct {
 }
 
 var (
-	defaultToolOnce sync.Once
-	defaultTool     *Tool
+	defaultToolOnce    sync.Once
+	defaultTool        *Tool
+	defaultToolInitErr error
 )
 
 func Translate(ctx context.Context, req Request) (string, error) {
+	// Initialization is attempted once. If it fails, all subsequent calls
+	// to Translate will return the same error; re-initialization is not possible.
 	defaultToolOnce.Do(func() {
-		defaultTool = New()
+		defaultTool, defaultToolInitErr = New()
 	})
+	if defaultToolInitErr != nil {
+		return "", defaultToolInitErr
+	}
 	return defaultTool.Translate(ctx, req)
 }
 
-func New() *Tool {
+func New() (*Tool, error) {
 	t := &Tool{providers: map[string]Provider{}}
 	if err := RegisterBuiltins(t); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("creating translator: %w", err)
 	}
-	return t
+	return t, nil
 }
 
 func (t *Tool) Register(provider Provider) error {
