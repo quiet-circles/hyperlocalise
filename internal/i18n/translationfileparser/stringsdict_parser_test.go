@@ -35,8 +35,11 @@ func TestAppleStringsdictParserParsesPluralCategories(t *testing.T) {
 		t.Fatalf("parse stringsdict: %v", err)
 	}
 
-	if got["files_count.NSStringLocalizedFormatKey"] != "%#@files@" {
-		t.Fatalf("unexpected format key: %q", got["files_count.NSStringLocalizedFormatKey"])
+	if _, ok := got["files_count.NSStringLocalizedFormatKey"]; ok {
+		t.Fatalf("metadata key NSStringLocalizedFormatKey must not be parsed as translatable entry")
+	}
+	if _, ok := got["files_count.files.NSStringFormatSpecTypeKey"]; ok {
+		t.Fatalf("metadata key NSStringFormatSpecTypeKey must not be parsed as translatable entry")
 	}
 	if got["files_count.files.one"] != "%d file" {
 		t.Fatalf("unexpected one value: %q", got["files_count.files.one"])
@@ -66,9 +69,8 @@ func TestMarshalAppleStringsdictPreservesTemplateAndPlaceholders(t *testing.T) {
 </plist>`)
 
 	out, err := MarshalAppleStringsdict(template, map[string]string{
-		"files_count.NSStringLocalizedFormatKey": "%#@files@",
-		"files_count.files.one":                  "%d fichier",
-		"files_count.files.other":                "%d fichiers",
+		"files_count.files.one":   "%d fichier",
+		"files_count.files.other": "%d fichiers",
 	})
 	if err != nil {
 		t.Fatalf("marshal stringsdict: %v", err)
@@ -86,5 +88,33 @@ func TestMarshalAppleStringsdictPreservesTemplateAndPlaceholders(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "<string>%d fichiers</string>") {
 		t.Fatalf("expected other category translation, got %q", rendered)
+	}
+}
+
+func TestAppleStringsdictParserRejectsMismatchedFormatToken(t *testing.T) {
+	content := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>pending_review_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@đánh giá@</string>
+    <key>reviews</key>
+    <dict>
+      <key>one</key>
+      <string>%d review pending</string>
+      <key>other</key>
+      <string>%d reviews pending</string>
+    </dict>
+  </dict>
+</dict>
+</plist>`)
+
+	_, err := (AppleStringsdictParser{}).Parse(content)
+	if err == nil {
+		t.Fatalf("expected parse error")
+	}
+	if !strings.Contains(err.Error(), `references missing substitution key "đánh giá"`) {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

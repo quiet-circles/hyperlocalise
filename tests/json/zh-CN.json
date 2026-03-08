@@ -2,17 +2,13 @@
   "auth": {
     "signIn": {
       "subtitle": "使用您的工作邮箱继续。",
-      "title": "登录您的工作区"
+      "title": "登录到您的工作空间"
     }
   },
-  "common": {
-    "goodbye": "再见",
-    "hello": "你好"
-  },
   "dashboard": {
-    "syncStatus": "上次同步时间 2 分钟前"
+    "syncStatus": "最后同步时间2分钟前"
   },
   "errors": {
-    "networkRetry": "我们无法保存您的更改。请检查您的网络连接并再次尝试。"
+    "networkRetry": "我们无法保存您的更改。请检查您的连接，然后重试。"
   }
 }

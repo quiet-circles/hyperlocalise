@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/quiet-circles/hyperlocalise/internal/i18n/icuparser"
 	"github.com/quiet-circles/hyperlocalise/internal/i18n/translator"
 )
 
@@ -67,6 +69,9 @@ func (s *Service) translateRequestWithRetry(ctx context.Context, request transla
 	for attempt = range translationRetryMaxAttempts {
 		translated, err := s.translate(ctx, request)
 		if err == nil {
+			if err := validateTranslatedInvariant(request.Source, translated); err != nil {
+				return "", err
+			}
 			return translated, nil
 		}
 		lastErr = err
@@ -84,6 +89,78 @@ func (s *Service) translateRequestWithRetry(ctx context.Context, request transla
 		return "", nil
 	}
 	return "", fmt.Errorf("translation failed after %d attempts: %w", attempt+1, lastErr)
+}
+
+func validateTranslatedInvariant(source, translated string) error {
+	srcInv, srcErr := icuparser.ParseInvariant(strings.TrimSpace(source))
+	if srcErr != nil {
+		return nil
+	}
+	if len(srcInv.Placeholders) == 0 && len(srcInv.ICUBlocks) == 0 {
+		return nil
+	}
+
+	translatedInv, translatedErr := icuparser.ParseInvariant(strings.TrimSpace(translated))
+	if translatedErr != nil {
+		return fmt.Errorf("translation invariant violation: invalid ICU/braces structure: %w", translatedErr)
+	}
+	if !samePlaceholderSet(srcInv.Placeholders, translatedInv.Placeholders) {
+		return fmt.Errorf(
+			"translation invariant violation: placeholder parity mismatch (expected %v, got %v)",
+			srcInv.Placeholders,
+			translatedInv.Placeholders,
+		)
+	}
+	if !sameICUBlocks(srcInv.ICUBlocks, translatedInv.ICUBlocks) {
+		return fmt.Errorf(
+			"translation invariant violation: ICU parity mismatch (expected %s, got %s)",
+			formatICUBlocks(srcInv.ICUBlocks),
+			formatICUBlocks(translatedInv.ICUBlocks),
+		)
+	}
+	return nil
+}
+
+func sameICUBlocks(a, b []icuparser.BlockSignature) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Arg != b[i].Arg || a[i].Type != b[i].Type || !slices.Equal(a[i].Options, b[i].Options) {
+			return false
+		}
+	}
+	return true
+}
+
+func samePlaceholderSet(a, b []string) bool {
+	return slices.Equal(uniqueStrings(a), uniqueStrings(b))
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	var last string
+	for i, value := range values {
+		if i == 0 || value != last {
+			out = append(out, value)
+			last = value
+		}
+	}
+	return out
+}
+
+func formatICUBlocks(blocks []icuparser.BlockSignature) string {
+	if len(blocks) == 0 {
+		return "[]"
+	}
+	parts := make([]string, 0, len(blocks))
+	for _, b := range blocks {
+		parts = append(parts, fmt.Sprintf("%s:%s%v", b.Arg, b.Type, b.Options))
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 func isRetryableTranslateError(err error) bool {

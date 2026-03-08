@@ -27,6 +27,12 @@ func TestBuildSystemPromptUsesDefaultPolicyWhenNoPromptProvided(t *testing.T) {
 	if !strings.Contains(got, "Translate the user-provided source text") {
 		t.Fatalf("expected default translation instruction, got %q", got)
 	}
+	if !strings.Contains(got, "Do not translate programmatic identifiers inside placeholders or ICU message syntax") {
+		t.Fatalf("expected ICU preservation guidance, got %q", got)
+	}
+	if !strings.Contains(got, "plural, select, selectordinal") {
+		t.Fatalf("expected ICU keyword list in default system prompt, got %q", got)
+	}
 	if !strings.Contains(got, "Target language: vi-VN") {
 		t.Fatalf("expected target language in default system prompt, got %q", got)
 	}
@@ -51,6 +57,18 @@ func TestBuildUserPromptPrefersUserPrompt(t *testing.T) {
 	})
 	if got != "custom user" {
 		t.Fatalf("expected custom user prompt, got %q", got)
+	}
+}
+
+func TestBuildUserPromptIncludesICUGuidanceByDefault(t *testing.T) {
+	t.Parallel()
+
+	got := buildUserPrompt(Request{
+		Source:         "{plan, select, pro{Pro} other{Free}}",
+		TargetLanguage: "zh-CN",
+	})
+	if !strings.Contains(got, "Do not translate ICU keywords, selectors, or placeholder names") {
+		t.Fatalf("expected ICU guidance in default user prompt, got %q", got)
 	}
 }
 

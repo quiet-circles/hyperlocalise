@@ -3,7 +3,7 @@
   <file source-language="en-US" datatype="plaintext" original="messages" target-language="zh-CN">
     <body>
       <trans-unit id="auth.signIn.title">
-        <source>登录您的工作区</source>
+        <source>登录到您的工作空间</source>
       </trans-unit>
       <trans-unit id="auth.signIn.subtitle">
         <source>使用您的工作邮箱继续。</source>
@@ -12,7 +12,7 @@
         <source>最后同步时间 2 分钟前</source>
       </trans-unit>
       <trans-unit id="errors.networkRetry">
-        <source>我们无法保存您的更改。请检查您的连接并重试。</source>
+        <source>我们无法保存您的更改。请检查您的连接，然后重试。</source>
       </trans-unit>
     </body>
   </file>

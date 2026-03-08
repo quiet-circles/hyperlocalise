@@ -64,7 +64,7 @@ func TestMarshalARBPreservesMetadataAndICUContent(t *testing.T) {
 	out, err := MarshalARB(template, template, map[string]string{
 		"inviteCount": "{count, plural, =0{Aucune invitation} one{1 invitation} other{{count} invitations}}",
 		"hello":       "Bonjour {name}",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestMarshalARBPreservesMetadataAndICUContent(t *testing.T) {
 	if payload["inviteCount"] != "{count, plural, =0{Aucune invitation} one{1 invitation} other{{count} invitations}}" {
 		t.Fatalf("unexpected inviteCount translation: %#v", payload["inviteCount"])
 	}
-	if payload["@@locale"] != "en" {
+	if payload["@@locale"] != "fr" {
 		t.Fatalf("expected @@locale metadata preserved, got %#v", payload["@@locale"])
 	}
 
@@ -200,7 +200,7 @@ func TestMarshalARBStructureFirstAndDeterministicAppend(t *testing.T) {
 		"hello": "Salut",
 		"new_b": "B",
 		"new_a": "A",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -246,7 +246,7 @@ func TestMarshalARBDoesNotTreatTemplateOrphanMetadataAsNewMessageMetadata(t *tes
 	out, err := MarshalARB(template, template, map[string]string{
 		"existing": "valeur",
 		"foo":      "translated",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -282,7 +282,7 @@ func TestMarshalARBCarriesSourceMetadataForAppendedKeys(t *testing.T) {
 	out, err := MarshalARB(targetTemplate, sourceTemplate, map[string]string{
 		"existing": "valeur",
 		"newKey":   "Nouveau message",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestMarshalARBNormalizesPreservedMetadataIndentation(t *testing.T) {
 
 	out, err := MarshalARB(template, template, map[string]string{
 		"hello": "Salut",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -347,7 +347,7 @@ func TestMarshalARBSkipsSourceMetadataWhenTargetAlreadyHasOrphanedMetadataKey(t 
 	out, err := MarshalARB(targetTemplate, sourceTemplate, map[string]string{
 		"existing": "valeur",
 		"foo":      "translated",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestMarshalARBRemovesAllMessagesWhenValuesEmpty(t *testing.T) {
   }
 }`)
 
-	out, err := MarshalARB(template, template, map[string]string{})
+	out, err := MarshalARB(template, template, map[string]string{}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -389,7 +389,7 @@ func TestMarshalARBRemovesAllMessagesWhenValuesEmpty(t *testing.T) {
 		t.Fatalf("expected @hello metadata to be removed with its message, got %q", rendered)
 	}
 	if !strings.Contains(rendered, `"@@locale": "fr"`) {
-		t.Fatalf("expected locale metadata to be preserved, got %q", rendered)
+		t.Fatalf("expected locale metadata to match target locale, got %q", rendered)
 	}
 	if !strings.Contains(rendered, `"@custom": {`) {
 		t.Fatalf("expected unrelated metadata to be preserved, got %q", rendered)
@@ -407,7 +407,7 @@ func TestMarshalARBAppendsAllValuesWhenTargetTemplateEmpty(t *testing.T) {
 
 	out, err := MarshalARB(targetTemplate, sourceTemplate, map[string]string{
 		"newKey": "Nouveau message",
-	})
+	}, "fr")
 	if err != nil {
 		t.Fatalf("marshal arb: %v", err)
 	}
@@ -452,7 +452,7 @@ func TestMarshalARBRejectsInvalidTemplates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := MarshalARB(tc.template, tc.sourceTemplate, map[string]string{
 				"hello": "Bonjour",
-			})
+			}, "fr")
 			if err == nil {
 				t.Fatalf("expected marshal error")
 			}

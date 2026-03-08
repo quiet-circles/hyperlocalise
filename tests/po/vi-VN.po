@@ -6,10 +6,10 @@ msgid "auth.signIn.title"
 msgstr "Đăng nhập vào không gian làm việc của bạn"
 
 msgid "auth.signIn.subtitle"
-msgstr "Sử dụng địa chỉ email làm việc của bạn để tiếp tục."
+msgstr "Sử dụng địa chỉ email công việc của bạn để tiếp tục."
 
 msgid "dashboard.syncStatus"
-msgstr "Đã đồng bộ hóa 2 phút trước"
+msgstr "Đã đồng bộ hóa lần cuối cách 2 phút trước"
 
 msgid "errors.networkRetry"
 msgstr "Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại."

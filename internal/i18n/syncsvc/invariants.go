@@ -25,7 +25,7 @@ func validateEntryInvariant(candidate, baseline storage.Entry) []string {
 		return diags
 	}
 
-	if !slices.Equal(baseInv.Placeholders, candInv.Placeholders) {
+	if !samePlaceholderSet(baseInv.Placeholders, candInv.Placeholders) {
 		diags = append(diags, fmt.Sprintf(
 			"placeholder parity mismatch (expected %v, got %v)",
 			baseInv.Placeholders,
@@ -53,6 +53,25 @@ func equalICUParity(a, b []icuparser.BlockSignature) bool {
 		}
 	}
 	return true
+}
+
+func samePlaceholderSet(a, b []string) bool {
+	return slices.Equal(uniqueStrings(a), uniqueStrings(b))
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	var last string
+	for i, value := range values {
+		if i == 0 || value != last {
+			out = append(out, value)
+			last = value
+		}
+	}
+	return out
 }
 
 func formatICUBlocks(blocks []icuparser.BlockSignature) string {

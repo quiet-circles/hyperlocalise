@@ -210,8 +210,8 @@ func TestStrategyParsesAppleStringsdict(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 
-	if got["items_count.NSStringLocalizedFormatKey"] != "%#@items@" {
-		t.Fatalf("unexpected format translation: %q", got["items_count.NSStringLocalizedFormatKey"])
+	if _, ok := got["items_count.NSStringLocalizedFormatKey"]; ok {
+		t.Fatalf("metadata key NSStringLocalizedFormatKey must not be parsed as translatable entry")
 	}
 	if got["items_count.items.one"] != "%d item" {
 		t.Fatalf("unexpected one translation: %q", got["items_count.items.one"])

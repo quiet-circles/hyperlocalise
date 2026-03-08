@@ -1,15 +1,15 @@
 {
   "auth": {
     "signIn": {
-      "subtitle": "使用您的工作电子邮件继续。",
-      "title": "登录您的工作空间"
+      "subtitle": "使用您的工作邮箱继续。",
+      "title": "登录到您的工作空间"
     }
   },
   "dashboard": {
-    "pendingReviews": "3 待审核的评论",
+    "pendingReviews": "3 待审评论",
     "syncStatus": "最后同步时间 2 分钟前"
   },
   "errors": {
-    "networkRetry": "我们无法保存您的更改。请检查您的连接并再次尝试。"
+    "networkRetry": "我们无法保存您的更改。请检查您的连接并重试。"
   }
 }

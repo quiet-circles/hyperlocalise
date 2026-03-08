@@ -1,12 +1,12 @@
 ---
-title: "Kế hoạch phát hành tài liệu"
-description: "Xử lý thay thế văn bản MDX mà không làm thay đổi JSX, biểu thức hoặc import."
+title: "Hướng dẫn thực hiện"
+description: "Xử lý các thay thế văn bản MDX mà không cần can thiệp vào JSX, biểu thức hoặc import."
 ---
 
 import { Callout } from "nextra/components";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# Kế hoạch ra mắt tài liệu
+# Hướng dẫn khởi chạy tài liệu
 
 <Callout type="warning">
   Keep `projectId="docs"` unchanged when you update this page.
@@ -17,7 +17,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
     Run `hyperlocalise status --verbose` before publishing the docs portal.
   </Tab>
   <Tab value="api">
-    API users should keep the token name `HYPERLOCALISE_API_KEY`.
+    Người dùng API nên giữ tên token là `HYPERLOCALISE_API_KEY`.
   </Tab>
 </Tabs>
 
@@ -34,21 +34,21 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
     Keep [reference links][mdx-ref] stable and preserve literal text like `MDPH_0_END`.
   </Callout>
 
-  - First nested item with `hyperlocalise sync pull`
-  - Second nested item with <Badge text="inline" /> markers
+  - Mục tiêu đệ quy đầu tiên với `hyperlocalise sync pull`
+  - Mục thứ hai được nhúng với <Badge text="inline" />
 </Card>
 
 Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
 
 Use <Badge text="stable" /> builds when the release branch is frozen.
 
-> Đoạn trích dẫn có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
+> Các đoạn trích có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
 >
-> ![Hình ảnh sơ đồ](https://example.com/assets/quoted(flow).png)
+> ![Biểu đồ đã được trích dẫn](https://example.com/assets/quoted(flow).png)
 
 <Steps>
   <Step title="Prepare">
-    Xem lại [Hướng dẫn CLI](https://example.com/docs/cli(reference)) trước khi xuất bản.
+    Review the [CLI guide](https://example.com/docs/cli(reference)) before publishing.
   </Step>
   <Step
     title="Publish"

@@ -40,7 +40,7 @@
 - Accepts object-shaped ARB JSON (Flutter resource bundles).
 - Only top-level non-metadata keys are treated as translatable message entries.
 - Keys prefixed with `@` (for example `@hello`, `@@locale`) are treated as metadata and excluded from translation parsing.
-- `MarshalARB(template, sourceTemplate, values)` preserves target-template metadata and ordering, and carries source `@key` metadata forward for newly appended message keys.
+- `MarshalARB(template, sourceTemplate, values, targetLocale)` preserves target-template metadata and ordering, carries source `@key` metadata forward for newly appended message keys, and normalizes `@@locale` to `targetLocale`.
 
 ### XLIFF
 
@@ -75,6 +75,8 @@
 
 - Parses plist/XML dictionaries and flattens `<string>` leaves to dotted keys.
   - Example: `item_count.items.one=%d item`
+- Treats `NSString*` fields such as `NSStringLocalizedFormatKey` and `NSStringFormatSpecTypeKey` as structural metadata, not translatable content.
+- Validates that every `%#@token@` in `NSStringLocalizedFormatKey` matches a sibling substitution dictionary key.
 - Preserves plural category keys (`zero`, `one`, `two`, `few`, `many`, `other`) as part of flattened key paths.
 - `MarshalAppleStringsdict(template, values)` preserves plist/XML layout and replaces only `<string>` text values.
 

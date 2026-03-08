@@ -6,13 +6,13 @@
         <source>Đăng nhập vào không gian làm việc của bạn</source>
       </trans-unit>
       <trans-unit id="auth.signIn.subtitle">
-        <source>Sử dụng địa chỉ email làm việc của bạn để tiếp tục.</source>
+        <source>Sử dụng địa chỉ email công việc của bạn để tiếp tục.</source>
       </trans-unit>
       <trans-unit id="dashboard.syncStatus">
         <source>Đã đồng bộ hóa lần cuối 2 phút trước</source>
       </trans-unit>
       <trans-unit id="errors.networkRetry">
-        <source>Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối và thử lại.</source>
+        <source>Chúng tôi không thể lưu thay đổi của bạn. Vui lòng kiểm tra kết nối và thử lại.</source>
       </trans-unit>
     </body>
   </file>

@@ -5,7 +5,7 @@
     <key>pending_review_count</key>
     <dict>
       <key>NSStringLocalizedFormatKey</key>
-      <string>%#@评论@</string>
+      <string>%#@reviews@</string>
       <key>reviews</key>
       <dict>
         <key>NSStringFormatSpecTypeKey</key>
@@ -15,7 +15,7 @@
         <key>one</key>
         <string>%d 评论待审核</string>
         <key>other</key>
-        <string>%d 条评论待审核</string>
+        <string>%d 评论待审核</string>
       </dict>
     </dict>
   </dict>

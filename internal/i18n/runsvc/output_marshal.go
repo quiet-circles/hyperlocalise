@@ -98,7 +98,7 @@ func (s *Service) marshalSourceTemplateTarget(ext, path, sourcePath, sourceLocal
 		}
 		return content, nil
 	case ".arb":
-		content, err := translationfileparser.MarshalARB(template, sourceTemplate, values)
+		content, err := translationfileparser.MarshalARB(template, sourceTemplate, values, targetLocale)
 		if err != nil {
 			return nil, fmt.Errorf("flush outputs: marshal %q: %w", path, err)
 		}

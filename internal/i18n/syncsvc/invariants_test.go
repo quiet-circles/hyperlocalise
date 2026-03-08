@@ -60,3 +60,29 @@ func TestValidateEntryInvariantFlagsInvalidBraceInTagBody(t *testing.T) {
 		t.Fatalf("unexpected diags: %#v", diags)
 	}
 }
+
+func TestValidateEntryInvariantFlagsTranslatedICUKeyword(t *testing.T) {
+	base := storage.Entry{Value: "{plan, select, free {Free plan} other {Custom plan}}"}
+	candidate := storage.Entry{Value: "{plan, 选择, free {免费计划} other {自定义计划}}"}
+
+	diags := validateEntryInvariant(candidate, base)
+	if len(diags) == 0 {
+		t.Fatalf("expected ICU parity mismatch")
+	}
+	if !strings.Contains(strings.Join(diags, " | "), "ICU parity mismatch") {
+		t.Fatalf("unexpected diags: %#v", diags)
+	}
+}
+
+func TestValidateEntryInvariantFlagsTranslatedPlaceholderName(t *testing.T) {
+	base := storage.Entry{Value: "{name} mentioned you in {projectName}"}
+	candidate := storage.Entry{Value: "{ten} da nhac den ban trong {projectName}"}
+
+	diags := validateEntryInvariant(candidate, base)
+	if len(diags) == 0 {
+		t.Fatalf("expected placeholder parity mismatch")
+	}
+	if !strings.Contains(strings.Join(diags, " | "), "placeholder parity mismatch") {
+		t.Fatalf("unexpected diags: %#v", diags)
+	}
+}

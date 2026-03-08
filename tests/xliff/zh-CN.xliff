@@ -9,10 +9,10 @@
         <source>使用您的工作邮箱继续。</source>
       </trans-unit>
       <trans-unit id="dashboard.syncStatus">
-        <source>最后同步时间2分钟前</source>
+        <source>最后同步时间 2 分钟前</source>
       </trans-unit>
       <trans-unit id="errors.networkRetry">
-        <source>我们无法保存您的更改。请检查您的连接并重试。</source>
+        <source>我们无法保存您的更改。请检查您的连接并再次尝试。</source>
       </trans-unit>
     </body>
   </file>

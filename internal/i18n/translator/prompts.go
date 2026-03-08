@@ -6,7 +6,7 @@ func buildSystemPrompt(req Request) string {
 	base := strings.TrimSpace(req.SystemPrompt)
 	if base == "" {
 		b := strings.Builder{}
-		b.WriteString("You are a translation assistant. Translate the user-provided source text into the requested target language. Preserve meaning, placeholders, variables, and formatting. Return only the translated text with no explanations, labels, markdown, or quotes unless the translated content itself requires them.")
+		b.WriteString("You are a translation assistant. Translate the user-provided source text into the requested target language. Preserve meaning, placeholders, variables, and formatting. Do not translate programmatic identifiers inside placeholders or ICU message syntax. Keep ICU keywords and selectors such as plural, select, selectordinal, zero, one, two, few, many, other, explicit selectors like =0, and # unchanged. Return only the translated text with no explanations, labels, markdown, or quotes unless the translated content itself requires them.")
 
 		target := strings.TrimSpace(req.TargetLanguage)
 		if target != "" {
@@ -26,7 +26,7 @@ func buildUserPrompt(req Request) string {
 	}
 
 	b := strings.Builder{}
-	b.WriteString("Translate the following source text into the requested target language. Preserve placeholders, variables, and formatting.\n\n")
+	b.WriteString("Translate the following source text into the requested target language. Preserve placeholders, variables, and formatting. Do not translate ICU keywords, selectors, or placeholder names.\n\n")
 	b.WriteString("Target language: ")
 	b.WriteString(strings.TrimSpace(req.TargetLanguage))
 	b.WriteString("\n")

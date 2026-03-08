@@ -40,7 +40,7 @@ For JSON (`.json`), `run` supports:
 
 In FormatJS mode, only `defaultMessage` is translated. Keys (message IDs), `description`, and other non-message metadata are preserved.
 
-For Flutter ARB (`.arb`), `run` translates only message keys and preserves metadata keys such as `@key` and `@@locale` unchanged.
+For Flutter ARB (`.arb`), `run` translates only message keys, preserves metadata keys such as `@key`, and normalizes `@@locale` to the target locale on write.
 
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 

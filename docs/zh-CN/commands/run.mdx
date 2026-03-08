@@ -40,7 +40,7 @@ hyperlocalise run [--config <path>] [--group <name>] [--bucket <name>] [--target
 
 In FormatJS mode, only `defaultMessage` is translated. Keys (message IDs), `description`, and other non-message metadata are preserved.
 
-对于 Flutter ARB (`.arb`)，`run` 仅翻译消息键，并保持元数据键（如 `@key` 和 `@@locale`）不变。
+对于 Flutter ARB (`.arb`)，`run` 仅翻译消息键，保留 `@key` 等元数据键，并在写入时将 `@@locale` 规范化为目标语言环境。
 
 For Markdown and MDX (`.md`, `.mdx`), `run` translates extracted prose and preserves non-translatable structure:
 

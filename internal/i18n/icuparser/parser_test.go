@@ -36,7 +36,7 @@ func TestParserFeatureParitySubset(t *testing.T) {
 		{
 			name:             "nested select plural",
 			msg:              "{gender, select, male {{count, plural, one {He has one} other {He has #}}} female {{count, plural, one {She has one} other {She has #}}} other {They have {count}}}",
-			wantPlaceholders: []string{"count"},
+			wantPlaceholders: []string{"count", "count", "count"},
 			wantICU: []BlockSignature{
 				{Arg: "count", Type: "plural", Options: []string{"one", "other"}},
 				{Arg: "count", Type: "plural", Options: []string{"one", "other"}},
@@ -46,7 +46,7 @@ func TestParserFeatureParitySubset(t *testing.T) {
 		{
 			name:             "plural offset accepted",
 			msg:              "{count, plural, offset:1 =0 {Nobody} one {{name}} other {{name} and # others}}",
-			wantPlaceholders: []string{"name", "name"},
+			wantPlaceholders: []string{"count", "name", "name"},
 			wantICU: []BlockSignature{{
 				Arg:     "count",
 				Type:    "plural",
@@ -54,9 +54,19 @@ func TestParserFeatureParitySubset(t *testing.T) {
 			}},
 		},
 		{
+			name:             "plural pound and explicit arg normalize the same",
+			msg:              "{count, plural, one {# invite} other {{count} invites}}",
+			wantPlaceholders: []string{"count", "count"},
+			wantICU: []BlockSignature{{
+				Arg:     "count",
+				Type:    "plural",
+				Options: []string{"one", "other"},
+			}},
+		},
+		{
 			name:             "selectordinal accepted",
 			msg:              "{pos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
-			wantPlaceholders: nil,
+			wantPlaceholders: []string{"pos", "pos", "pos", "pos"},
 			wantICU: []BlockSignature{{
 				Arg:     "pos",
 				Type:    "selectordinal",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -32,6 +33,9 @@ func (p AppleStringsdictParser) Parse(content []byte) (map[string]string, error)
 
 	out := map[string]string{}
 	for _, entry := range doc.entries {
+		if isStringsdictMetadataKey(entry.key) {
+			continue
+		}
 		out[entry.key] = entry.sourceValue
 	}
 	return out, nil
@@ -183,7 +187,68 @@ func parseStringsdictDocument(content []byte) (stringsdictDocument, error) {
 		}
 	}
 
+	if err := validateStringsdictFormatKeys(doc.entries); err != nil {
+		return stringsdictDocument{}, err
+	}
+
 	return doc, nil
+}
+
+var stringsdictFormatTokenPattern = regexp.MustCompile(`%#@([^@]+)@`)
+
+func validateStringsdictFormatKeys(entries []stringsdictEntry) error {
+	childKeysByPrefix := map[string]map[string]struct{}{}
+	for _, entry := range entries {
+		parts := strings.Split(entry.key, ".")
+		if len(parts) < 3 {
+			continue
+		}
+		if isStringsdictMetadataKey(entry.key) {
+			continue
+		}
+		prefix := strings.Join(parts[:len(parts)-2], ".")
+		childKey := parts[len(parts)-2]
+		if childKey == "" {
+			continue
+		}
+		if _, ok := childKeysByPrefix[prefix]; !ok {
+			childKeysByPrefix[prefix] = map[string]struct{}{}
+		}
+		childKeysByPrefix[prefix][childKey] = struct{}{}
+	}
+
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.key, ".NSStringLocalizedFormatKey") {
+			continue
+		}
+		prefix := strings.TrimSuffix(entry.key, ".NSStringLocalizedFormatKey")
+		candidates := childKeysByPrefix[prefix]
+		if len(candidates) == 0 {
+			continue
+		}
+
+		matches := stringsdictFormatTokenPattern.FindAllStringSubmatch(entry.sourceValue, -1)
+		if len(matches) == 0 {
+			return fmt.Errorf("stringsdict key %q has invalid NSStringLocalizedFormatKey %q", entry.key, entry.sourceValue)
+		}
+		for _, match := range matches {
+			token := strings.TrimSpace(match[1])
+			if _, ok := candidates[token]; !ok {
+				return fmt.Errorf("stringsdict key %q references missing substitution key %q", entry.key, token)
+			}
+		}
+	}
+
+	return nil
+}
+
+func isStringsdictMetadataKey(path string) bool {
+	lastDot := strings.LastIndex(path, ".")
+	segment := path
+	if lastDot >= 0 {
+		segment = path[lastDot+1:]
+	}
+	return strings.HasPrefix(segment, "NSString")
 }
 
 func escapeXMLText(s string) string {

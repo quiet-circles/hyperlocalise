@@ -72,15 +72,22 @@ func parseARBDescription(payload map[string]any, key string) string {
 }
 
 // MarshalARB preserves target-template metadata and ordering while carrying
-// source-template message metadata for newly appended keys.
-func MarshalARB(template []byte, sourceTemplate []byte, values map[string]string) ([]byte, error) {
+// source-template message metadata for newly appended keys. When @@locale is
+// present, or targetLocale is provided without one in the template, the output
+// is normalized to the requested target locale.
+func MarshalARB(template []byte, sourceTemplate []byte, values map[string]string, targetLocale string) ([]byte, error) {
 	fields, err := parseARBObjectFields(template)
 	if err != nil {
 		return nil, fmt.Errorf("arb decode: %w", err)
 	}
+	normalizedTargetLocale := strings.TrimSpace(targetLocale)
 
 	templateMessageKeys := make(map[string]struct{}, len(fields))
+	hasLocaleField := false
 	for _, field := range fields {
+		if field.Key == "@@locale" {
+			hasLocaleField = true
+		}
 		if isARBMetadataKey(field.Key) {
 			continue
 		}
@@ -118,8 +125,30 @@ func MarshalARB(template []byte, sourceTemplate []byte, values map[string]string
 		return nil
 	}
 
+	if !hasLocaleField && normalizedTargetLocale != "" {
+		encodedLocale, err := json.Marshal(normalizedTargetLocale)
+		if err != nil {
+			return nil, fmt.Errorf("arb encode: %w", err)
+		}
+		if err := writeField("@@locale", encodedLocale); err != nil {
+			return nil, fmt.Errorf("arb encode: %w", err)
+		}
+		writtenFields["@@locale"] = struct{}{}
+	}
+
 	for _, field := range fields {
 		if isARBMetadataKey(field.Key) {
+			if field.Key == "@@locale" && normalizedTargetLocale != "" {
+				encodedLocale, err := json.Marshal(normalizedTargetLocale)
+				if err != nil {
+					return nil, fmt.Errorf("arb encode: %w", err)
+				}
+				if err := writeField(field.Key, encodedLocale); err != nil {
+					return nil, fmt.Errorf("arb encode: %w", err)
+				}
+				writtenFields[field.Key] = struct{}{}
+				continue
+			}
 			if messageKey, isMessageMeta := arbMessageMetadataKey(field.Key, templateMessageKeys); isMessageMeta {
 				if _, ok := values[messageKey]; !ok {
 					continue

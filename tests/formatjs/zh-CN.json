@@ -1,22 +1,14 @@
 {
   "auth.signIn.title": {
-    "defaultMessage": "登录到您的工作空间"
+    "defaultMessage": "登录您的工作空间"
   },
   "billing.trialNotice": {
     "defaultMessage": "您的试用期将于 {date} 结束。"
   },
-  "checkout.submit": {
-    "defaultMessage": "提交订单",
-    "description": "Checkout submit button"
-  },
   "dashboard.pendingReviews": {
-    "defaultMessage": "{count, plural, =0{无待审核的评论} one{# 待审核的评论} other{# 待审核的评论}}"
-  },
-  "home.title": {
-    "defaultMessage": "欢迎",
-    "description": "Homepage title"
+    "defaultMessage": "{count, plural, =0{待审核的评论数量为0} one{# 待审核的评论} other{# 待审核的评论}}"
   },
   "notifications.email.subject": {
-    "defaultMessage": "{name} 在 {projectName} 中提到了你"
+    "defaultMessage": "{name} 在 {projectName} 中提到了您"
   }
 }

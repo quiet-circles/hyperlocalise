@@ -27,7 +27,7 @@ func ParseInvariant(s string) (Invariant, error) {
 	}
 
 	inv := Invariant{}
-	collectInvariantFromElements(elems, &inv)
+	collectInvariantFromElements(elems, &inv, "")
 
 	sort.Strings(inv.Placeholders)
 	sort.Slice(inv.ICUBlocks, func(i, j int) bool {
@@ -70,13 +70,13 @@ func normalizeMustachePlaceholders(s string) string {
 	return b.String()
 }
 
-func collectInvariantFromElements(elems []Element, inv *Invariant) {
+func collectInvariantFromElements(elems []Element, inv *Invariant, pluralArg string) {
 	for _, el := range elems {
-		collectInvariantFromElement(el, inv)
+		collectInvariantFromElement(el, inv, pluralArg)
 	}
 }
 
-func collectInvariantFromElement(el Element, inv *Invariant) {
+func collectInvariantFromElement(el Element, inv *Invariant, pluralArg string) {
 	switch v := el.(type) {
 	case ArgumentElement:
 		appendPlaceholder(inv, v.Value)
@@ -87,12 +87,17 @@ func collectInvariantFromElement(el Element, inv *Invariant) {
 	case TimeElement:
 		appendPlaceholder(inv, v.Value)
 	case SelectElement:
-		appendSelectBlockInvariant(inv, v)
+		appendSelectBlockInvariant(inv, v, pluralArg)
 	case PluralElement:
 		appendPluralBlockInvariant(inv, v)
 	case TagElement:
-		collectInvariantFromElements(v.Children, inv)
-	case LiteralElement, PoundElement:
+		collectInvariantFromElements(v.Children, inv, pluralArg)
+	case PoundElement:
+		if pluralArg != "" {
+			appendPlaceholder(inv, pluralArg)
+		}
+		return
+	case LiteralElement:
 		return
 	default:
 		// Defensive no-op for future element types.
@@ -106,14 +111,14 @@ func appendPlaceholder(inv *Invariant, value string) {
 	}
 }
 
-func appendSelectBlockInvariant(inv *Invariant, v SelectElement) {
+func appendSelectBlockInvariant(inv *Invariant, v SelectElement, pluralArg string) {
 	inv.ICUBlocks = append(inv.ICUBlocks, BlockSignature{
 		Arg:     v.Value,
 		Type:    "select",
 		Options: sortedSelectors(v.Options),
 	})
 	for _, opt := range v.Options {
-		collectInvariantFromElements(opt.Value, inv)
+		collectInvariantFromElements(opt.Value, inv, pluralArg)
 	}
 }
 
@@ -129,7 +134,7 @@ func appendPluralBlockInvariant(inv *Invariant, v PluralElement) {
 		Options: sortedPluralSelectors(v.Options),
 	})
 	for _, opt := range v.Options {
-		collectInvariantFromElements(opt.Value, inv)
+		collectInvariantFromElements(opt.Value, inv, v.Value)
 	}
 }
 

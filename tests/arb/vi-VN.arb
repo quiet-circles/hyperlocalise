@@ -1,7 +1,7 @@
 {
-  "@@locale": "en-US",
+  "@@locale": "vi-VN",
   "@@last_modified": "2026-03-08T09:30:00Z",
-  "app.title": "Tập trung vào",
+  "app.title": "Tập trung vào địa phương",
   "@app.title": {
     "description": "Application name shown in the browser title and native shell"
   },
@@ -13,7 +13,7 @@
   "@nav.pricing": {
     "description": "Primary navigation link to the pricing page"
   },
-  "nav.docs": "Liên kết điều hướng chính đến phần tài liệu",
+  "nav.docs": "Tài liệu",
   "@nav.docs": {
     "description": "Primary navigation link to the documentation section"
   },
@@ -37,7 +37,7 @@
   "@auth.signIn.title": {
     "description": "Heading on the sign-in screen"
   },
-  "auth.signIn.subtitle": "Sử dụng địa chỉ email làm việc của bạn để tiếp tục.",
+  "auth.signIn.subtitle": "Sử dụng địa chỉ email của công ty để tiếp tục.",
   "@auth.signIn.subtitle": {
     "description": "Supporting copy below the sign-in heading"
   },
@@ -51,7 +51,7 @@
       }
     }
   },
-  "dashboard.syncStatus": "Đã đồng bộ hóa lần cuối {relativeTime}",
+  "dashboard.syncStatus": "Lần đồng bộ hóa cuối cùng cách đây {relativeTime}",
   "@dashboard.syncStatus": {
     "description": "Status line on the dashboard showing the last successful sync time",
     "placeholders": {
@@ -61,7 +61,7 @@
       }
     }
   },
-  "dashboard.pendingReviews": "{count, plural, =0{Không có đánh giá nào đang chờ xử lý} one{# đánh giá đang chờ xử lý} other{# đánh giá đang chờ xử lý}}",
+  "dashboard.pendingReviews": "{count, plural, =0{Không có đánh giá nào đang chờ xử lý} one{# một đánh giá đang chờ xử lý} other{# các đánh giá đang chờ xử lý}}",
   "@dashboard.pendingReviews": {
     "description": "Dashboard card showing how many reviews still need approval",
     "placeholders": {
@@ -71,7 +71,7 @@
       }
     }
   },
-  "settings.planBadge": "{plan, chọn, miễn phí{Kế hoạch miễn phí}, chuyên nghiệp{Kế hoạch chuyên nghiệp}, doanh nghiệp{Kế hoạch doanh nghiệp}, khác{Kế hoạch tùy chỉnh}}",
+  "settings.planBadge": "{plan, select, free{Kế hoạch miễn phí} pro{Kế hoạch Pro} enterprise{Kế hoạch doanh nghiệp} other{Kế hoạch tùy chỉnh}}",
   "@settings.planBadge": {
     "description": "Badge label showing the active subscription tier",
     "placeholders": {
@@ -81,7 +81,7 @@
       }
     }
   },
-  "billing.trialNotice": "Thử nghiệm của bạn sẽ kết thúc vào ngày {date}.",
+  "billing.trialNotice": "Thời gian dùng thử của bạn sẽ hết vào ngày {date}.",
   "@billing.trialNotice": {
     "description": "Notice displayed when the workspace is in a trial period",
     "placeholders": {
@@ -100,7 +100,7 @@
       }
     }
   },
-  "notifications.email.subject": "{tên} đã đề cập đến bạn trong dự án {projectName}",
+  "notifications.email.subject": "{name} đã đề cập đến bạn trong dự án {projectName}",
   "@notifications.email.subject": {
     "description": "Subject line for mention notification emails",
     "placeholders": {
@@ -118,11 +118,11 @@
   "@notifications.email.cta": {
     "description": "CTA button label in notification emails"
   },
-  "errors.networkRetry": "Chúng tôi không thể lưu thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại.",
+  "errors.networkRetry": "Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại.",
   "@errors.networkRetry": {
     "description": "Inline error shown after a failed save request"
   },
-  "errors.supportLink": "Cần hỗ trợ? Vui lòng truy cập {supportUrl}",
+  "errors.supportLink": "Cần trợ giúp? Vui lòng truy cập {supportUrl}",
   "@errors.supportLink": {
     "description": "Support help text with a documentation URL",
     "placeholders": {

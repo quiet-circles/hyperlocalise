@@ -98,7 +98,7 @@ JSON format support in `run`:
 
 Flutter ARB format support in `run`:
 - `.arb` files are supported for source and target mappings.
-- Only message keys are translated; metadata keys such as `@key` and `@@locale` are preserved.
+- Only message keys are translated; metadata keys such as `@key` are preserved, and `@@locale` is normalized to the target locale when writing `.arb` outputs.
 
 Prune workflow recommendation:
 - Run `hyperlocalise run --dry-run --prune` regularly (for example weekly or before releases) to review stale-key candidates.
