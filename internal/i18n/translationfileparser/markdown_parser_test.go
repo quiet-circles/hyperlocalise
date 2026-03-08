@@ -724,6 +724,22 @@ func TestMarshalMarkdownWithTargetFallbackFixturesRepairDanglingInlineLinkCloser
 	})
 }
 
+func TestMarshalMarkdownWithTargetFallbackFixturesRepairDanglingTableRowClosersFromWhyHyperlocaliseDocs(t *testing.T) {
+	source := readFixture(t, "docs/getting-started/why-hyperlocalise.mdx")
+	target := readFixture(t, "docs/zh-CN/getting-started/why-hyperlocalise.mdx")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if strings.Contains(output, "| 手动脚本 | 🟡 中到高（需要自行构建和维护） | 🟢 高（完全自定义） | 🟡 中（取决于脚本的质量和标准） | 🟢 低\n") {
+		t.Fatalf("expected dangling table row closer repaired, got %q", output)
+	}
+	if !strings.Contains(output, "| 手动脚本 | 🟡 中到高（需要自行构建和维护） | 🟢 高（完全自定义） | 🟡 中（取决于脚本的质量和标准） | 🟢 低 |") {
+		t.Fatalf("expected table row with restored closing pipe, got %q", output)
+	}
+	if !strings.Contains(output, "| 细分地域化 | 🟢 低 (使用单一 CLI，配置简单) | 🟢 高 (AI 自动生成 + 可选的人工审核流程) | 🟢 高 (显式预演、同步、状态流程) | 🟢 低 (支持多提供商和多适配器) |") {
+		t.Fatalf("expected final table row with restored closing pipe, got %q", output)
+	}
+}
+
 func TestMarshalMarkdownWithTargetFallbackKeepsMdxSentenceBoundariesAroundExpressions(t *testing.T) {
 	source := []byte("Fallback route: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} is computed at runtime.\nUse <Badge text=\"stable\" /> builds when the release branch is frozen.\n")
 	target := []byte("Duong dan du phong: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} duoc tinh khi chay.\nDung ban build <Badge text=\"stable\" /> khi nhanh phat hanh da dong bang.\n")
