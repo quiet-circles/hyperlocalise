@@ -38,8 +38,8 @@ func TestParserFeatureParitySubset(t *testing.T) {
 			msg:              "{gender, select, male {{count, plural, one {He has one} other {He has #}}} female {{count, plural, one {She has one} other {She has #}}} other {They have {count}}}",
 			wantPlaceholders: []string{"count", "count", "count", "count", "count"},
 			wantICU: []BlockSignature{
-				{Arg: "count", Type: "plural", Options: []string{"one", "other"}},
-				{Arg: "count", Type: "plural", Options: []string{"one", "other"}},
+				{Arg: "count", Type: "plural", Options: []string{"one", "other"}, Pounds: []int{0, 1}},
+				{Arg: "count", Type: "plural", Options: []string{"one", "other"}, Pounds: []int{0, 1}},
 				{Arg: "gender", Type: "select", Options: []string{"female", "male", "other"}},
 			},
 		},
@@ -51,6 +51,7 @@ func TestParserFeatureParitySubset(t *testing.T) {
 				Arg:     "count",
 				Type:    "plural",
 				Options: []string{"=0", "one", "other"},
+				Pounds:  []int{0, 0, 1},
 			}},
 		},
 		{
@@ -61,6 +62,7 @@ func TestParserFeatureParitySubset(t *testing.T) {
 				Arg:     "count",
 				Type:    "plural",
 				Options: []string{"one", "other"},
+				Pounds:  []int{1, 0},
 			}},
 		},
 		{
@@ -81,6 +83,7 @@ func TestParserFeatureParitySubset(t *testing.T) {
 				Arg:     "pos",
 				Type:    "selectordinal",
 				Options: []string{"few", "one", "other", "two"},
+				Pounds:  []int{1, 1, 1, 1},
 			}},
 		},
 		{

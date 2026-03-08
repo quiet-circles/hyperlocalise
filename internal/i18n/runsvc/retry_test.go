@@ -278,6 +278,25 @@ func TestTranslateWithRetryAcceptsPluralPoundWhenSourceOmitsExplicitCount(t *tes
 	}
 }
 
+func TestTranslateWithRetryRejectsDuplicatePluralPoundUsage(t *testing.T) {
+	svc := &Service{}
+	svc.translate = func(_ context.Context, req translator.Request) (string, error) {
+		return "{count, plural, =0{待审核的评论数量为0} one{# 还有# 待审核的评论} other{# 还有# 待审核的评论}}", nil
+	}
+
+	_, err := svc.translateWithRetry(context.Background(), Task{
+		EntryKey:     "dashboard.pendingReviews",
+		SourceText:   "{count, plural, =0{No reviews pending} one{# review pending} other{# reviews pending}}",
+		TargetLocale: "zh-CN",
+	})
+	if err == nil {
+		t.Fatalf("expected invariant validation error")
+	}
+	if !strings.Contains(err.Error(), "duplicate # tokens in ICU plural/selectordinal branch") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestTranslateWithRetrySanitizesEntryKeyInSystemPromptContext(t *testing.T) {
 	svc := &Service{}
 	var got translator.Request

@@ -25,7 +25,7 @@ Use the [status reference](https://example.com/docs/status?tab=cli#dry-run) befo
 | ---- | ----- | ----- |
 | 准备 | 文档 | 仅替换句子，而不是 `docs/{{locale}}/index.mdx`。 |
 | 验证 | QA | 检查“同步摘要”是否出现在报告中，并查看 [CLI 指南][cli-guide]。 |
-| 发布 | 运维 | 上传 ![审核后，图表](https://example.com/assets/flow(chart).png) ] |
+| 发布 | 运维 | 审核通过后，上传 ![图表](https://example.com/assets/flow(chart).png)。 |
 
 1. 打开 `docs/index.mdx`。
 2. 搜索“同步摘要”。

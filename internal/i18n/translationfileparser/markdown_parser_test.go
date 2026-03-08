@@ -740,6 +740,19 @@ func TestMarshalMarkdownWithTargetFallbackFixturesRepairDanglingTableRowClosersF
 	}
 }
 
+func TestMarshalMarkdownWithTargetFallbackRepairsDanglingImageCloserInTableRow(t *testing.T) {
+	source := []byte("| Step | Owner | Notes |\n| ---- | ----- | ----- |\n| Publish | Ops | Upload ![Diagram](https://example.com/assets/flow(chart).png) after approval. |\n")
+	target := []byte("| 步骤 | 负责人 | 备注 |\n| ---- | ----- | ----- |\n| 发布 | 运维 | 上传 ![审核后，图表](https://example.com/assets/flow(chart).png) ] |\n")
+
+	output := string(MarshalMarkdownWithTargetFallback(source, target, map[string]string{}))
+	if strings.Contains(output, ".png) ] |") {
+		t.Fatalf("expected dangling image closer repaired, got %q", output)
+	}
+	if !strings.Contains(output, "https://example.com/assets/flow(chart).png") {
+		t.Fatalf("expected source image destination preserved, got %q", output)
+	}
+}
+
 func TestMarshalMarkdownWithTargetFallbackKeepsMdxSentenceBoundariesAroundExpressions(t *testing.T) {
 	source := []byte("Fallback route: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} is computed at runtime.\nUse <Badge text=\"stable\" /> builds when the release branch is frozen.\n")
 	target := []byte("Duong dan du phong: {locale === \"vi-VN\" ? \"/vi-VN\" : \"/\"} duoc tinh khi chay.\nDung ban build <Badge text=\"stable\" /> khi nhanh phat hanh da dong bang.\n")

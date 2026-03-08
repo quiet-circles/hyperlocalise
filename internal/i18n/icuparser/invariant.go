@@ -16,6 +16,7 @@ type BlockSignature struct {
 	Arg     string
 	Type    string
 	Options []string
+	Pounds  []int
 }
 
 func ParseInvariant(s string) (Invariant, error) {
@@ -39,7 +40,9 @@ func ParseInvariant(s string) (Invariant, error) {
 		if inv.ICUBlocks[i].Type != inv.ICUBlocks[j].Type {
 			return inv.ICUBlocks[i].Type < inv.ICUBlocks[j].Type
 		}
-		return strings.Join(inv.ICUBlocks[i].Options, "\x00") < strings.Join(inv.ICUBlocks[j].Options, "\x00")
+		left := strings.Join(inv.ICUBlocks[i].Options, "\x00") + "|" + formatPoundCounts(inv.ICUBlocks[i].Pounds)
+		right := strings.Join(inv.ICUBlocks[j].Options, "\x00") + "|" + formatPoundCounts(inv.ICUBlocks[j].Pounds)
+		return left < right
 	})
 	return inv, nil
 }
@@ -60,12 +63,27 @@ func SameICUBlocks(a, b []BlockSignature) bool {
 	return true
 }
 
+func HasDuplicatePounds(blocks []BlockSignature) bool {
+	for _, block := range blocks {
+		for _, count := range block.Pounds {
+			if count > 1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FormatICUBlocks(blocks []BlockSignature) string {
 	if len(blocks) == 0 {
 		return "[]"
 	}
 	parts := make([]string, 0, len(blocks))
 	for _, b := range blocks {
+		if hasNonZeroPounds(b.Pounds) {
+			parts = append(parts, fmt.Sprintf("%s:%s%v#%v", b.Arg, b.Type, b.Options, b.Pounds))
+			continue
+		}
 		parts = append(parts, fmt.Sprintf("%s:%s%v", b.Arg, b.Type, b.Options))
 	}
 	return "[" + strings.Join(parts, ", ") + "]"
@@ -157,11 +175,13 @@ func appendPluralBlockInvariant(inv *Invariant, v PluralElement) {
 		blockType = "selectordinal"
 	}
 	appendPlaceholder(inv, v.Value)
+	sortedOptions, poundCounts := sortedPluralOptionSignatures(v.Options)
 
 	inv.ICUBlocks = append(inv.ICUBlocks, BlockSignature{
 		Arg:     v.Value,
 		Type:    blockType,
-		Options: sortedPluralSelectors(v.Options),
+		Options: sortedOptions,
+		Pounds:  poundCounts,
 	})
 	for _, opt := range v.Options {
 		collectInvariantFromElements(opt.Value, inv, v.Value)
@@ -184,6 +204,71 @@ func sortedPluralSelectors(opts []PluralOption) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func sortedPluralOptionSignatures(opts []PluralOption) ([]string, []int) {
+	type optionSig struct {
+		selector string
+		pounds   int
+	}
+	sigs := make([]optionSig, 0, len(opts))
+	for _, o := range opts {
+		sigs = append(sigs, optionSig{selector: o.Selector, pounds: countPounds(o.Value)})
+	}
+	sort.Slice(sigs, func(i, j int) bool {
+		return sigs[i].selector < sigs[j].selector
+	})
+	selectors := make([]string, 0, len(sigs))
+	pounds := make([]int, 0, len(sigs))
+	for _, sig := range sigs {
+		selectors = append(selectors, sig.selector)
+		pounds = append(pounds, sig.pounds)
+	}
+	if !hasNonZeroPounds(pounds) {
+		pounds = nil
+	}
+	return selectors, pounds
+}
+
+func countPounds(elems []Element) int {
+	total := 0
+	for _, el := range elems {
+		switch v := el.(type) {
+		case PoundElement:
+			total++
+		case TagElement:
+			total += countPounds(v.Children)
+		case SelectElement:
+			for _, opt := range v.Options {
+				total += countPounds(opt.Value)
+			}
+		case PluralElement:
+			for _, opt := range v.Options {
+				total += countPounds(opt.Value)
+			}
+		}
+	}
+	return total
+}
+
+func hasNonZeroPounds(values []int) bool {
+	for _, v := range values {
+		if v != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func formatPoundCounts(values []int) string {
+	if len(values) == 0 {
+		return ""
+	}
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = fmt.Sprintf("%d", v)
+	}
+	return strings.Join(parts, ",")
 }
 
 func uniqueStrings(values []string) []string {

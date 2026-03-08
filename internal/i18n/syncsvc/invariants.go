@@ -38,6 +38,12 @@ func validateEntryInvariant(candidate, baseline storage.Entry) []string {
 			icuparser.FormatICUBlocks(candInv.ICUBlocks),
 		))
 	}
+	if icuparser.HasDuplicatePounds(candInv.ICUBlocks) {
+		diags = append(diags, fmt.Sprintf(
+			"duplicate # tokens in ICU plural/selectordinal branch (got %s)",
+			icuparser.FormatICUBlocks(candInv.ICUBlocks),
+		))
+	}
 
 	return diags
 }

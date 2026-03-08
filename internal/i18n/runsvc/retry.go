@@ -157,6 +157,13 @@ func validateTranslatedInvariant(source, translated string) error {
 			formatInvariantDebugContext(source, translated),
 		)}
 	}
+	if icuparser.HasDuplicatePounds(translatedInv.ICUBlocks) {
+		return &invariantViolationError{msg: fmt.Sprintf(
+			"translation invariant violation: duplicate # tokens in ICU plural/selectordinal branch (got %s) | %s",
+			icuparser.FormatICUBlocks(translatedInv.ICUBlocks),
+			formatInvariantDebugContext(source, translated),
+		)}
+	}
 	return nil
 }
 

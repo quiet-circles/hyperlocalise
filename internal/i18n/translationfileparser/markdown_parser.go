@@ -787,6 +787,7 @@ func normalizeUnexpectedMarkdownLinkClosers(part markdownPart, rendered string) 
 			continue
 		}
 		rendered = strings.ReplaceAll(rendered, original+"]", original)
+		rendered = strings.ReplaceAll(rendered, original+" ]", original)
 	}
 	return rendered
 }
