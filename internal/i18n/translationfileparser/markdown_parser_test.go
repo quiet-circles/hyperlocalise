@@ -1065,6 +1065,84 @@ func TestAlignMarkdownTargetToSourceReturnsExpandedFallbackText(t *testing.T) {
 	}
 }
 
+func TestMarshalMarkdownWithTargetFallbackRegressionMarkdownStructureAcrossAddThenDelete(t *testing.T) {
+	v1Source := []byte("# Release checklist\n\nFirst section.\n\nSecond section.\n\nThird section.\n")
+	v1Target := MarshalMarkdown(v1Source, translateAllMarkdownEntries(t, v1Source))
+
+	v2Source := []byte("# Release checklist\n\nFirst section.\n\nSecond section.\n\nInserted section.\n\nThird section.\n")
+	v2Entries, err := (MarkdownParser{}).Parse(v2Source)
+	if err != nil {
+		t.Fatalf("parse v2 source: %v", err)
+	}
+	insertedKey := findKeyByValue(v2Entries, "Inserted section.")
+	if insertedKey == "" {
+		t.Fatalf("expected key for inserted section")
+	}
+	v2Target := MarshalMarkdownWithTargetFallback(v2Source, v1Target, map[string]string{insertedKey: "FR:Inserted section."})
+
+	v3Source := []byte("# Release checklist\n\nFirst section.\n\nInserted section.\n\nThird section.\n")
+	v3Target := string(MarshalMarkdownWithTargetFallback(v3Source, v2Target, map[string]string{}))
+
+	if strings.Contains(v3Target, "FR:Second section.") {
+		t.Fatalf("expected deleted section to be pruned from markdown structure, got %q", v3Target)
+	}
+	first := strings.Index(v3Target, "FR:First section.")
+	inserted := strings.Index(v3Target, "FR:Inserted section.")
+	third := strings.Index(v3Target, "FR:Third section.")
+	if first < 0 || inserted < 0 || third < 0 {
+		t.Fatalf("expected translated sections to remain present, got %q", v3Target)
+	}
+	if first >= inserted || inserted >= third {
+		t.Fatalf("expected section order preserved after add/delete cycle, got %q", v3Target)
+	}
+}
+
+func TestMarshalMarkdownWithTargetFallbackRegressionMDXStructureAcrossAddThenDelete(t *testing.T) {
+	v1Source := []byte("# Guide\n\nIntro paragraph.\n\n<Callout type=\"info\">\n  Existing callout text.\n</Callout>\n\nOutro paragraph.\n")
+	v1Target := MarshalMarkdown(v1Source, translateAllMarkdownEntries(t, v1Source))
+
+	v2Source := []byte("# Guide\n\nIntro paragraph.\n\n<Callout type=\"info\">\n  Existing callout text.\n</Callout>\n\n<Card title=\"New\">\n  Inserted card text.\n</Card>\n\nOutro paragraph.\n")
+	v2Entries, err := (MarkdownParser{}).Parse(v2Source)
+	if err != nil {
+		t.Fatalf("parse v2 source: %v", err)
+	}
+	insertedKey := findKeyByValue(v2Entries, "Inserted card text.")
+	if insertedKey == "" {
+		t.Fatalf("expected key for inserted mdx section")
+	}
+	v2Target := MarshalMarkdownWithTargetFallback(v2Source, v1Target, map[string]string{insertedKey: "FR:Inserted card text."})
+
+	v3Source := []byte("# Guide\n\nIntro paragraph.\n\n<Card title=\"New\">\n  Inserted card text.\n</Card>\n\nOutro paragraph.\n")
+	v3Target := string(MarshalMarkdownWithTargetFallback(v3Source, v2Target, map[string]string{}))
+
+	if strings.Contains(v3Target, "FR:Existing callout text.") {
+		t.Fatalf("expected deleted mdx section to be pruned from output, got %q", v3Target)
+	}
+	intro := strings.Index(v3Target, "FR:Intro paragraph.")
+	inserted := strings.Index(v3Target, "FR:Inserted card text.")
+	outro := strings.Index(v3Target, "FR:Outro paragraph.")
+	if intro < 0 || inserted < 0 || outro < 0 {
+		t.Fatalf("expected translated mdx sections to remain present, got %q", v3Target)
+	}
+	if intro >= inserted || inserted >= outro {
+		t.Fatalf("expected mdx section order preserved after add/delete cycle, got %q", v3Target)
+	}
+}
+
+func translateAllMarkdownEntries(t *testing.T, source []byte) map[string]string {
+	t.Helper()
+
+	entries, err := (MarkdownParser{}).Parse(source)
+	if err != nil {
+		t.Fatalf("parse source: %v", err)
+	}
+	translated := make(map[string]string, len(entries))
+	for key, value := range entries {
+		translated[key] = "FR:" + strings.TrimSpace(value)
+	}
+	return translated
+}
+
 func readFixture(t *testing.T, rel string) []byte {
 	t.Helper()
 

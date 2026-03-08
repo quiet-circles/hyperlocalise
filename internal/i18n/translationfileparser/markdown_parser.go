@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -936,33 +937,15 @@ func MarshalMarkdownWithTargetFallbackDiagnostics(sourceTemplate, targetTemplate
 	var diags MarkdownRenderDiagnostics
 
 	takeFallback := func(sourceCtx markdownKeyContext) (string, bool) {
-		for i := targetCtxCursor; i < len(targetContexts); i++ {
-			if targetPartUsed[targetContexts[i].partIndex] {
-				continue
+		if idx, ok := selectMarkdownContextCandidate(targetContexts, targetPartUsed, sourceCtx, targetCtxCursor, sourceCtxIdx, len(sourceContexts)); ok {
+			targetPartUsed[targetContexts[idx].partIndex] = true
+			if idx >= targetCtxCursor {
+				targetCtxCursor = idx + 1
 			}
-			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
-				targetPartUsed[targetContexts[i].partIndex] = true
-				targetCtxCursor = i + 1
-				if targetContexts[i].partIndex+1 > targetPartCursor {
-					targetPartCursor = targetContexts[i].partIndex + 1
-				}
-				return targetContexts[i].text, true
+			if targetContexts[idx].partIndex+1 > targetPartCursor {
+				targetPartCursor = targetContexts[idx].partIndex + 1
 			}
-		}
-		for i := 0; i < len(targetContexts); i++ {
-			if targetPartUsed[targetContexts[i].partIndex] {
-				continue
-			}
-			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
-				targetPartUsed[targetContexts[i].partIndex] = true
-				if i >= targetCtxCursor {
-					targetCtxCursor = i + 1
-				}
-				if targetContexts[i].partIndex+1 > targetPartCursor {
-					targetPartCursor = targetContexts[i].partIndex + 1
-				}
-				return targetContexts[i].text, true
-			}
+			return targetContexts[idx].text, true
 		}
 		for _, startAt := range []int{targetPartCursor, 0} {
 			if fallback, nextPartCursor, ok := takeMarkdownFallbackSpan(targetDoc, targetPartUsed, startAt, sourceCtx); ok {
@@ -1046,33 +1029,15 @@ func alignMarkdownFallback(sourceDoc markdownDocument, sourceEntries map[string]
 	aligned := make(map[string]string, len(sourceEntries))
 
 	takeFallback := func(sourceCtx markdownKeyContext) (string, bool) {
-		for i := targetCtxCursor; i < len(targetContexts); i++ {
-			if targetPartUsed[targetContexts[i].partIndex] {
-				continue
+		if idx, ok := selectMarkdownContextCandidate(targetContexts, targetPartUsed, sourceCtx, targetCtxCursor, sourceCtxIdx, len(sourceContexts)); ok {
+			targetPartUsed[targetContexts[idx].partIndex] = true
+			if idx >= targetCtxCursor {
+				targetCtxCursor = idx + 1
 			}
-			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
-				targetPartUsed[targetContexts[i].partIndex] = true
-				targetCtxCursor = i + 1
-				if targetContexts[i].partIndex+1 > targetPartCursor {
-					targetPartCursor = targetContexts[i].partIndex + 1
-				}
-				return targetContexts[i].text, true
+			if targetContexts[idx].partIndex+1 > targetPartCursor {
+				targetPartCursor = targetContexts[idx].partIndex + 1
 			}
-		}
-		for i := range targetContexts {
-			if targetPartUsed[targetContexts[i].partIndex] {
-				continue
-			}
-			if targetContexts[i].prevLiteral == sourceCtx.prevLiteral && targetContexts[i].nextLiteral == sourceCtx.nextLiteral {
-				targetPartUsed[targetContexts[i].partIndex] = true
-				if i >= targetCtxCursor {
-					targetCtxCursor = i + 1
-				}
-				if targetContexts[i].partIndex+1 > targetPartCursor {
-					targetPartCursor = targetContexts[i].partIndex + 1
-				}
-				return targetContexts[i].text, true
-			}
+			return targetContexts[idx].text, true
 		}
 		for _, startAt := range []int{targetPartCursor, 0} {
 			if fallback, nextPartCursor, ok := takeMarkdownFallbackSpan(targetDoc, targetPartUsed, startAt, sourceCtx); ok {
@@ -1130,6 +1095,40 @@ func alignMarkdownFallback(sourceDoc markdownDocument, sourceEntries map[string]
 	}
 
 	return aligned
+}
+
+func selectMarkdownContextCandidate(targetContexts []markdownKeyContext, targetPartUsed []bool, sourceCtx markdownKeyContext, targetCtxCursor, sourceCtxIdx, sourceTotal int) (int, bool) {
+	best := -1
+	bestScore := math.MaxFloat64
+	for i := range targetContexts {
+		if targetPartUsed[targetContexts[i].partIndex] {
+			continue
+		}
+		if targetContexts[i].prevLiteral != sourceCtx.prevLiteral || targetContexts[i].nextLiteral != sourceCtx.nextLiteral {
+			continue
+		}
+		score := markdownRelativeIndexDistance(i, len(targetContexts), sourceCtxIdx, sourceTotal)
+		if i < targetCtxCursor {
+			score += 0.25
+		}
+		if score < bestScore {
+			best = i
+			bestScore = score
+		}
+	}
+	if best < 0 {
+		return 0, false
+	}
+	return best, true
+}
+
+func markdownRelativeIndexDistance(targetIdx, targetTotal, sourceIdx, sourceTotal int) float64 {
+	if targetTotal <= 1 || sourceTotal <= 1 {
+		return 0
+	}
+	targetPos := float64(targetIdx) / float64(targetTotal-1)
+	sourcePos := float64(sourceIdx) / float64(sourceTotal-1)
+	return math.Abs(targetPos - sourcePos)
 }
 
 func takeMarkdownFallbackSpan(targetDoc markdownDocument, targetPartUsed []bool, startAt int, sourceCtx markdownKeyContext) (string, int, bool) {
