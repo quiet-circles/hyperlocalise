@@ -61,7 +61,7 @@ func TestMarshalARBPreservesMetadataAndICUContent(t *testing.T) {
   }
 }`)
 
-	out, err := MarshalARB(template, map[string]string{
+	out, err := MarshalARB(template, template, map[string]string{
 		"inviteCount": "{count, plural, =0{Aucune invitation} one{1 invitation} other{{count} invitations}}",
 		"hello":       "Bonjour {name}",
 	})
@@ -133,7 +133,7 @@ func TestMarshalARBStructureFirstAndDeterministicAppend(t *testing.T) {
   }
 }`)
 
-	out, err := MarshalARB(template, map[string]string{
+	out, err := MarshalARB(template, template, map[string]string{
 		"hello": "Salut",
 		"new_b": "B",
 		"new_a": "A",
@@ -180,7 +180,7 @@ func TestMarshalARBDoesNotTreatTemplateOrphanMetadataAsNewMessageMetadata(t *tes
   "existing": "value"
 }`)
 
-	out, err := MarshalARB(template, map[string]string{
+	out, err := MarshalARB(template, template, map[string]string{
 		"existing": "valeur",
 		"foo":      "translated",
 	})
@@ -197,5 +197,52 @@ func TestMarshalARBDoesNotTreatTemplateOrphanMetadataAsNewMessageMetadata(t *tes
 	}
 	if metaIdx >= existingIdx || existingIdx >= fooIdx {
 		t.Fatalf("expected orphan metadata to stay in template position and new foo appended later, got %q", rendered)
+	}
+}
+
+func TestMarshalARBCarriesSourceMetadataForAppendedKeys(t *testing.T) {
+	targetTemplate := []byte(`{
+  "@@locale": "fr",
+  "existing": "value"
+}`)
+
+	sourceTemplate := []byte(`{
+  "@@locale": "en",
+  "existing": "value",
+  "newKey": "New message",
+  "@newKey": {
+    "description": "Shown on the welcome screen",
+    "placeholders": {}
+  }
+}`)
+
+	out, err := MarshalARB(targetTemplate, sourceTemplate, map[string]string{
+		"existing": "valeur",
+		"newKey":   "Nouveau message",
+	})
+	if err != nil {
+		t.Fatalf("marshal arb: %v", err)
+	}
+
+	rendered := string(out)
+	newKeyIdx := strings.Index(rendered, `"newKey": "Nouveau message"`)
+	metaIdx := strings.Index(rendered, `"@newKey": {`)
+	if newKeyIdx == -1 || metaIdx == -1 {
+		t.Fatalf("expected appended newKey and carried source metadata in rendered output, got %q", rendered)
+	}
+	if metaIdx < newKeyIdx {
+		t.Fatalf("expected carried source metadata to be written after appended newKey, got %q", rendered)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(out, &payload); err != nil {
+		t.Fatalf("decode marshaled arb: %v", err)
+	}
+	meta, ok := payload["@newKey"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected @newKey metadata object, got %#v", payload["@newKey"])
+	}
+	if meta["description"] != "Shown on the welcome screen" {
+		t.Fatalf("expected @newKey.description metadata preserved, got %#v", meta["description"])
 	}
 }

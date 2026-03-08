@@ -71,8 +71,9 @@ func parseARBDescription(payload map[string]any, key string) string {
 	return strings.TrimSpace(description)
 }
 
-// MarshalARB preserves metadata keys and rewrites only translatable message keys.
-func MarshalARB(template []byte, values map[string]string) ([]byte, error) {
+// MarshalARB preserves target-template metadata and ordering while carrying
+// source-template message metadata for newly appended keys.
+func MarshalARB(template []byte, sourceTemplate []byte, values map[string]string) ([]byte, error) {
 	fields, err := parseARBObjectFields(template)
 	if err != nil {
 		return nil, fmt.Errorf("arb decode: %w", err)
@@ -84,6 +85,11 @@ func MarshalARB(template []byte, values map[string]string) ([]byte, error) {
 			continue
 		}
 		templateMessageKeys[field.Key] = struct{}{}
+	}
+
+	sourceMessageMetadata, err := arbMessageMetadataFields(sourceTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("arb decode: %w", err)
 	}
 
 	written := make(map[string]struct{}, len(values))
@@ -145,6 +151,11 @@ func MarshalARB(template []byte, values map[string]string) ([]byte, error) {
 		}
 		if err := writeField(key, encodedValue); err != nil {
 			return nil, fmt.Errorf("arb encode: %w", err)
+		}
+		if rawMeta, ok := sourceMessageMetadata[key]; ok {
+			if err := writeField("@"+key, rawMeta); err != nil {
+				return nil, fmt.Errorf("arb encode: %w", err)
+			}
 		}
 	}
 
@@ -217,6 +228,31 @@ func arbMessageMetadataKey(metaKey string, templateMessageKeys map[string]struct
 		return messageKey, true
 	}
 	return "", false
+}
+
+func arbMessageMetadataFields(content []byte) (map[string]json.RawMessage, error) {
+	fields, err := parseARBObjectFields(content)
+	if err != nil {
+		return nil, err
+	}
+
+	messageKeys := make(map[string]struct{}, len(fields))
+	for _, field := range fields {
+		if isARBMetadataKey(field.Key) {
+			continue
+		}
+		messageKeys[field.Key] = struct{}{}
+	}
+
+	metadataByKey := make(map[string]json.RawMessage)
+	for _, field := range fields {
+		messageKey, isMessageMeta := arbMessageMetadataKey(field.Key, messageKeys)
+		if !isMessageMeta {
+			continue
+		}
+		metadataByKey[messageKey] = field.RawValue
+	}
+	return metadataByKey, nil
 }
 
 func isARBMetadataKey(key string) bool {

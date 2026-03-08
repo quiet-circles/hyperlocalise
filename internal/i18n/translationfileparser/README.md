@@ -33,7 +33,7 @@
 - Accepts object-shaped ARB JSON (Flutter resource bundles).
 - Only top-level non-metadata keys are treated as translatable message entries.
 - Keys prefixed with `@` (for example `@hello`, `@@locale`) are treated as metadata and excluded from translation parsing.
-- `MarshalARB(template, values)` preserves ARB metadata keys and rewrites only message values.
+- `MarshalARB(template, sourceTemplate, values)` preserves target-template metadata and ordering, and carries source `@key` metadata forward for newly appended message keys.
 
 ### XLIFF
 

@@ -3267,7 +3267,7 @@ func TestMarshalSourceTemplateTargetPrefersTargetTemplateForARBWhenAllKeysPresen
 	}
 }
 
-func TestMarshalSourceTemplateTargetARBAppendsMissingKeysWithoutDroppingTargetMetadata(t *testing.T) {
+func TestMarshalSourceTemplateTargetARBAppendsMissingKeysAndCarriesSourceMetadata(t *testing.T) {
 	svc := newTestService()
 	sourcePath := "/tmp/source.arb"
 	targetPath := "/tmp/out.arb"
@@ -3323,8 +3323,12 @@ func TestMarshalSourceTemplateTargetARBAppendsMissingKeysWithoutDroppingTargetMe
 	if payload["goodbye"] != "Au revoir" {
 		t.Fatalf("expected missing key appended from values, got %#v", payload["goodbye"])
 	}
-	if _, ok := payload["@goodbye"]; ok {
-		t.Fatalf("expected missing key metadata to remain absent when not in target template")
+	goodbyeMeta, ok := payload["@goodbye"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected missing key metadata carried from source template, got %#v", payload["@goodbye"])
+	}
+	if goodbyeMeta["description"] != "source-goodbye" {
+		t.Fatalf("expected source @goodbye.description preserved for appended key, got %#v", goodbyeMeta["description"])
 	}
 }
 
