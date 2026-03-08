@@ -733,6 +733,7 @@ func renderMarkdownPart(part markdownPart, translated string) string {
 
 func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, diags *MarkdownRenderDiagnostics) string {
 	rendered := preserveChunkBoundaryWhitespace(part.source, translated)
+	rendered = normalizeMarkdownTableRowBoundaries(part, rendered)
 	if len(part.placeholders) == 0 {
 		return rendered
 	}
@@ -749,6 +750,32 @@ func renderMarkdownPartWithDiagnostics(part markdownPart, translated string, dia
 		return expandMarkdownPlaceholders(part.source, part.placeholders)
 	}
 	return rendered
+}
+
+func normalizeMarkdownTableRowBoundaries(part markdownPart, rendered string) string {
+	sourceTrimmed := strings.TrimSpace(part.source)
+	if !strings.HasPrefix(sourceTrimmed, "|") {
+		return rendered
+	}
+	if strings.Count(sourceTrimmed, "|") < 2 {
+		return rendered
+	}
+
+	lead := len(rendered) - len(strings.TrimLeftFunc(rendered, unicode.IsSpace))
+	trail := len(rendered) - len(strings.TrimRightFunc(rendered, unicode.IsSpace))
+	core := strings.TrimSpace(rendered)
+	if core == "" {
+		return rendered
+	}
+
+	if !strings.HasPrefix(core, "|") {
+		core = "| " + strings.TrimLeft(core, " ")
+	}
+	if !strings.HasSuffix(core, "|") {
+		core = strings.TrimRight(core, " ") + " |"
+	}
+
+	return rendered[:lead] + core + rendered[len(rendered)-trail:]
 }
 
 func normalizeUnexpectedMarkdownLinkClosers(part markdownPart, rendered string) string {
