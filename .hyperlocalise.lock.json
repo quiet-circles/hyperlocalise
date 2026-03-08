@@ -14643,11 +14643,161 @@
     "docs/zh-CN/workflows/tms-curation-loop.mdx::md.e616e3204a57d20a": {
       "source_hash": "55e1c5f61fbbb151eaa413533c0cf489b019713b42e3922a7a5c2d1fef836c6bff33c517130fa77ab270fbceb29de9c46bfe6f55484d0dd50d2538cf84cf0389"
     },
+    "tests/arb/vi-VN.arb::app.title": {
+      "source_hash": "b88afbfcb698a3646c07d1befe169bd9232e265f91cff749c9d534eccbd0615598f00f1040e0ee7681830ec58f4cc4b6b94106ba67bb2c8e40ce0b63a3c00047"
+    },
+    "tests/arb/vi-VN.arb::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/arb/vi-VN.arb::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/arb/vi-VN.arb::auth.welcomeBack": {
+      "source_hash": "85218d87328344cb5b701efa204a0ccdaaddaf9006b8a79245ac403b8327cc2dc2c3b22f64572caae9562cc5e79f4175b8f1382575f982ebbfcf3000e6335c6d"
+    },
+    "tests/arb/vi-VN.arb::billing.trialNotice": {
+      "source_hash": "f73ad6cee1f8b58fbc258fc2c9e0138d148fd6816406e0bf6ff16bcb5cf3e38c8d11b1c85ce48c50ec6daabc05bb29ab557ee3b0edb5df89d89b408f95c74de5"
+    },
+    "tests/arb/vi-VN.arb::common.cancel": {
+      "source_hash": "e3b158c1b6be6c8bd45688c723640e4c08b65ed90e40d977e044ce308e28d68cd38c5f5ea795e871ce7089a1624fb18e9b162614a63a882a3b83826911e16f98"
+    },
+    "tests/arb/vi-VN.arb::common.goodbye": {
+      "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
+    },
+    "tests/arb/vi-VN.arb::common.hello": {
+      "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/arb/vi-VN.arb::common.save": {
+      "source_hash": "5f485ad5af966158ae128c2e0b993424567303f694df922982db30d52b7908b71dcfb6f1c4233557e1b642c7711defab38152b098f20e812a91d19bab92eab9a"
+    },
+    "tests/arb/vi-VN.arb::dashboard.pendingReviews": {
+      "source_hash": "e63a6d1fb7cb19dd13a91e37ec205730f0e39ca28e9a8f84dfa4134b91cc9eff16b4d25f0a70bda1099b9d6a9c4aafb0572db8e2db529cd5ed59cf444ee94764"
+    },
+    "tests/arb/vi-VN.arb::dashboard.syncStatus": {
+      "source_hash": "6c731ccf6b2be82dd1f04c2ddd28bd2e6f22d4f595300b65818de2c83a462b2c4dc4ae326b4abd3bf49632937c70bd304209e95ca1762dc198900292bd03acd9"
+    },
+    "tests/arb/vi-VN.arb::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/arb/vi-VN.arb::errors.supportLink": {
+      "source_hash": "b94e0816e5137ce6e0ec1e0846fad0be1cf310cffd656dee964a1b4da088d175c7d2a9cb22e1873c3a1f19f1b18a05e3d9e533dfcf832e04496ed4a2e1ae8846"
+    },
+    "tests/arb/vi-VN.arb::inviteCount": {
+      "source_hash": "a4bc8995dc393ed857eecaa39e04c540763806a3517e08bc7efd051af2c9fb547ad393520dd4437e39fab9bc6a0c5147dfbe9c3042ca650f83f47f887e030fe3"
+    },
+    "tests/arb/vi-VN.arb::legal.termsNotice": {
+      "source_hash": "b8484bd5d05220325ef30ed5e5c136ed707c072bca539654aa2fbce9c755c15edd51ed38a3b74574ab908063c17d97d9ee4611d1e7038ed682e8b327e50b6b1c"
+    },
+    "tests/arb/vi-VN.arb::nav.docs": {
+      "source_hash": "ffafec3d7cc822a228b8a64621e4db852284550660b5ca2e9841661dcb20cd24d6b51ea1dd46a5f700091985c7f281cf5fbe78b57c47cae6f47c58d9dc8c1152"
+    },
+    "tests/arb/vi-VN.arb::nav.home": {
+      "source_hash": "7a31067714941ac39fd75610d1c7910d21f21ae45d532daf088134b3d8d270a3d14f60ce94e7c4caf885a4f554913491849dcc18a981e0130f7d34078cf870b6"
+    },
+    "tests/arb/vi-VN.arb::nav.pricing": {
+      "source_hash": "e56c28a70348211907b78c9debf7c4407a65b5092593d7607e7263c970c2857317b132d49109df0ba2cf27cb9a0211d1010b813d548054ff353db334781fb3a2"
+    },
+    "tests/arb/vi-VN.arb::notifications.email.cta": {
+      "source_hash": "692177131b9bc35ac65d43403b152f33867f0aa4ff6eca0d36230ce575a286a5a22cb9f607aac322e4689d6f6d033bc814996d2fb17c3238f13c6885b424ad90"
+    },
+    "tests/arb/vi-VN.arb::notifications.email.subject": {
+      "source_hash": "746dd92018a34a7e379350073294a955f14d2be588926881bef774e4c4c1f1908dc25ca8450829a628bacae81abd630cad7fb7eca954032a518dd97319ec7a98"
+    },
+    "tests/arb/vi-VN.arb::onboarding.stepLabel": {
+      "source_hash": "13fed83910a79a6b6164ce1dc44bccbc584a530a6f7eca7271e2fb30fe3c8fb528968c458471acd8b544528f8d97f3e3cfad409ec110b0a65d35b58427304a0d"
+    },
+    "tests/arb/vi-VN.arb::settings.planBadge": {
+      "source_hash": "6443c383cba57d8b86081b0b87650770b10c88ffec5d7ff1e2756df29ade0126ac56515d832c08cedf594ed7a6ed5d0e39c5c2f86d66d6192a9819ef01812854"
+    },
+    "tests/arb/zh-CN.arb::app.title": {
+      "source_hash": "b88afbfcb698a3646c07d1befe169bd9232e265f91cff749c9d534eccbd0615598f00f1040e0ee7681830ec58f4cc4b6b94106ba67bb2c8e40ce0b63a3c00047"
+    },
+    "tests/arb/zh-CN.arb::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/arb/zh-CN.arb::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/arb/zh-CN.arb::auth.welcomeBack": {
+      "source_hash": "85218d87328344cb5b701efa204a0ccdaaddaf9006b8a79245ac403b8327cc2dc2c3b22f64572caae9562cc5e79f4175b8f1382575f982ebbfcf3000e6335c6d"
+    },
+    "tests/arb/zh-CN.arb::billing.trialNotice": {
+      "source_hash": "f73ad6cee1f8b58fbc258fc2c9e0138d148fd6816406e0bf6ff16bcb5cf3e38c8d11b1c85ce48c50ec6daabc05bb29ab557ee3b0edb5df89d89b408f95c74de5"
+    },
+    "tests/arb/zh-CN.arb::common.cancel": {
+      "source_hash": "e3b158c1b6be6c8bd45688c723640e4c08b65ed90e40d977e044ce308e28d68cd38c5f5ea795e871ce7089a1624fb18e9b162614a63a882a3b83826911e16f98"
+    },
+    "tests/arb/zh-CN.arb::common.goodbye": {
+      "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
+    },
+    "tests/arb/zh-CN.arb::common.hello": {
+      "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/arb/zh-CN.arb::common.save": {
+      "source_hash": "5f485ad5af966158ae128c2e0b993424567303f694df922982db30d52b7908b71dcfb6f1c4233557e1b642c7711defab38152b098f20e812a91d19bab92eab9a"
+    },
+    "tests/arb/zh-CN.arb::dashboard.pendingReviews": {
+      "source_hash": "e63a6d1fb7cb19dd13a91e37ec205730f0e39ca28e9a8f84dfa4134b91cc9eff16b4d25f0a70bda1099b9d6a9c4aafb0572db8e2db529cd5ed59cf444ee94764"
+    },
+    "tests/arb/zh-CN.arb::dashboard.syncStatus": {
+      "source_hash": "6c731ccf6b2be82dd1f04c2ddd28bd2e6f22d4f595300b65818de2c83a462b2c4dc4ae326b4abd3bf49632937c70bd304209e95ca1762dc198900292bd03acd9"
+    },
+    "tests/arb/zh-CN.arb::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/arb/zh-CN.arb::errors.supportLink": {
+      "source_hash": "b94e0816e5137ce6e0ec1e0846fad0be1cf310cffd656dee964a1b4da088d175c7d2a9cb22e1873c3a1f19f1b18a05e3d9e533dfcf832e04496ed4a2e1ae8846"
+    },
+    "tests/arb/zh-CN.arb::inviteCount": {
+      "source_hash": "a4bc8995dc393ed857eecaa39e04c540763806a3517e08bc7efd051af2c9fb547ad393520dd4437e39fab9bc6a0c5147dfbe9c3042ca650f83f47f887e030fe3"
+    },
+    "tests/arb/zh-CN.arb::legal.termsNotice": {
+      "source_hash": "b8484bd5d05220325ef30ed5e5c136ed707c072bca539654aa2fbce9c755c15edd51ed38a3b74574ab908063c17d97d9ee4611d1e7038ed682e8b327e50b6b1c"
+    },
+    "tests/arb/zh-CN.arb::nav.docs": {
+      "source_hash": "ffafec3d7cc822a228b8a64621e4db852284550660b5ca2e9841661dcb20cd24d6b51ea1dd46a5f700091985c7f281cf5fbe78b57c47cae6f47c58d9dc8c1152"
+    },
+    "tests/arb/zh-CN.arb::nav.home": {
+      "source_hash": "7a31067714941ac39fd75610d1c7910d21f21ae45d532daf088134b3d8d270a3d14f60ce94e7c4caf885a4f554913491849dcc18a981e0130f7d34078cf870b6"
+    },
+    "tests/arb/zh-CN.arb::nav.pricing": {
+      "source_hash": "e56c28a70348211907b78c9debf7c4407a65b5092593d7607e7263c970c2857317b132d49109df0ba2cf27cb9a0211d1010b813d548054ff353db334781fb3a2"
+    },
+    "tests/arb/zh-CN.arb::notifications.email.cta": {
+      "source_hash": "692177131b9bc35ac65d43403b152f33867f0aa4ff6eca0d36230ce575a286a5a22cb9f607aac322e4689d6f6d033bc814996d2fb17c3238f13c6885b424ad90"
+    },
+    "tests/arb/zh-CN.arb::notifications.email.subject": {
+      "source_hash": "746dd92018a34a7e379350073294a955f14d2be588926881bef774e4c4c1f1908dc25ca8450829a628bacae81abd630cad7fb7eca954032a518dd97319ec7a98"
+    },
+    "tests/arb/zh-CN.arb::onboarding.stepLabel": {
+      "source_hash": "13fed83910a79a6b6164ce1dc44bccbc584a530a6f7eca7271e2fb30fe3c8fb528968c458471acd8b544528f8d97f3e3cfad409ec110b0a65d35b58427304a0d"
+    },
+    "tests/arb/zh-CN.arb::settings.planBadge": {
+      "source_hash": "6443c383cba57d8b86081b0b87650770b10c88ffec5d7ff1e2756df29ade0126ac56515d832c08cedf594ed7a6ed5d0e39c5c2f86d66d6192a9819ef01812854"
+    },
+    "tests/csv/vi-VN.csv::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/csv/vi-VN.csv::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/csv/vi-VN.csv::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/csv/vi-VN.csv::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/csv/vi-VN.csv::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/csv/vi-VN.csv::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/csv/zh-CN.csv::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/csv/zh-CN.csv::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
     },
     "tests/csv/zh-CN.csv::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
@@ -14655,17 +14805,53 @@
     "tests/csv/zh-CN.csv::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/csv/zh-CN.csv::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/csv/zh-CN.csv::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/formatjs/vi-VN.json::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/formatjs/vi-VN.json::billing.trialNotice": {
+      "source_hash": "f73ad6cee1f8b58fbc258fc2c9e0138d148fd6816406e0bf6ff16bcb5cf3e38c8d11b1c85ce48c50ec6daabc05bb29ab557ee3b0edb5df89d89b408f95c74de5"
+    },
     "tests/formatjs/vi-VN.json::checkout.submit": {
       "source_hash": "458d722c645b7fe4a79ee64923f43984651fb8bcea46770c4f779bfdeffe0945b18aa77d331599f677781423e38965bb266d5c070d8a341e98b5c5d60aac85d2"
+    },
+    "tests/formatjs/vi-VN.json::dashboard.pendingReviews": {
+      "source_hash": "e63a6d1fb7cb19dd13a91e37ec205730f0e39ca28e9a8f84dfa4134b91cc9eff16b4d25f0a70bda1099b9d6a9c4aafb0572db8e2db529cd5ed59cf444ee94764"
     },
     "tests/formatjs/vi-VN.json::home.title": {
       "source_hash": "3f068dda8136a42f4c05801ea490c6eb8d53e3a2faceff16f42d677c0ee1285f85d886bf5cb7e32b865f96b38d4254b08f79bc79b3db8225f61fa04979c0288a"
     },
+    "tests/formatjs/vi-VN.json::notifications.email.subject": {
+      "source_hash": "746dd92018a34a7e379350073294a955f14d2be588926881bef774e4c4c1f1908dc25ca8450829a628bacae81abd630cad7fb7eca954032a518dd97319ec7a98"
+    },
+    "tests/formatjs/zh-CN.json::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/formatjs/zh-CN.json::billing.trialNotice": {
+      "source_hash": "f73ad6cee1f8b58fbc258fc2c9e0138d148fd6816406e0bf6ff16bcb5cf3e38c8d11b1c85ce48c50ec6daabc05bb29ab557ee3b0edb5df89d89b408f95c74de5"
+    },
     "tests/formatjs/zh-CN.json::checkout.submit": {
       "source_hash": "458d722c645b7fe4a79ee64923f43984651fb8bcea46770c4f779bfdeffe0945b18aa77d331599f677781423e38965bb266d5c070d8a341e98b5c5d60aac85d2"
     },
+    "tests/formatjs/zh-CN.json::dashboard.pendingReviews": {
+      "source_hash": "e63a6d1fb7cb19dd13a91e37ec205730f0e39ca28e9a8f84dfa4134b91cc9eff16b4d25f0a70bda1099b9d6a9c4aafb0572db8e2db529cd5ed59cf444ee94764"
+    },
     "tests/formatjs/zh-CN.json::home.title": {
       "source_hash": "3f068dda8136a42f4c05801ea490c6eb8d53e3a2faceff16f42d677c0ee1285f85d886bf5cb7e32b865f96b38d4254b08f79bc79b3db8225f61fa04979c0288a"
+    },
+    "tests/formatjs/zh-CN.json::notifications.email.subject": {
+      "source_hash": "746dd92018a34a7e379350073294a955f14d2be588926881bef774e4c4c1f1908dc25ca8450829a628bacae81abd630cad7fb7eca954032a518dd97319ec7a98"
+    },
+    "tests/json/vi-VN.json::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/json/vi-VN.json::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
     },
     "tests/json/vi-VN.json::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
@@ -14673,11 +14859,59 @@
     "tests/json/vi-VN.json::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/json/vi-VN.json::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/json/vi-VN.json::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/json/zh-CN.json::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/json/zh-CN.json::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/json/zh-CN.json::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/json/zh-CN.json::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/json/zh-CN.json::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/json/zh-CN.json::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/jsonc/vi-VN.jsonc::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/jsonc/vi-VN.jsonc::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/jsonc/vi-VN.jsonc::dashboard.pendingReviews": {
+      "source_hash": "c9b0f07b55b59d9ee3ec018f48230a907ff888a94d48e57e1a6462239cbf67188f45530ca38531a07fa1ae5c95b914cce6d29f6258072c2f8754d63c98a4b935"
+    },
+    "tests/jsonc/vi-VN.jsonc::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/jsonc/vi-VN.jsonc::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/jsonc/zh-CN.jsonc::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/jsonc/zh-CN.jsonc::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
+    "tests/jsonc/zh-CN.jsonc::dashboard.pendingReviews": {
+      "source_hash": "c9b0f07b55b59d9ee3ec018f48230a907ff888a94d48e57e1a6462239cbf67188f45530ca38531a07fa1ae5c95b914cce6d29f6258072c2f8754d63c98a4b935"
+    },
+    "tests/jsonc/zh-CN.jsonc::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/jsonc/zh-CN.jsonc::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
     },
     "tests/md/vi-VN.md::md.078404b9f4f7b6b6": {
       "source_hash": "db7848ebc50c2abea4088623f08230988871fb0d367c4447ea3bd7c7ddc3270a96b471b0d7567db513dd821d5226703f1e2e25f7a632f00db92b102d5d98bdb2"
@@ -14696,6 +14930,9 @@
     },
     "tests/md/vi-VN.md::md.3819abb5f27f9042.2": {
       "source_hash": "0294ed2f3f1fc87481e1f19addc480c32d8f557db88ee0a6556c6dafa11262a2c52abe6506f2121983671f0a0bcd401afea5a375beff2471c520c4a5ef9ba471"
+    },
+    "tests/md/vi-VN.md::md.3a9f34234c4ce42d": {
+      "source_hash": "d600005075afe085873c87624950946181103e788aa06c69be7bc87d4e982e6f7de5d31a6547869cc204bb0e88c94f50df4332d52a668232d20ab5e25eeb3dee"
     },
     "tests/md/vi-VN.md::md.4727c30e3bde6f10": {
       "source_hash": "01d566d2ab8db3cdabb45ff04d930637a7a2d41dce60db3f5ca3466fdb52094fb3e0d94d21affee7044260ec157b80db99a0125416a084a32fc26035dd9abcd2"
@@ -14780,6 +15017,9 @@
     },
     "tests/md/zh-CN.md::md.3819abb5f27f9042.2": {
       "source_hash": "0294ed2f3f1fc87481e1f19addc480c32d8f557db88ee0a6556c6dafa11262a2c52abe6506f2121983671f0a0bcd401afea5a375beff2471c520c4a5ef9ba471"
+    },
+    "tests/md/zh-CN.md::md.3a9f34234c4ce42d": {
+      "source_hash": "d600005075afe085873c87624950946181103e788aa06c69be7bc87d4e982e6f7de5d31a6547869cc204bb0e88c94f50df4332d52a668232d20ab5e25eeb3dee"
     },
     "tests/md/zh-CN.md::md.4727c30e3bde6f10": {
       "source_hash": "01d566d2ab8db3cdabb45ff04d930637a7a2d41dce60db3f5ca3466fdb52094fb3e0d94d21affee7044260ec157b80db99a0125416a084a32fc26035dd9abcd2"
@@ -14871,6 +15111,9 @@
     "tests/mdx/vi-VN.mdx::md.7c873b47592622ad": {
       "source_hash": "30c0fc225fb452f39afe0328a65527501f658cdeb988090402e0f2c1bd22f98ce939f0b215a5e75b8c9f21503c267bcdc245e83234630c79002f7dc1dcc1d100"
     },
+    "tests/mdx/vi-VN.mdx::md.86156f710040d40c": {
+      "source_hash": "38e332843e6bc5736c7b4b11909bb28d3ad1f91487788371ea64e027c33dbc4b0d4d4d3ce333abb72ad06f4caf55d76190d8913c0aca35370135bb183a3e681b"
+    },
     "tests/mdx/vi-VN.mdx::md.8d91218fd83cc00e": {
       "source_hash": "fb1b27ce2faa4fddc00161b8b92cd9cebbe0975e39622ace26ea6932c2e31424e8f6f1cbe6c3ec5f1b3513b98971751e0d30535bdb57225a6d36d2a1c8dae747"
     },
@@ -14934,6 +15177,9 @@
     "tests/mdx/zh-CN.mdx::md.7c873b47592622ad": {
       "source_hash": "30c0fc225fb452f39afe0328a65527501f658cdeb988090402e0f2c1bd22f98ce939f0b215a5e75b8c9f21503c267bcdc245e83234630c79002f7dc1dcc1d100"
     },
+    "tests/mdx/zh-CN.mdx::md.86156f710040d40c": {
+      "source_hash": "38e332843e6bc5736c7b4b11909bb28d3ad1f91487788371ea64e027c33dbc4b0d4d4d3ce333abb72ad06f4caf55d76190d8913c0aca35370135bb183a3e681b"
+    },
     "tests/mdx/zh-CN.mdx::md.8d91218fd83cc00e": {
       "source_hash": "fb1b27ce2faa4fddc00161b8b92cd9cebbe0975e39622ace26ea6932c2e31424e8f6f1cbe6c3ec5f1b3513b98971751e0d30535bdb57225a6d36d2a1c8dae747"
     },
@@ -14973,11 +15219,29 @@
     "tests/mdx/zh-CN.mdx::md.ed5d7051d690d830": {
       "source_hash": "3e890cc7528b6fcbc8425e37ae7e5b24ca47b6702b188297301787549d45f0d529511453147ef1ea3d133640df23516e4d5165b6e90d2de43b5130efae49fbd6"
     },
+    "tests/po/vi-VN.po::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/po/vi-VN.po::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/po/vi-VN.po::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/po/vi-VN.po::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/po/vi-VN.po::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/po/vi-VN.po::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/po/zh-CN.po::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/po/zh-CN.po::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
     },
     "tests/po/zh-CN.po::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
@@ -14985,17 +15249,47 @@
     "tests/po/zh-CN.po::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/po/zh-CN.po::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/po/zh-CN.po::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/strings/vi-VN.strings::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/strings/vi-VN.strings::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/strings/vi-VN.strings::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/strings/vi-VN.strings::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/strings/vi-VN.strings::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/strings/vi-VN.strings::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
+    },
+    "tests/strings/zh-CN.strings::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/strings/zh-CN.strings::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/strings/zh-CN.strings::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/strings/zh-CN.strings::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/strings/zh-CN.strings::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/strings/zh-CN.strings::errors.networkRetry": {
+      "source_hash": "411f14b49e0fa5e4f930c072c12dc96ce9b18a15d0767022751b729da4466cbfaae3cca8e7655f297fce714727843be3c4024154989f303a91aaa9a38297fe77"
     },
     "tests/stringsdict/vi-VN.stringsdict::item_count.NSStringLocalizedFormatKey": {
       "source_hash": "a43a8dde06ae4883e0f178b4205569b4bb2edc794dedceafdd211b2d7151847cef6797971e5d6f5223ff02522192622ffbc3a16d5c4ea95eb51970580f6aa605"
@@ -15012,6 +15306,21 @@
     "tests/stringsdict/vi-VN.stringsdict::item_count.items.other": {
       "source_hash": "34f309b554600ff33ea499978f5eefacd4fbbdaaf87ac70efc622a50d86edc144f9e4a73e19a339ed70895f5336243db5f8c040f4b1f7beee29ac77a101964d9"
     },
+    "tests/stringsdict/vi-VN.stringsdict::pending_review_count.NSStringLocalizedFormatKey": {
+      "source_hash": "ca705517d5e0f1c1cad6dfd6abbc8a73f8e62dc5b788ca23721e0ea39625d8490ebf2b002dd22c554799bb68f926a779783a8c77ebbfed1bdf77bc9c5b385a4a"
+    },
+    "tests/stringsdict/vi-VN.stringsdict::pending_review_count.reviews.NSStringFormatSpecTypeKey": {
+      "source_hash": "0e8bdf23719f3b5aaf10f0b53c292f287aa9daef761cacdaacd2684a888ce6960750e59861cb0379ce87afb9775984b79401d141a81e82668fe25c7cb51b96b3"
+    },
+    "tests/stringsdict/vi-VN.stringsdict::pending_review_count.reviews.NSStringFormatValueTypeKey": {
+      "source_hash": "48fb10b15f3d44a09dc82d02b06581e0c0c69478c9fd2cf8f9093659019a1687baecdbb38c9e72b12169dc4148690f87467f9154f5931c5df665c6496cbfd5f5"
+    },
+    "tests/stringsdict/vi-VN.stringsdict::pending_review_count.reviews.one": {
+      "source_hash": "0754140ea44423273f09ede44fe0a4668502804f02d3228a6846e183f461c3d84eba392f5bcf9332eaa87c62ec3db23b33279b0f56f869868b678ca48589319d"
+    },
+    "tests/stringsdict/vi-VN.stringsdict::pending_review_count.reviews.other": {
+      "source_hash": "387aa3a86463d83041e31860ad6dfa010cb83070673f1cd9f18634fe8587d395666df80483656d8072e1cfecb64b436d200542152a444b3b5cfe1a1127b9a714"
+    },
     "tests/stringsdict/zh-CN.stringsdict::item_count.NSStringLocalizedFormatKey": {
       "source_hash": "a43a8dde06ae4883e0f178b4205569b4bb2edc794dedceafdd211b2d7151847cef6797971e5d6f5223ff02522192622ffbc3a16d5c4ea95eb51970580f6aa605"
     },
@@ -15027,11 +15336,44 @@
     "tests/stringsdict/zh-CN.stringsdict::item_count.items.other": {
       "source_hash": "34f309b554600ff33ea499978f5eefacd4fbbdaaf87ac70efc622a50d86edc144f9e4a73e19a339ed70895f5336243db5f8c040f4b1f7beee29ac77a101964d9"
     },
+    "tests/stringsdict/zh-CN.stringsdict::pending_review_count.NSStringLocalizedFormatKey": {
+      "source_hash": "ca705517d5e0f1c1cad6dfd6abbc8a73f8e62dc5b788ca23721e0ea39625d8490ebf2b002dd22c554799bb68f926a779783a8c77ebbfed1bdf77bc9c5b385a4a"
+    },
+    "tests/stringsdict/zh-CN.stringsdict::pending_review_count.reviews.NSStringFormatSpecTypeKey": {
+      "source_hash": "0e8bdf23719f3b5aaf10f0b53c292f287aa9daef761cacdaacd2684a888ce6960750e59861cb0379ce87afb9775984b79401d141a81e82668fe25c7cb51b96b3"
+    },
+    "tests/stringsdict/zh-CN.stringsdict::pending_review_count.reviews.NSStringFormatValueTypeKey": {
+      "source_hash": "48fb10b15f3d44a09dc82d02b06581e0c0c69478c9fd2cf8f9093659019a1687baecdbb38c9e72b12169dc4148690f87467f9154f5931c5df665c6496cbfd5f5"
+    },
+    "tests/stringsdict/zh-CN.stringsdict::pending_review_count.reviews.one": {
+      "source_hash": "0754140ea44423273f09ede44fe0a4668502804f02d3228a6846e183f461c3d84eba392f5bcf9332eaa87c62ec3db23b33279b0f56f869868b678ca48589319d"
+    },
+    "tests/stringsdict/zh-CN.stringsdict::pending_review_count.reviews.other": {
+      "source_hash": "387aa3a86463d83041e31860ad6dfa010cb83070673f1cd9f18634fe8587d395666df80483656d8072e1cfecb64b436d200542152a444b3b5cfe1a1127b9a714"
+    },
+    "tests/xlf/vi-VN.xlf::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xlf/vi-VN.xlf::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/xlf/vi-VN.xlf::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/xlf/vi-VN.xlf::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/xlf/vi-VN.xlf::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xlf/vi-VN.xlf::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
+    },
+    "tests/xlf/zh-CN.xlf::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xlf/zh-CN.xlf::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
     },
     "tests/xlf/zh-CN.xlf::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
@@ -15039,11 +15381,35 @@
     "tests/xlf/zh-CN.xlf::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/xlf/zh-CN.xlf::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xlf/zh-CN.xlf::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
+    },
+    "tests/xlif/vi-VN.xlif::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xlif/vi-VN.xlif::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/xlif/vi-VN.xlif::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/xlif/vi-VN.xlif::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/xlif/vi-VN.xlif::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xlif/vi-VN.xlif::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
+    },
+    "tests/xlif/zh-CN.xlif::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xlif/zh-CN.xlif::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
     },
     "tests/xlif/zh-CN.xlif::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
@@ -15051,17 +15417,47 @@
     "tests/xlif/zh-CN.xlif::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/xlif/zh-CN.xlif::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xlif/zh-CN.xlif::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
+    },
+    "tests/xliff/vi-VN.xliff::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xliff/vi-VN.xliff::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/xliff/vi-VN.xliff::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/xliff/vi-VN.xliff::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
     },
+    "tests/xliff/vi-VN.xliff::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xliff/vi-VN.xliff::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
+    },
+    "tests/xliff/zh-CN.xliff::auth.signIn.subtitle": {
+      "source_hash": "8aa8308f8ed86f50f7072c02f7c7ef326f2d89ec30adc7e6dc64deb294bd52fb3124e0841e568723668725c171aaa22e6389b8444a4b8b5b94bbf7af8bc725a8"
+    },
+    "tests/xliff/zh-CN.xliff::auth.signIn.title": {
+      "source_hash": "c04ac612cb9eba4fe23c2eea9e2a8a1cfadc41e787c3095ebb9b0c3b4e10c84ba1346c11ab326295c40fd0e164f61c2d5df4cfac62643f9486a17afd0c849786"
+    },
     "tests/xliff/zh-CN.xliff::common.goodbye": {
       "source_hash": "db8051af2e1400f8b4bb7a4afd7bcffdcd924ebd61d5b10ebdcc1a9dcd8e40fcd8e0f6f0aebb3209bd0c4908f68b68e1854f22984adaa1b23a4b4345c6b56a91"
     },
     "tests/xliff/zh-CN.xliff::common.hello": {
       "source_hash": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
+    },
+    "tests/xliff/zh-CN.xliff::dashboard.syncStatus": {
+      "source_hash": "6cc4fcf317d0356b2efaa574e2e4a248a91f832cb0353048171888c62fbd013963b31de2dd24494fa5199d83c29843382d15351904f1b3d6465889bd811d8a95"
+    },
+    "tests/xliff/zh-CN.xliff::errors.networkRetry": {
+      "source_hash": "85561c123b0f5e30b60b7a97cd16822343e5c7a1abb7e71564ec8ac35d164ab99d0376d761d5db74bcde08ec528aa4515d40ceee4807f0dc8a4d45ba51375888"
     }
   }
 }

@@ -2,11 +2,17 @@
 <xliff version="1.2">
   <file source-language="en-US" datatype="plaintext" original="messages">
     <body>
-      <trans-unit id="common.hello">
-        <source>Hello</source>
+      <trans-unit id="auth.signIn.title">
+        <source>Sign in to your workspace</source>
       </trans-unit>
-      <trans-unit id="common.goodbye">
-        <source>Goodbye</source>
+      <trans-unit id="auth.signIn.subtitle">
+        <source>Use your work email to continue.</source>
+      </trans-unit>
+      <trans-unit id="dashboard.syncStatus">
+        <source>Last synced 2 minutes ago</source>
+      </trans-unit>
+      <trans-unit id="errors.networkRetry">
+        <source>We couldn't save your changes. Check your connection and try again.</source>
       </trans-unit>
     </body>
   </file>

@@ -1,3 +1,9 @@
-/* Home screen */
-"common.hello" = "Hello";
-"common.goodbye" = "Goodbye";
+/* Auth screen */
+"auth.signIn.title" = "Sign in to your workspace";
+"auth.signIn.subtitle" = "Use your work email to continue.";
+
+/* Dashboard */
+"dashboard.syncStatus" = "Last synced 2 minutes ago";
+
+/* Errors */
+"errors.networkRetry" = "We couldn't save your changes. Check your connection and try again.";

@@ -2,11 +2,17 @@
 <xliff version="1.2">
   <file source-language="en-US" datatype="plaintext" original="messages" target-language="zh-CN">
     <body>
-      <trans-unit id="common.hello">
-        <source>你好</source>
+      <trans-unit id="auth.signIn.title">
+        <source>登录您的工作空间</source>
       </trans-unit>
-      <trans-unit id="common.goodbye">
-        <source>再见</source>
+      <trans-unit id="auth.signIn.subtitle">
+        <source>使用您的工作邮箱继续。</source>
+      </trans-unit>
+      <trans-unit id="dashboard.syncStatus">
+        <source>最后同步时间 2 分钟前</source>
+      </trans-unit>
+      <trans-unit id="errors.networkRetry">
+        <source>我们无法保存您的更改。请检查您的连接并再次尝试。</source>
       </trans-unit>
     </body>
   </file>

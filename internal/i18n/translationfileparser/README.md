@@ -5,6 +5,7 @@
 ## Supported formats
 
 - `.json` via `JSONParser`
+- `.jsonc` via `JSONCParser`
 - `.arb` via `ARBParser` (Flutter Application Resource Bundle)
 - `.xlf` / `.xliff` via `XLIFFParser` (XLIFF 1.2 and 2.x)
 - `.po` via `POFileParser` (GNU gettext)
@@ -26,6 +27,12 @@
 - Accepts object-shaped JSON.
 - Nested objects are flattened with dotted keys.
   - Example: `{ "home": { "title": "Accueil" } }` -> `home.title=Accueil`
+- Non-string leaf values are rejected.
+
+### JSONC
+
+- Accepts JSON with `//` and `/* ... */` comments plus trailing commas.
+- Produces the same flattened dotted-key output shape as the JSON parser.
 - Non-string leaf values are rejected.
 
 ### ARB

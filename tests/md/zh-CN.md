@@ -40,4 +40,4 @@ hyperlocalise run --group docs --dry-run
 
 最后提醒：“同步摘要”必须在检查表和报告中保持一致。
 
-[CLI 指南]: https://example.com/docs/cli(reference)
+[cli-guide]: https://example.com/docs/cli(reference)

@@ -1,3 +1,7 @@
 key,value
 common.hello,Xin chào
 common.goodbye,Tạm biệt
+auth.signIn.subtitle,Sử dụng địa chỉ email làm việc của bạn để tiếp tục.
+auth.signIn.title,Đăng nhập vào không gian làm việc của bạn
+dashboard.syncStatus,Đã đồng bộ hóa 2 phút trước
+errors.networkRetry,Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối và thử lại.

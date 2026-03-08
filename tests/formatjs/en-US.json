@@ -1,10 +1,18 @@
 {
-  "checkout.submit": {
-    "defaultMessage": "Submit order",
-    "description": "Checkout submit button"
+  "auth.signIn.title": {
+    "defaultMessage": "Sign in to your workspace",
+    "description": "Heading on the sign-in screen"
   },
-  "home.title": {
-    "defaultMessage": "Welcome",
-    "description": "Homepage title"
+  "dashboard.pendingReviews": {
+    "defaultMessage": "{count, plural, =0{No reviews pending} one{# review pending} other{# reviews pending}}",
+    "description": "Dashboard card showing how many reviews still need approval"
+  },
+  "billing.trialNotice": {
+    "defaultMessage": "Your trial ends on {date}.",
+    "description": "Notice displayed when the workspace is in a trial period"
+  },
+  "notifications.email.subject": {
+    "defaultMessage": "{name} mentioned you in {projectName}",
+    "description": "Subject line for mention notification emails"
   }
 }

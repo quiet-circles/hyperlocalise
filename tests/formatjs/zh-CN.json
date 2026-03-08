@@ -1,10 +1,22 @@
 {
+  "auth.signIn.title": {
+    "defaultMessage": "登录到您的工作空间"
+  },
+  "billing.trialNotice": {
+    "defaultMessage": "您的试用期将于 {date} 结束。"
+  },
   "checkout.submit": {
     "defaultMessage": "提交订单",
     "description": "Checkout submit button"
   },
+  "dashboard.pendingReviews": {
+    "defaultMessage": "{count, plural, =0{无待审核的评论} one{# 待审核的评论} other{# 待审核的评论}}"
+  },
   "home.title": {
     "defaultMessage": "欢迎",
     "description": "Homepage title"
+  },
+  "notifications.email.subject": {
+    "defaultMessage": "{name} 在 {projectName} 中提到了你"
   }
 }

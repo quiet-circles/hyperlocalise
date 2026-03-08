@@ -2,8 +2,14 @@ msgid ""
 msgstr ""
 "Language: en-US\\n"
 
-msgid "common.hello"
-msgstr "Xin chào"
+msgid "auth.signIn.title"
+msgstr "Đăng nhập vào không gian làm việc của bạn"
 
-msgid "common.goodbye"
-msgstr "Tạm biệt"
+msgid "auth.signIn.subtitle"
+msgstr "Sử dụng địa chỉ email làm việc của bạn để tiếp tục."
+
+msgid "dashboard.syncStatus"
+msgstr "Đã đồng bộ hóa 2 phút trước"
+
+msgid "errors.networkRetry"
+msgstr "Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại."

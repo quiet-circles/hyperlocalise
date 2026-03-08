@@ -1,0 +1,153 @@
+{
+  "@@locale": "en-US",
+  "@@last_modified": "2026-03-08T09:30:00Z",
+  "app.title": "Tập trung vào",
+  "@app.title": {
+    "description": "Application name shown in the browser title and native shell"
+  },
+  "nav.home": "Trang chủ",
+  "@nav.home": {
+    "description": "Primary navigation link to the homepage"
+  },
+  "nav.pricing": "Giá",
+  "@nav.pricing": {
+    "description": "Primary navigation link to the pricing page"
+  },
+  "nav.docs": "Liên kết điều hướng chính đến phần tài liệu",
+  "@nav.docs": {
+    "description": "Primary navigation link to the documentation section"
+  },
+  "common.hello": "Xin chào",
+  "@common.hello": {
+    "description": "Generic greeting"
+  },
+  "common.goodbye": "Tạm biệt",
+  "@common.goodbye": {
+    "description": "Generic farewell"
+  },
+  "common.cancel": "Hủy",
+  "@common.cancel": {
+    "description": "Generic dismissive action label"
+  },
+  "common.save": "Lưu",
+  "@common.save": {
+    "description": "Primary save action label"
+  },
+  "auth.signIn.title": "Đăng nhập vào không gian làm việc của bạn",
+  "@auth.signIn.title": {
+    "description": "Heading on the sign-in screen"
+  },
+  "auth.signIn.subtitle": "Sử dụng địa chỉ email làm việc của bạn để tiếp tục.",
+  "@auth.signIn.subtitle": {
+    "description": "Supporting copy below the sign-in heading"
+  },
+  "auth.welcomeBack": "Chào mừng trở lại, {firstName}!",
+  "@auth.welcomeBack": {
+    "description": "Personalized greeting shown after successful authentication",
+    "placeholders": {
+      "firstName": {
+        "type": "String",
+        "example": "Mina"
+      }
+    }
+  },
+  "dashboard.syncStatus": "Đã đồng bộ hóa lần cuối {relativeTime}",
+  "@dashboard.syncStatus": {
+    "description": "Status line on the dashboard showing the last successful sync time",
+    "placeholders": {
+      "relativeTime": {
+        "type": "String",
+        "example": "2 minutes ago"
+      }
+    }
+  },
+  "dashboard.pendingReviews": "{count, plural, =0{Không có đánh giá nào đang chờ xử lý} one{# đánh giá đang chờ xử lý} other{# đánh giá đang chờ xử lý}}",
+  "@dashboard.pendingReviews": {
+    "description": "Dashboard card showing how many reviews still need approval",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+  "settings.planBadge": "{plan, chọn, miễn phí{Kế hoạch miễn phí}, chuyên nghiệp{Kế hoạch chuyên nghiệp}, doanh nghiệp{Kế hoạch doanh nghiệp}, khác{Kế hoạch tùy chỉnh}}",
+  "@settings.planBadge": {
+    "description": "Badge label showing the active subscription tier",
+    "placeholders": {
+      "plan": {
+        "type": "String",
+        "example": "pro"
+      }
+    }
+  },
+  "billing.trialNotice": "Thử nghiệm của bạn sẽ kết thúc vào ngày {date}.",
+  "@billing.trialNotice": {
+    "description": "Notice displayed when the workspace is in a trial period",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "example": "March 31, 2026"
+      }
+    }
+  },
+  "inviteCount": "{count, plural, =0{Không có lời mời} one{1 lời mời} other{{count} lời mời}}",
+  "@inviteCount": {
+    "description": "Number of invitations in inbox",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifications.email.subject": "{tên} đã đề cập đến bạn trong dự án {projectName}",
+  "@notifications.email.subject": {
+    "description": "Subject line for mention notification emails",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alex"
+      },
+      "projectName": {
+        "type": "String",
+        "example": "Website relaunch"
+      }
+    }
+  },
+  "notifications.email.cta": "Xem bản cập nhật",
+  "@notifications.email.cta": {
+    "description": "CTA button label in notification emails"
+  },
+  "errors.networkRetry": "Chúng tôi không thể lưu thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại.",
+  "@errors.networkRetry": {
+    "description": "Inline error shown after a failed save request"
+  },
+  "errors.supportLink": "Cần hỗ trợ? Vui lòng truy cập {supportUrl}",
+  "@errors.supportLink": {
+    "description": "Support help text with a documentation URL",
+    "placeholders": {
+      "supportUrl": {
+        "type": "String",
+        "example": "https://hyperlocalise.dev/docs/support"
+      }
+    }
+  },
+  "onboarding.stepLabel": "Bước {current} trong tổng cộng {total}",
+  "@onboarding.stepLabel": {
+    "description": "Progress label shown during onboarding",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "legal.termsNotice": "Bằng cách tiếp tục, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật.",
+  "@legal.termsNotice": {
+    "description": "Consent notice displayed before account creation"
+  }
+}

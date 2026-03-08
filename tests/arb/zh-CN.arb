@@ -1,0 +1,153 @@
+{
+  "@@locale": "en-US",
+  "@@last_modified": "2026-03-08T09:30:00Z",
+  "app.title": "本地化",
+  "@app.title": {
+    "description": "Application name shown in the browser title and native shell"
+  },
+  "nav.home": "主页",
+  "@nav.home": {
+    "description": "Primary navigation link to the homepage"
+  },
+  "nav.pricing": "定价",
+  "@nav.pricing": {
+    "description": "Primary navigation link to the pricing page"
+  },
+  "nav.docs": "文档",
+  "@nav.docs": {
+    "description": "Primary navigation link to the documentation section"
+  },
+  "common.hello": "你好",
+  "@common.hello": {
+    "description": "Generic greeting"
+  },
+  "common.goodbye": "再见",
+  "@common.goodbye": {
+    "description": "Generic farewell"
+  },
+  "common.cancel": "取消",
+  "@common.cancel": {
+    "description": "Generic dismissive action label"
+  },
+  "common.save": "保存更改",
+  "@common.save": {
+    "description": "Primary save action label"
+  },
+  "auth.signIn.title": "登录到您的工作空间",
+  "@auth.signIn.title": {
+    "description": "Heading on the sign-in screen"
+  },
+  "auth.signIn.subtitle": "使用您的工作邮箱继续。",
+  "@auth.signIn.subtitle": {
+    "description": "Supporting copy below the sign-in heading"
+  },
+  "auth.welcomeBack": "欢迎回来，{firstName}！",
+  "@auth.welcomeBack": {
+    "description": "Personalized greeting shown after successful authentication",
+    "placeholders": {
+      "firstName": {
+        "type": "String",
+        "example": "Mina"
+      }
+    }
+  },
+  "dashboard.syncStatus": "最后同步时间：{relativeTime}",
+  "@dashboard.syncStatus": {
+    "description": "Status line on the dashboard showing the last successful sync time",
+    "placeholders": {
+      "relativeTime": {
+        "type": "String",
+        "example": "2 minutes ago"
+      }
+    }
+  },
+  "dashboard.pendingReviews": "{count, 数量, =0{无待审核的评论} one{# 待审核的评论} other{# 待审核的评论}}",
+  "@dashboard.pendingReviews": {
+    "description": "Dashboard card showing how many reviews still need approval",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+  "settings.planBadge": "{计划, 选择, free{免费计划} pro{专业计划} enterprise{企业计划} other{自定义计划}}",
+  "@settings.planBadge": {
+    "description": "Badge label showing the active subscription tier",
+    "placeholders": {
+      "plan": {
+        "type": "String",
+        "example": "pro"
+      }
+    }
+  },
+  "billing.trialNotice": "您的试用期将于 {date} 结束。",
+  "@billing.trialNotice": {
+    "description": "Notice displayed when the workspace is in a trial period",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "example": "March 31, 2026"
+      }
+    }
+  },
+  "inviteCount": "{count, plural, =0{没有邀请} one{1 个邀请} other{{count} 个邀请}}",
+  "@inviteCount": {
+    "description": "Number of invitations in inbox",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifications.email.subject": "{name} 在 {projectName} 中提到了您",
+  "@notifications.email.subject": {
+    "description": "Subject line for mention notification emails",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alex"
+      },
+      "projectName": {
+        "type": "String",
+        "example": "Website relaunch"
+      }
+    }
+  },
+  "notifications.email.cta": "查看更新",
+  "@notifications.email.cta": {
+    "description": "CTA button label in notification emails"
+  },
+  "errors.networkRetry": "我们无法保存您的更改。请检查您的连接并重试。",
+  "@errors.networkRetry": {
+    "description": "Inline error shown after a failed save request"
+  },
+  "errors.supportLink": "需要帮助吗？请访问 {supportUrl}",
+  "@errors.supportLink": {
+    "description": "Support help text with a documentation URL",
+    "placeholders": {
+      "supportUrl": {
+        "type": "String",
+        "example": "https://hyperlocalise.dev/docs/support"
+      }
+    }
+  },
+  "onboarding.stepLabel": "步骤 {current} / {total}",
+  "@onboarding.stepLabel": {
+    "description": "Progress label shown during onboarding",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "legal.termsNotice": "通过继续，您同意服务条款和隐私政策。",
+  "@legal.termsNotice": {
+    "description": "Consent notice displayed before account creation"
+  }
+}

@@ -2,8 +2,14 @@ msgid ""
 msgstr ""
 "Language: en-US\\n"
 
-msgid "common.hello"
-msgstr "你好"
+msgid "auth.signIn.title"
+msgstr "登录到您的工作空间"
 
-msgid "common.goodbye"
-msgstr "再见"
+msgid "auth.signIn.subtitle"
+msgstr "使用您的工作电子邮件继续。"
+
+msgid "dashboard.syncStatus"
+msgstr "上次同步时间 2 分钟前"
+
+msgid "errors.networkRetry"
+msgstr "我们无法保存您的更改。请检查您的网络连接，然后重试。"

@@ -1,0 +1,15 @@
+{
+  "auth": {
+    "signIn": {
+      "subtitle": "Sử dụng địa chỉ email của công ty để tiếp tục.",
+      "title": "Đăng nhập vào không gian làm việc của bạn"
+    }
+  },
+  "dashboard": {
+    "pendingReviews": "3 đánh giá đang chờ xem",
+    "syncStatus": "Đã đồng bộ hóa 2 phút trước"
+  },
+  "errors": {
+    "networkRetry": "Chúng tôi không thể lưu thay đổi của bạn. Vui lòng kiểm tra kết nối và thử lại."
+  }
+}

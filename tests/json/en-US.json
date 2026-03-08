@@ -1,6 +1,14 @@
 {
-  "common": {
-    "hello": "Hello",
-    "goodbye": "Goodbye"
+  "auth": {
+    "signIn": {
+      "title": "Sign in to your workspace",
+      "subtitle": "Use your work email to continue."
+    }
+  },
+  "dashboard": {
+    "syncStatus": "Last synced 2 minutes ago"
+  },
+  "errors": {
+    "networkRetry": "We couldn't save your changes. Check your connection and try again."
   }
 }

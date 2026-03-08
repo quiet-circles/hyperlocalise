@@ -2,8 +2,14 @@ msgid ""
 msgstr ""
 "Language: en-US\\n"
 
-msgid "common.hello"
-msgstr "Hello"
+msgid "auth.signIn.title"
+msgstr "Sign in to your workspace"
 
-msgid "common.goodbye"
-msgstr "Goodbye"
+msgid "auth.signIn.subtitle"
+msgstr "Use your work email to continue."
+
+msgid "dashboard.syncStatus"
+msgstr "Last synced 2 minutes ago"
+
+msgid "errors.networkRetry"
+msgstr "We couldn't save your changes. Check your connection and try again."

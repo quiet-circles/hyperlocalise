@@ -1,6 +1,18 @@
 {
+  "auth": {
+    "signIn": {
+      "subtitle": "Sử dụng địa chỉ email làm việc của bạn để tiếp tục.",
+      "title": "Đăng nhập vào không gian làm việc"
+    }
+  },
   "common": {
     "goodbye": "Tạm biệt",
     "hello": "Xin chào"
+  },
+  "dashboard": {
+    "syncStatus": "Đã đồng bộ hóa 2 phút trước"
+  },
+  "errors": {
+    "networkRetry": "Chúng tôi không thể lưu các thay đổi của bạn. Vui lòng kiểm tra kết nối của bạn và thử lại."
   }
 }

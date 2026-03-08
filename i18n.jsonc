@@ -35,6 +35,14 @@
         },
       ],
     },
+    "tests_jsonc": {
+      "files": [
+        {
+          "from": "tests/jsonc/en-US.jsonc",
+          "to": "tests/jsonc/[locale].jsonc",
+        },
+      ],
+    },
     "tests_arb": {
       "files": [
         {
@@ -140,6 +148,7 @@
       "buckets": [
         "tests_arb",
         "tests_json",
+        "tests_jsonc",
         "tests_formatjs",
         "tests_xlf",
         "tests_xlif",

@@ -1,10 +1,22 @@
 {
+  "auth.signIn.title": {
+    "defaultMessage": "Đăng nhập vào không gian làm việc của bạn"
+  },
+  "billing.trialNotice": {
+    "defaultMessage": "Thời gian dùng thử của bạn sẽ hết vào ngày {ngày}."
+  },
   "checkout.submit": {
     "defaultMessage": "Gửi đơn hàng",
     "description": "Checkout submit button"
   },
+  "dashboard.pendingReviews": {
+    "defaultMessage": "{count, plural, =0{Không có đánh giá nào đang chờ xử lý} one{# đánh giá đang chờ xử lý} other{# đánh giá đang chờ xử lý}}"
+  },
   "home.title": {
     "defaultMessage": "Chào mừng",
     "description": "Homepage title"
+  },
+  "notifications.email.subject": {
+    "defaultMessage": "{name} đã đề cập đến bạn trong dự án {projectName}"
   }
 }

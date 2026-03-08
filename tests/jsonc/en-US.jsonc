@@ -1,0 +1,19 @@
+{
+  // Authentication copy shown before the user joins a workspace.
+  "auth": {
+    "signIn": {
+      "title": "Sign in to your workspace",
+      "subtitle": "Use your work email to continue.",
+    },
+  },
+
+  // Dashboard status text with stable wording for integration tests.
+  "dashboard": {
+    "syncStatus": "Last synced 2 minutes ago",
+    "pendingReviews": "3 reviews pending",
+  },
+
+  "errors": {
+    "networkRetry": "We couldn't save your changes. Check your connection and try again.",
+  },
+}
