@@ -6,10 +6,10 @@
     }
   },
   "dashboard": {
-    "pendingReviews": "3 待审评论",
+    "pendingReviews": "3 待审核评论",
     "syncStatus": "最后同步时间 2 分钟前"
   },
   "errors": {
-    "networkRetry": "我们无法保存您的更改。请检查您的连接并重试。"
+    "networkRetry": "我们无法保存您的更改。请检查您的连接并再次尝试。"
   }
 }

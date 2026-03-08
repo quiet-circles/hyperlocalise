@@ -1,15 +1,15 @@
 ---
-title: "文档发布流程"
-description: "在不修改 JSX、表达式或导入的情况下，处理 MDX 段落替换。"
+title: "文档启动计划"
+description: "在不修改 JSX、表达式或导入的情况下处理 MDX 段落替换。"
 ---
 
 import { Callout } from "nextra/components";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# 文档发布流程
+# 文档发布指南
 
 <Callout type="warning">
-  请在更新此页面时，保持`projectId="docs"`不变。
+  请在更新此页面时保持 `projectId="docs"` 不变。
 </Callout>
 
 <Tabs items={["cli", "api"]}>
@@ -17,7 +17,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
     Run `hyperlocalise status --verbose` before publishing the docs portal.
   </Tab>
   <Tab value="api">
-    API 用户应保留 token 名称 `HYPERLOCALISE_API_KEY`。
+    API 用户应保留令牌名称 `HYPERLOCALISE_API_KEY`。
   </Tab>
 </Tabs>
 
@@ -31,20 +31,20 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
   icon={<Badge text="beta" />}
 >
   <Callout type="info">
-    保持[参考链接][mdx-ref]的稳定性，并保留字面文本，例如 `MDPH_0_END`。
+    保持[参考链接][mdx-ref]不变，并保留字面文本，如 `MDPH_0_END`。
   </Callout>
 
-  - 第一层嵌套项目，带有`hyperlocalise sync pull`
+  - 第一层嵌套项：`hyperlocalise sync pull`
   - 第二个嵌套项目，带有<Badge text="inline" />标记
 </Card>
 
 备用路由：{locale === "vi-VN" ? "/vi-VN" : "/"} 在运行时计算。
 
-使用<Badge text="stable" />构建，当发布分支被冻结时。
+使用<Badge text="stable" />是在发布分支被冻结时构建的。
 
-> 代码块可以包含 <Badge text="quoted" /> 和 `inlineCode()`。
+> 代码块可以包含<Badge text="quoted" />和`inlineCode()`。
 >
-> ![引用图](https://example.com/assets/quoted(flow).png)
+> ![引用的图表](https://example.com/assets/quoted(flow).png)
 
 <Steps>
   <Step title="Prepare">
@@ -54,7 +54,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
     title="Publish"
     icon={<Badge text="go" />}
   >
-    部署文档页面，并保持`docs/[locale]/index.mdx`不变。
+    发送文档页面，并保持`docs/[locale]/index.mdx`不变。
   </Step>
 </Steps>
 

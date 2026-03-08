@@ -1,12 +1,12 @@
 ---
-title: "Hướng dẫn thực hiện"
-description: "Xử lý các thay thế văn bản MDX mà không cần can thiệp vào JSX, biểu thức hoặc import."
+title: "Hướng dẫn triển khai"
+description: "Xử lý thay thế đoạn văn MDX mà không cần tác động đến JSX, biểu thức hoặc import."
 ---
 
 import { Callout } from "nextra/components";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-# Hướng dẫn khởi chạy tài liệu
+# Hướng dẫn triển khai
 
 <Callout type="warning">
   Keep `projectId="docs"` unchanged when you update this page.
@@ -17,7 +17,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
     Run `hyperlocalise status --verbose` before publishing the docs portal.
   </Tab>
   <Tab value="api">
-    Người dùng API nên giữ tên token là `HYPERLOCALISE_API_KEY`.
+    API users should keep the token name `HYPERLOCALISE_API_KEY`.
   </Tab>
 </Tabs>
 
@@ -31,20 +31,20 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
   icon={<Badge text="beta" />}
 >
   <Callout type="info">
-    Keep [reference links][mdx-ref] stable and preserve literal text like `MDPH_0_END`.
+    Giữ [liên kết tham khảo][mdx-ref] ổn định và giữ nguyên văn bản, ví dụ: `MDPH_0_END`.
   </Callout>
 
-  - Mục tiêu đệ quy đầu tiên với `hyperlocalise sync pull`
-  - Mục thứ hai được nhúng với <Badge text="inline" />
+  - Mục con đầu tiên với `hyperlocalise sync pull`
+  - Mục tiêu thứ hai được nhúng với <Badge text="inline" />
 </Card>
 
 Fallback route: {locale === "vi-VN" ? "/vi-VN" : "/"} is computed at runtime.
 
 Use <Badge text="stable" /> builds when the release branch is frozen.
 
-> Các đoạn trích có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
+> Đoạn trích dẫn có thể bao gồm <Badge text="quoted" /> và `inlineCode()`.
 >
-> ![Biểu đồ đã được trích dẫn](https://example.com/assets/quoted(flow).png)
+> ![Hình ảnh sơ đồ](https://example.com/assets/quoted(flow).png)
 
 <Steps>
   <Step title="Prepare">
@@ -59,7 +59,7 @@ Use <Badge text="stable" /> builds when the release branch is frozen.
 </Steps>
 
 > Repeat this warning: preserve `href="/docs/rules"` exactly.
-> Repeat this warning: preserve `href="/docs/rules"` exactly.
+> Lặp lại cảnh báo này: giữ nguyên `href="/docs/rules"` chính xác.
 
 ```ts
 export const projectId = "docs";

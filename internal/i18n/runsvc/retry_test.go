@@ -204,6 +204,15 @@ func TestTranslateWithRetryRejectsTranslatedICUKeyword(t *testing.T) {
 	if !strings.Contains(err.Error(), "translation invariant violation") {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if !strings.Contains(err.Error(), `source="{plan, select, pro{Pro plan} other{Free plan}}"`) {
+		t.Fatalf("expected source context in error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), `candidate="{plan, 选择, pro{专业计划} other{免费计划}}"`) {
+		t.Fatalf("expected candidate context in error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "diff=at=") {
+		t.Fatalf("expected diff context in error, got %v", err)
+	}
 }
 
 func TestTranslateWithRetryRejectsTranslatedPlaceholderName(t *testing.T) {
@@ -222,6 +231,12 @@ func TestTranslateWithRetryRejectsTranslatedPlaceholderName(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "placeholder parity mismatch") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(err.Error(), `source="Welcome back {name}"`) {
+		t.Fatalf("expected source context in error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), `candidate="Chao mung {ten}"`) {
+		t.Fatalf("expected candidate context in error, got %v", err)
 	}
 }
 

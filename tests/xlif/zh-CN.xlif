@@ -3,10 +3,10 @@
   <file source-language="en-US" datatype="plaintext" original="messages" target-language="zh-CN">
     <body>
       <trans-unit id="auth.signIn.title">
-        <source>登录您的工作区</source>
+        <source>登录到您的工作空间</source>
       </trans-unit>
       <trans-unit id="auth.signIn.subtitle">
-        <source>使用您的工作邮箱继续。</source>
+        <source>使用您的工作电子邮件继续。</source>
       </trans-unit>
       <trans-unit id="dashboard.syncStatus">
         <source>最后同步时间 2 分钟前</source>

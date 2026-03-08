@@ -1,12 +1,12 @@
 {
   "auth.signIn.title": {
-    "defaultMessage": "登录您的工作空间"
+    "defaultMessage": "登录到您的工作空间"
   },
   "billing.trialNotice": {
     "defaultMessage": "您的试用期将于 {date} 结束。"
   },
   "dashboard.pendingReviews": {
-    "defaultMessage": "{count, plural, =0{待审核的评论数量为0} one{# 待审核的评论} other{# 待审核的评论}}"
+    "defaultMessage": "{count, plural, =0{待审核的评论数量为0} one{# 还有# 待审核的评论} other{# 还有# 待审核的评论}}"
   },
   "notifications.email.subject": {
     "defaultMessage": "{name} 在 {projectName} 中提到了您"

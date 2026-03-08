@@ -42,6 +42,10 @@ func ParseInvariant(s string) (Invariant, error) {
 	return inv, nil
 }
 
+func SamePlaceholderSet(a, b []string) bool {
+	return slicesEqual(uniqueStrings(a), uniqueStrings(b))
+}
+
 func normalizeMustachePlaceholders(s string) string {
 	var b strings.Builder
 
@@ -154,6 +158,33 @@ func sortedPluralSelectors(opts []PluralOption) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	var last string
+	for i, value := range values {
+		if i == 0 || value != last {
+			out = append(out, value)
+			last = value
+		}
+	}
+	return out
+}
+
+func slicesEqual[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func isPlaceholderName(s string) bool {

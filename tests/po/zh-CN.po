@@ -12,4 +12,4 @@ msgid "dashboard.syncStatus"
 msgstr "最后同步时间 2 分钟前"
 
 msgid "errors.networkRetry"
-msgstr "我们无法保存您的更改。请检查您的连接，然后重试。"
+msgstr "我们无法保存您的更改。请检查您的连接并重试。"

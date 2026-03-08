@@ -1,7 +1,7 @@
 key,value
 common.hello,你好
 common.goodbye,再见
-auth.signIn.subtitle,使用您的工作邮箱继续。
+auth.signIn.subtitle,使用您的工作电子邮件继续。
 auth.signIn.title,登录您的工作区
 dashboard.syncStatus,最后同步时间 2 分钟前
-errors.networkRetry,我们无法保存您的更改。请检查您的连接，然后重试。
+errors.networkRetry,我们无法保存您的更改。请检查您的连接并重试。

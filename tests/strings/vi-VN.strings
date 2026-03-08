@@ -1,6 +1,6 @@
 /* Auth screen */
 "auth.signIn.title" = "Đăng nhập vào không gian làm việc của bạn";
-"auth.signIn.subtitle" = "Sử dụng địa chỉ email làm việc của bạn để tiếp tục.";
+"auth.signIn.subtitle" = "Sử dụng địa chỉ email của công ty để tiếp tục.";
 
 /* Dashboard */
 "dashboard.syncStatus" = "Đã đồng bộ hóa lần cuối cách đây 2 phút";
