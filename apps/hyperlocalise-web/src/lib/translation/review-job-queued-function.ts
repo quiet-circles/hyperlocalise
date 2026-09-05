@@ -221,6 +221,11 @@ export async function completeReviewJob(input: {
     );
   }
 
+  await captureJobStatus({
+    jobId: input.jobId,
+    status: input.status,
+    operationKey: `review:${input.jobId}:${input.status === "succeeded" ? "succeeded" : "waiting"}`,
+  });
   return getStoredReviewJob(input.jobId, input.projectId);
 }
 
@@ -425,11 +430,6 @@ export async function executeNativeReviewJob(input: {
       provenance: "automated",
       sourceEntries: Object.fromEntries(rows.map((row) => [row.translationKeyId, row.sourceText])),
     });
-  await captureJobStatus({
-    jobId: input.jobId,
-    status: blocking.length ? "waiting_for_review" : "succeeded",
-    operationKey: `review:${input.jobId}:${blocking.length ? "waiting" : "succeeded"}`,
-  });
   const outcome = {
     criteria: input.criteria,
     targetLocale,

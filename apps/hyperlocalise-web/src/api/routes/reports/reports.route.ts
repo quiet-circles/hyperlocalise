@@ -63,14 +63,24 @@ export function createReportsRoutes() {
             .where(inArray(schema.projects.id, projectIds))
         : [];
       if (!hasCapability(c.var.auth.membership.role, "billing:read"))
-        return c.json({ settings: { projects, rates: [], budgets: [], financial: false } });
+        return c.json({
+          settings: { projects, rates: [], budgets: [], financial: false, canManage: false },
+        });
       const rates = await db
         .select()
         .from(schema.reportingRates)
         .where(eq(schema.reportingRates.organizationId, organizationId))
         .orderBy(desc(schema.reportingRates.createdAt));
       const budgets = await budgetSummary(organizationId, projectIds);
-      return c.json({ settings: { projects, rates, budgets, financial: true } });
+      return c.json({
+        settings: {
+          projects,
+          rates,
+          budgets,
+          financial: true,
+          canManage: hasCapability(c.var.auth.membership.role, "billing:write"),
+        },
+      });
     })
     .get("/tasks/:jobId", async (c) => {
       const organizationId = c.var.auth.organization.localOrganizationId;
@@ -120,7 +130,7 @@ export function createReportsRoutes() {
       });
     })
     .post("/rates", async (c) => {
-      if (!hasCapability(c.var.auth.membership.role, "billing:read"))
+      if (!hasCapability(c.var.auth.membership.role, "billing:write"))
         return forbiddenResponse(c, "report_costs_forbidden");
       const parsed = rateSchema.safeParse(await c.req.json());
       if (!parsed.success) return badRequestResponse(c, "invalid_rate");
@@ -131,7 +141,7 @@ export function createReportsRoutes() {
       return c.json({ rate }, 201);
     })
     .put("/budgets", async (c) => {
-      if (!hasCapability(c.var.auth.membership.role, "billing:read"))
+      if (!hasCapability(c.var.auth.membership.role, "billing:write"))
         return forbiddenResponse(c, "report_costs_forbidden");
       const parsed = budgetSchema.safeParse(await c.req.json());
       if (!parsed.success) return badRequestResponse(c, "invalid_budget");
@@ -148,7 +158,7 @@ export function createReportsRoutes() {
       return c.json({ budget });
     })
     .put("/task-rates", async (c) => {
-      if (!hasCapability(c.var.auth.membership.role, "billing:read"))
+      if (!hasCapability(c.var.auth.membership.role, "billing:write"))
         return forbiddenResponse(c, "report_costs_forbidden");
       const parsed = taskRateSchema.safeParse(await c.req.json());
       if (!parsed.success) return badRequestResponse(c, "invalid_task_rate");
@@ -316,12 +326,15 @@ export function createReportsRoutes() {
             eq(schema.reportingTimeEntries.voided, false),
           ),
         );
-      if (!entry || !(await getAccessibleProjectIds(c.var.auth)).includes(entry.projectId))
+      if (
+        !entry?.projectId ||
+        !(await getAccessibleProjectIds(c.var.auth)).includes(entry.projectId)
+      )
         return notFoundResponse(c, "time_entry_not_found");
       if (
         !hasCapability(c.var.auth.membership.role, "jobs:write") ||
         (entry.contributorId !== c.var.auth.user.localUserId &&
-          !hasCapability(c.var.auth.membership.role, "billing:read"))
+          !hasCapability(c.var.auth.membership.role, "billing:write"))
       )
         return forbiddenResponse(c, "time_entry_forbidden");
       await db.transaction(async (tx) => {
@@ -366,11 +379,14 @@ export function createReportsRoutes() {
             eq(schema.reportingTimeEntries.id, c.req.param("id")),
           ),
         );
-      if (!entry || !(await getAccessibleProjectIds(c.var.auth)).includes(entry.projectId))
+      if (
+        !entry?.projectId ||
+        !(await getAccessibleProjectIds(c.var.auth)).includes(entry.projectId)
+      )
         return notFoundResponse(c, "time_entry_not_found");
       if (
         entry.contributorId !== c.var.auth.user.localUserId &&
-        !hasCapability(c.var.auth.membership.role, "billing:read")
+        !hasCapability(c.var.auth.membership.role, "billing:write")
       )
         return forbiddenResponse(c, "time_entry_forbidden");
       await db.transaction(async (tx) => {
@@ -393,7 +409,7 @@ export function createReportsRoutes() {
       return c.body(null, 204);
     })
     .post("/expenses", async (c) => {
-      if (!hasCapability(c.var.auth.membership.role, "billing:read"))
+      if (!hasCapability(c.var.auth.membership.role, "billing:write"))
         return forbiddenResponse(c, "report_costs_forbidden");
       const parsed = expenseSchema.safeParse(await c.req.json());
       if (!parsed.success) return badRequestResponse(c, "invalid_expense");

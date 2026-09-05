@@ -66,7 +66,7 @@ export const reportingBudgets = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     organizationId: organizationId(),
-    projectId: projectId().notNull(),
+    projectId: projectId(),
     budget: amount("budget").notNull(),
     rateCardName: text("rate_card_name"),
     createdAt: createdAt(),
@@ -78,7 +78,7 @@ export const reportingTaskRates = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     organizationId: organizationId(),
-    jobId: jobId().notNull(),
+    jobId: jobId(),
     step: text("step", { enum: ["translation", "review"] }).notNull(),
     rateId: uuid("rate_id").references(() => reportingRates.id),
     estimatedMinutes: integer("estimated_minutes"),
@@ -148,8 +148,8 @@ export const reportingTimeEntries = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     organizationId: organizationId(),
-    projectId: projectId().notNull(),
-    jobId: jobId().notNull(),
+    projectId: projectId(),
+    jobId: jobId(),
     contributorId: uuid("contributor_id")
       .notNull()
       .references(() => users.id),

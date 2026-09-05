@@ -1512,48 +1512,44 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
       }
 
       if (sourceEntries) {
-        const targetEntries = await extractEntriesStep(sandboxId, outputFilename, {
-          sourcePath: inputFilename,
-        });
-        await captureFileCompletionsStep({
-          organizationId,
-          jobId: claim.job.id,
-          targetLocale,
-          sourceEntries,
-          targetEntries,
-        });
-      }
-
-      if (sourceEntries && repositorySourcePath) {
         try {
           const targetEntries = await extractEntriesStep(sandboxId, outputFilename, {
             sourcePath: inputFilename,
           });
-          await persistFileTranslationMemoryEntriesStep({
-            projectId: claim.job.projectId,
+          await captureFileCompletionsStep({
+            organizationId,
             jobId: claim.job.id,
-            sourceLocale: parsedInput.sourceLocale,
             targetLocale,
-            sourcePath: repositorySourcePath,
-            sourceFileHash: sourceFile.sha256,
             sourceEntries,
             targetEntries,
           });
-          if (
-            !isDocumentTranslationFileFormat(
-              parsedInput.fileFormat as SupportedTranslationFileFormat,
-            )
-          ) {
-            await persistFileProjectTranslationsStep({
-              organizationId,
+          if (repositorySourcePath) {
+            await persistFileTranslationMemoryEntriesStep({
               projectId: claim.job.projectId,
               jobId: claim.job.id,
-              sourcePath: repositorySourcePath,
               sourceLocale: parsedInput.sourceLocale,
               targetLocale,
+              sourcePath: repositorySourcePath,
+              sourceFileHash: sourceFile.sha256,
               sourceEntries,
               targetEntries,
             });
+            if (
+              !isDocumentTranslationFileFormat(
+                parsedInput.fileFormat as SupportedTranslationFileFormat,
+              )
+            ) {
+              await persistFileProjectTranslationsStep({
+                organizationId,
+                projectId: claim.job.projectId,
+                jobId: claim.job.id,
+                sourcePath: repositorySourcePath,
+                sourceLocale: parsedInput.sourceLocale,
+                targetLocale,
+                sourceEntries,
+                targetEntries,
+              });
+            }
           }
         } catch (error) {
           console.warn("[file-translation-workflow] target TM persistence failed", {
@@ -1567,7 +1563,8 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
             }),
           });
         }
-      } else if (sourceEntries && !repositorySourcePath) {
+      }
+      if (sourceEntries && !repositorySourcePath) {
         console.warn("[file-translation-workflow] skipped native translation persistence", {
           jobId: claim.job.id,
           projectId: claim.job.projectId,

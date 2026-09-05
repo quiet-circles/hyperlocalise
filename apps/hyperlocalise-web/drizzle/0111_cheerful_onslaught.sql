@@ -47,7 +47,7 @@ CREATE TABLE "reporting_audit" (
 CREATE TABLE "reporting_budgets" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
-	"project_id" text NOT NULL,
+	"project_id" text,
 	"budget" numeric(24, 8) NOT NULL,
 	"rate_card_name" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -98,7 +98,7 @@ CREATE TABLE "reporting_rollout" (
 CREATE TABLE "reporting_task_rates" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
-	"job_id" text NOT NULL,
+	"job_id" text,
 	"step" text NOT NULL,
 	"rate_id" uuid,
 	"estimated_minutes" integer,
@@ -109,8 +109,8 @@ CREATE TABLE "reporting_task_rates" (
 CREATE TABLE "reporting_time_entries" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
-	"project_id" text NOT NULL,
-	"job_id" text NOT NULL,
+	"project_id" text,
+	"job_id" text,
 	"contributor_id" uuid NOT NULL,
 	"step" text NOT NULL,
 	"target_locale" text NOT NULL,

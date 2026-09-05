@@ -53,6 +53,7 @@ type Settings = {
   rates: Rate[];
   budgets: Budget[];
   financial: boolean;
+  canManage: boolean;
 };
 export async function reportingFetch<T>(url: string): Promise<T> {
   const response = await fetch(url);
@@ -256,6 +257,7 @@ export function ReportsWorkspace({
   });
   const rows = report.data?.report.rows ?? [];
   const financial = settings.data?.settings.financial ?? false;
+  const canManage = settings.data?.settings.canManage ?? false;
   const projectOptions = (settings.data?.settings.projects ?? []).map((project) => ({
     value: project.id,
     label: project.name,
@@ -510,53 +512,55 @@ export function ReportsWorkspace({
                 ))}
             </TableBody>
           </Table>
-          <div className="grid gap-4 md:grid-cols-2">
-            <ReportingForm
-              title="budgetForm"
-              endpoint={base + "/budgets"}
-              method="PUT"
-              fields={["projectId", "budget", "rateCardName"]}
-              options={commonOptions}
-              defaults={{ projectId: filters.projectId }}
-            />
-            <ReportingForm
-              title="rateForm"
-              endpoint={base + "/rates"}
-              fields={["name", "sourceLocale", "targetLocale", "step", "basis", "rate"]}
-              percentages
-              options={{
-                ...commonOptions,
-                basis: [
-                  { value: "word", label: label("word") },
-                  { value: "hour", label: label("hour") },
-                ],
-              }}
-            />
-            <ReportingForm
-              title="taskRateForm"
-              endpoint={base + "/task-rates"}
-              method="PUT"
-              fields={["jobId", "step", "rateId", "estimatedMinutes", "overrideUsd"]}
-              defaults={{ jobId: filters.jobId }}
-              options={{
-                ...commonOptions,
-                rateId: [
-                  { value: "", label: label("all") },
-                  ...(settings.data?.settings.rates ?? []).map((rate) => ({
-                    value: rate.id,
-                    label: `${rate.name} · ${rate.sourceLocale} → ${rate.targetLocale} · ${rate.step} · $${rate.rate}/${rate.basis}`,
-                  })),
-                ],
-              }}
-            />
-            <ReportingForm
-              title="expenseForm"
-              endpoint={base + "/expenses"}
-              fields={["projectId", "step", "amountUsd", "note"]}
-              options={commonOptions}
-              defaults={{ projectId: filters.projectId }}
-            />
-          </div>
+          {canManage ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <ReportingForm
+                title="budgetForm"
+                endpoint={base + "/budgets"}
+                method="PUT"
+                fields={["projectId", "budget", "rateCardName"]}
+                options={commonOptions}
+                defaults={{ projectId: filters.projectId }}
+              />
+              <ReportingForm
+                title="rateForm"
+                endpoint={base + "/rates"}
+                fields={["name", "sourceLocale", "targetLocale", "step", "basis", "rate"]}
+                percentages
+                options={{
+                  ...commonOptions,
+                  basis: [
+                    { value: "word", label: label("word") },
+                    { value: "hour", label: label("hour") },
+                  ],
+                }}
+              />
+              <ReportingForm
+                title="taskRateForm"
+                endpoint={base + "/task-rates"}
+                method="PUT"
+                fields={["jobId", "step", "rateId", "estimatedMinutes", "overrideUsd"]}
+                defaults={{ jobId: filters.jobId }}
+                options={{
+                  ...commonOptions,
+                  rateId: [
+                    { value: "", label: label("all") },
+                    ...(settings.data?.settings.rates ?? []).map((rate) => ({
+                      value: rate.id,
+                      label: `${rate.name} · ${rate.sourceLocale} → ${rate.targetLocale} · ${rate.step} · $${rate.rate}/${rate.basis}`,
+                    })),
+                  ],
+                }}
+              />
+              <ReportingForm
+                title="expenseForm"
+                endpoint={base + "/expenses"}
+                fields={["projectId", "step", "amountUsd", "note"]}
+                options={commonOptions}
+                defaults={{ projectId: filters.projectId }}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>
