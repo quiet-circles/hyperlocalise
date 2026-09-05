@@ -35,52 +35,56 @@ export async function captureAiUsage(
     targetLocale?: string;
   },
 ) {
-  await reportingStart();
-  if (input.jobId) {
-    const [external] = await db
-      .select({ id: schema.externalJobDetails.jobId })
-      .from(schema.externalJobDetails)
-      .where(
-        and(
-          eq(schema.externalJobDetails.jobId, input.jobId),
-          eq(schema.externalJobDetails.organizationId, input.organizationId),
-        ),
-      );
-    if (external) return;
+  try {
+    await reportingStart();
+    if (input.jobId) {
+      const [external] = await db
+        .select({ id: schema.externalJobDetails.jobId })
+        .from(schema.externalJobDetails)
+        .where(
+          and(
+            eq(schema.externalJobDetails.jobId, input.jobId),
+            eq(schema.externalJobDetails.organizationId, input.organizationId),
+          ),
+        );
+      if (external) return;
+    }
+    const estimate = getUsage({
+      modelId: input.model,
+      usage: { input: input.inputTokens, output: input.outputTokens },
+    }).costUSD?.totalUSD;
+    const amountUsd =
+      input.reportedUsd ??
+      (!input.usageUnavailable && estimate !== undefined && Number.isFinite(estimate)
+        ? estimate.toFixed(8)
+        : null);
+    await db
+      .insert(schema.reportingCosts)
+      .values({
+        organizationId: input.organizationId,
+        projectId: input.projectId,
+        jobId: input.jobId,
+        operationKey: `ai:${input.invocationId}`,
+        kind: "ai",
+        step: input.step ?? "translation",
+        targetLocale: input.targetLocale,
+        amountUsd,
+        basis:
+          input.reportedUsd !== undefined
+            ? "reported"
+            : amountUsd !== null
+              ? "estimated"
+              : "unpriced",
+        provider: input.provider,
+        model: input.model,
+        inputTokens: input.inputTokens,
+        outputTokens: input.outputTokens,
+        tokenCategories: input.tokenCategories,
+        pricingVersion:
+          amountUsd !== null && input.reportedUsd === undefined ? AI_PRICING_VERSION : null,
+      })
+      .onConflictDoNothing();
+  } catch (error) {
+    console.warn("reporting_ai_usage_failed", { jobId: input.jobId, error });
   }
-  const estimate = getUsage({
-    modelId: input.model,
-    usage: { input: input.inputTokens, output: input.outputTokens },
-  }).costUSD?.totalUSD;
-  const amountUsd =
-    input.reportedUsd ??
-    (!input.usageUnavailable && estimate !== undefined && Number.isFinite(estimate)
-      ? estimate.toFixed(8)
-      : null);
-  await db
-    .insert(schema.reportingCosts)
-    .values({
-      organizationId: input.organizationId,
-      projectId: input.projectId,
-      jobId: input.jobId,
-      operationKey: `ai:${input.invocationId}`,
-      kind: "ai",
-      step: input.step ?? "translation",
-      targetLocale: input.targetLocale,
-      amountUsd,
-      basis:
-        input.reportedUsd !== undefined
-          ? "reported"
-          : amountUsd !== null
-            ? "estimated"
-            : "unpriced",
-      provider: input.provider,
-      model: input.model,
-      inputTokens: input.inputTokens,
-      outputTokens: input.outputTokens,
-      tokenCategories: input.tokenCategories,
-      pricingVersion:
-        amountUsd !== null && input.reportedUsd === undefined ? AI_PRICING_VERSION : null,
-    })
-    .onConflictDoNothing();
 }

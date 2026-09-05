@@ -413,24 +413,31 @@ async function runTranslationStep(
       },
     );
     if (options?.organizationId && options.projectId && options.jobId) {
-      const { readTranslatedFile } = await import("@/lib/translation/sandbox");
-      const { captureSandboxUsage } = await import("@/lib/reporting/sandbox-usage");
-      const { resolveSandboxLlmProfile } = await import("@/lib/translation/sandbox-llm");
-      const { env } = await import("@/lib/env");
-      let report: string | null = null;
       try {
-        report = (await readTranslatedFile(sandboxId, reportPath)).toString("utf8");
-      } catch {
-        /* Missing usage is recorded as unpriced. */
+        const { readTranslatedFile } = await import("@/lib/translation/sandbox");
+        const { captureSandboxUsage } = await import("@/lib/reporting/sandbox-usage");
+        const { resolveSandboxLlmProfile } = await import("@/lib/translation/sandbox-llm");
+        const { env } = await import("@/lib/env");
+        let report: string | null = null;
+        try {
+          report = (await readTranslatedFile(sandboxId, reportPath)).toString("utf8");
+        } catch {
+          /* Missing usage is recorded as unpriced. */
+        }
+        await captureSandboxUsage({
+          organizationId: options.organizationId,
+          projectId: options.projectId,
+          jobId: options.jobId,
+          invocationId,
+          ...resolveSandboxLlmProfile(env, byok),
+          report,
+        });
+      } catch (error) {
+        console.warn("[file-translation-workflow] usage capture failed", {
+          jobId: options.jobId,
+          error,
+        });
       }
-      await captureSandboxUsage({
-        organizationId: options.organizationId,
-        projectId: options.projectId,
-        jobId: options.jobId,
-        invocationId,
-        ...resolveSandboxLlmProfile(env, byok),
-        report,
-      });
     }
     return result;
   } catch (error) {

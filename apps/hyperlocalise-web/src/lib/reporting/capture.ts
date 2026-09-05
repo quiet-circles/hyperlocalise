@@ -14,8 +14,12 @@ import { createHash } from "node:crypto";
 import { and, eq, desc, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema, type DatabaseClient } from "@/lib/database/client";
 import { listAttachedProjectMemoryIds } from "@/lib/memory/ensure-default-native-project-memory";
+import { normalizeTranslationMemorySourceText } from "@/lib/translation/normalizeTranslationMemorySourceText";
+import { buildTranslationMemoryTsQuery } from "@/lib/translation/translation-memory-ts-query";
 import { countSourceWords, matchBucket, WORD_COUNT_VERSION } from "./word-analysis";
 import { wordCost } from "./money";
+
+const MEMORY_MATCH_CANDIDATE_LIMIT = 32;
 
 export async function reportingStart(database: DatabaseClient = db) {
   await database.insert(schema.reportingRollout).values({ id: 1 }).onConflictDoNothing();
@@ -27,23 +31,25 @@ export async function resolveReportingRate(
   input: {
     organizationId: string;
     projectId: string;
-    jobId: string;
+    jobId?: string;
     sourceLocale: string;
     targetLocale: string;
     step: "translation" | "review";
   },
   database: DatabaseClient = db,
 ) {
-  const [override] = await database
-    .select()
-    .from(schema.reportingTaskRates)
-    .where(
-      and(
-        eq(schema.reportingTaskRates.organizationId, input.organizationId),
-        eq(schema.reportingTaskRates.jobId, input.jobId),
-        eq(schema.reportingTaskRates.step, input.step),
-      ),
-    );
+  const [override] = input.jobId
+    ? await database
+        .select()
+        .from(schema.reportingTaskRates)
+        .where(
+          and(
+            eq(schema.reportingTaskRates.organizationId, input.organizationId),
+            eq(schema.reportingTaskRates.jobId, input.jobId),
+            eq(schema.reportingTaskRates.step, input.step),
+          ),
+        )
+    : [];
   if (override?.rateId) {
     const [rate] = await database
       .select()
@@ -103,10 +109,58 @@ export function sourceSimilarity(left: string, right: string): number {
   return Math.floor(100 * (1 - previous[b.length] / Math.max(a.length, b.length)));
 }
 
+export async function bestReportingMatchScore(input: {
+  memoryIds: string[];
+  sourceLocale: string;
+  targetLocale: string;
+  sourceText: string;
+}): Promise<number> {
+  if (!input.memoryIds.length) return 0;
+  const normalized = normalizeTranslationMemorySourceText(input.sourceText);
+  const [exact] = await db
+    .select({ id: schema.memoryEntries.id })
+    .from(schema.memoryEntries)
+    .where(
+      and(
+        inArray(schema.memoryEntries.memoryId, input.memoryIds),
+        eq(schema.memoryEntries.normalizedSourceText, normalized),
+        eq(schema.memoryEntries.sourceLocale, input.sourceLocale),
+        eq(schema.memoryEntries.targetLocale, input.targetLocale),
+        eq(schema.memoryEntries.reviewStatus, "approved"),
+      ),
+    )
+    .limit(1);
+  if (exact) return 100;
+  const tsQuery = buildTranslationMemoryTsQuery(input.sourceText);
+  if (!tsQuery) return 0;
+  const candidates = await db
+    .select({ source: schema.memoryEntries.sourceText })
+    .from(schema.memoryEntries)
+    .where(
+      and(
+        inArray(schema.memoryEntries.memoryId, input.memoryIds),
+        eq(schema.memoryEntries.sourceLocale, input.sourceLocale),
+        eq(schema.memoryEntries.targetLocale, input.targetLocale),
+        eq(schema.memoryEntries.reviewStatus, "approved"),
+        sql`${schema.memoryEntries.searchVector} @@ to_tsquery('simple', ${tsQuery})`,
+      ),
+    )
+    .orderBy(
+      desc(
+        sql`ts_rank(${schema.memoryEntries.searchVector}, to_tsquery('simple', ${tsQuery}))`,
+      ),
+    )
+    .limit(MEMORY_MATCH_CANDIDATE_LIMIT);
+  return candidates.reduce(
+    (best, candidate) => Math.max(best, sourceSimilarity(input.sourceText, candidate.source)),
+    0,
+  );
+}
+
 export async function captureAnalysis(input: {
   organizationId: string;
   projectId: string;
-  jobId: string;
+  jobId?: string;
   sourceLocale: string;
   targetLocale: string;
   sourceEntries: Record<string, string>;
@@ -114,64 +168,63 @@ export async function captureAnalysis(input: {
   billable?: boolean;
 }) {
   await reportingStart();
-  const [job] = await db
-    .select({ id: schema.jobs.id })
-    .from(schema.jobs)
-    .leftJoin(schema.externalJobDetails, eq(schema.externalJobDetails.jobId, schema.jobs.id))
-    .where(
-      and(
-        eq(schema.jobs.id, input.jobId),
-        eq(schema.jobs.organizationId, input.organizationId),
-        eq(schema.jobs.projectId, input.projectId),
-        isNull(schema.externalJobDetails.jobId),
-      ),
-    );
-  if (!job) return;
-  const rate = await resolveReportingRate({ ...input, step: input.step ?? "translation" });
-  let memorySources: string[] | null = null;
+  if (input.jobId) {
+    const [job] = await db
+      .select({ id: schema.jobs.id })
+      .from(schema.jobs)
+      .leftJoin(schema.externalJobDetails, eq(schema.externalJobDetails.jobId, schema.jobs.id))
+      .where(
+        and(
+          eq(schema.jobs.id, input.jobId),
+          eq(schema.jobs.organizationId, input.organizationId),
+          eq(schema.jobs.projectId, input.projectId),
+          isNull(schema.externalJobDetails.jobId),
+        ),
+      );
+    if (!job) return;
+  }
+  const step = input.step ?? "translation";
+  const rate = await resolveReportingRate({ ...input, step });
+  let memoryIds: string[] | null = null;
   try {
-    const memoryIds = await listAttachedProjectMemoryIds(input.projectId);
-    memorySources = memoryIds.length
-      ? (
-          await db
-            .select({ source: schema.memoryEntries.sourceText })
-            .from(schema.memoryEntries)
-            .where(
-              and(
-                inArray(schema.memoryEntries.memoryId, memoryIds),
-                eq(schema.memoryEntries.sourceLocale, input.sourceLocale),
-                eq(schema.memoryEntries.targetLocale, input.targetLocale),
-                eq(schema.memoryEntries.reviewStatus, "approved"),
-              ),
-            )
-        ).map((row) => row.source)
-      : [];
+    memoryIds = await listAttachedProjectMemoryIds(input.projectId);
   } catch {
     console.warn("reporting_match_analysis_unavailable", { jobId: input.jobId });
   }
+  const uniqueTexts = [...new Set(Object.values(input.sourceEntries))];
+  const scores = new Map<string, number | null>();
+  if (memoryIds)
+    for (const sourceText of uniqueTexts)
+      scores.set(
+        sourceText,
+        await bestReportingMatchScore({
+          memoryIds,
+          sourceLocale: input.sourceLocale,
+          targetLocale: input.targetLocale,
+          sourceText,
+        }),
+      );
   const seen = new Set<string>();
-  for (const [segmentId, sourceText] of Object.entries(input.sourceEntries)) {
-    const normalized = sourceText.normalize("NFC").trim();
-    const repetition = seen.has(normalized);
-    seen.add(normalized);
-    const score =
-      memorySources === null
-        ? null
-        : memorySources.reduce(
-            (best, source) => Math.max(best, sourceSimilarity(sourceText, source)),
-            0,
-          );
-    await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
+    if (input.jobId)
       await tx
         .select({ id: schema.jobs.id })
         .from(schema.jobs)
         .where(eq(schema.jobs.id, input.jobId))
         .for("update");
+    for (const [segmentId, sourceText] of Object.entries(input.sourceEntries)) {
+      const normalized = sourceText.normalize("NFC").trim();
+      const repetition = seen.has(normalized);
+      seen.add(normalized);
+      const score = memoryIds ? (scores.get(sourceText) ?? 0) : null;
       const identity = and(
-        eq(schema.reportingAnalyses.jobId, input.jobId),
+        input.jobId
+          ? eq(schema.reportingAnalyses.jobId, input.jobId)
+          : isNull(schema.reportingAnalyses.jobId),
+        eq(schema.reportingAnalyses.organizationId, input.organizationId),
         eq(schema.reportingAnalyses.segmentId, segmentId),
         eq(schema.reportingAnalyses.targetLocale, input.targetLocale),
-        eq(schema.reportingAnalyses.step, input.step ?? "translation"),
+        eq(schema.reportingAnalyses.step, step),
       );
       await tx.update(schema.reportingAnalyses).set({ isCurrent: false }).where(identity);
       await tx
@@ -179,8 +232,8 @@ export async function captureAnalysis(input: {
         .values({
           organizationId: input.organizationId,
           projectId: input.projectId,
-          jobId: input.jobId,
-          step: input.step ?? "translation",
+          jobId: input.jobId ?? null,
+          step,
           segmentId,
           sourceRevision: createHash("sha256").update(sourceText).digest("hex"),
           sourceLocale: input.sourceLocale,
@@ -203,14 +256,14 @@ export async function captureAnalysis(input: {
           ],
           set: { isCurrent: true, ...(input.billable ? { billable: true } : {}) },
         });
-    });
-  }
+    }
+  });
 }
 
 export async function captureCompletions(
   input: {
     organizationId: string;
-    jobId: string;
+    jobId?: string;
     targetLocale: string;
     sourceEntries: Record<string, string>;
     provenance: "human" | "automated";
@@ -225,7 +278,9 @@ export async function captureCompletions(
     .where(
       and(
         eq(schema.reportingAnalyses.organizationId, input.organizationId),
-        eq(schema.reportingAnalyses.jobId, input.jobId),
+        input.jobId
+          ? eq(schema.reportingAnalyses.jobId, input.jobId)
+          : isNull(schema.reportingAnalyses.jobId),
         eq(schema.reportingAnalyses.targetLocale, input.targetLocale),
         eq(schema.reportingAnalyses.step, step),
         eq(schema.reportingAnalyses.isCurrent, true),
@@ -244,7 +299,7 @@ export async function captureCompletions(
       .values({
         organizationId: input.organizationId,
         projectId: analysis.projectId,
-        jobId: input.jobId,
+        jobId: input.jobId ?? null,
         operationKey,
         kind: "completion",
         step,
@@ -253,16 +308,18 @@ export async function captureCompletions(
       })
       .onConflictDoNothing();
     if (input.provenance !== "human") continue;
-    const [taskRate] = await database
-      .select()
-      .from(schema.reportingTaskRates)
-      .where(
-        and(
-          eq(schema.reportingTaskRates.jobId, input.jobId),
-          eq(schema.reportingTaskRates.step, step),
-        ),
-      );
-    if (taskRate?.overrideUsd !== null && taskRate?.overrideUsd !== undefined) continue;
+    if (input.jobId) {
+      const [taskRate] = await database
+        .select()
+        .from(schema.reportingTaskRates)
+        .where(
+          and(
+            eq(schema.reportingTaskRates.jobId, input.jobId),
+            eq(schema.reportingTaskRates.step, step),
+          ),
+        );
+      if (taskRate?.overrideUsd !== null && taskRate?.overrideUsd !== undefined) continue;
+    }
     const [rate] = analysis.rateId
       ? await database
           .select()
@@ -275,7 +332,7 @@ export async function captureCompletions(
       .values({
         organizationId: input.organizationId,
         projectId: analysis.projectId,
-        jobId: input.jobId,
+        jobId: input.jobId ?? null,
         operationKey: `human:${analysis.id}:${step}`,
         kind: "human",
         step,

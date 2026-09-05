@@ -760,22 +760,31 @@ export class NativeContentEditorService extends ProjectServiceBase {
       return null;
     }
 
-    if (input.sourceJobId) {
-      const [project] = await this.database
-        .select({ sourceLocale: schema.projects.sourceLocale })
-        .from(schema.projects)
-        .where(eq(schema.projects.id, input.projectId));
-      await captureAnalysis({
-        organizationId: input.organizationId,
-        projectId: input.projectId,
-        jobId: input.sourceJobId,
-        sourceLocale: project?.sourceLocale ?? "en",
-        targetLocale: input.targetLocale,
-        sourceEntries: { [key.id]: key.sourceText },
-        billable: (input.provenance ?? "manual") === "manual",
-        step: input.approve ? "review" : "translation",
-      });
-    }
+    const [existing] = await this.database
+      .select({ sourceJobId: schema.projectTranslations.sourceJobId })
+      .from(schema.projectTranslations)
+      .where(
+        and(
+          eq(schema.projectTranslations.translationKeyId, key.id),
+          eq(schema.projectTranslations.targetLocale, input.targetLocale),
+        ),
+      )
+      .limit(1);
+    const sourceJobId = input.sourceJobId ?? existing?.sourceJobId ?? undefined;
+    const [project] = await this.database
+      .select({ sourceLocale: schema.projects.sourceLocale })
+      .from(schema.projects)
+      .where(eq(schema.projects.id, input.projectId));
+    await captureAnalysis({
+      organizationId: input.organizationId,
+      projectId: input.projectId,
+      jobId: sourceJobId,
+      sourceLocale: project?.sourceLocale ?? "en",
+      targetLocale: input.targetLocale,
+      sourceEntries: { [key.id]: key.sourceText },
+      billable: (input.provenance ?? "manual") === "manual",
+      step: input.approve ? "review" : "translation",
+    });
     const status = input.approve ? "approved" : "draft";
     const provenance = input.provenance ?? "manual";
     const reviewedAt = input.approve ? new Date() : null;
@@ -791,7 +800,7 @@ export class NativeContentEditorService extends ProjectServiceBase {
         text: input.text,
         status,
         provenance,
-        sourceJobId: input.sourceJobId ?? null,
+        sourceJobId: sourceJobId ?? null,
         reviewedByUserId,
         reviewedAt,
       })
@@ -804,7 +813,7 @@ export class NativeContentEditorService extends ProjectServiceBase {
           text: input.text,
           status,
           provenance,
-          sourceJobId: input.sourceJobId ?? null,
+          sourceJobId: sourceJobId ?? existing?.sourceJobId ?? null,
           reviewedByUserId,
           reviewedAt,
           updatedAt: new Date(),
@@ -830,10 +839,10 @@ export class NativeContentEditorService extends ProjectServiceBase {
       "saved native CAT translation",
     );
 
-    if (input.sourceJobId && input.text.trim())
+    if (input.text.trim())
       await captureCompletions({
         organizationId: input.organizationId,
-        jobId: input.sourceJobId,
+        jobId: sourceJobId,
         targetLocale: input.targetLocale,
         sourceEntries: { [key.id]: key.sourceText },
         provenance: (input.provenance ?? "manual") === "manual" ? "human" : "automated",

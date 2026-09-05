@@ -436,16 +436,23 @@ export class StringTranslationEngine {
     if (input.reporting) {
       const model = typeof this.model === "string" ? this.model : this.model.modelId;
       const provider = typeof this.model === "string" ? "gateway" : this.model.provider;
-      await captureAiUsage({
-        ...input.reporting,
-        invocationId,
-        targetLocale:
-          input.jobInput.targetLocales.length === 1 ? input.jobInput.targetLocales[0] : undefined,
-        model,
-        provider,
-        inputTokens: usage.inputTokens ?? 0,
-        outputTokens: usage.outputTokens ?? 0,
-      });
+      try {
+        await captureAiUsage({
+          ...input.reporting,
+          invocationId,
+          targetLocale:
+            input.jobInput.targetLocales.length === 1 ? input.jobInput.targetLocales[0] : undefined,
+          model,
+          provider,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+        });
+      } catch (error) {
+        console.warn("[string-translation] usage capture failed", {
+          jobId: input.reporting.jobId,
+          error,
+        });
+      }
     }
     return normalizeTranslations(input.jobInput, output, normalizeAiSdkTokenUsage(usage));
   }

@@ -11,7 +11,7 @@
  * Version 2.0 or later.
  */
 "use client";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,7 @@ export function ReportingForm({
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const label = (key: Label) => intl.formatMessage(messages[key]);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const expenseKey = useRef(crypto.randomUUID());
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setState("saving");
@@ -102,7 +103,7 @@ export function ReportingForm({
           Number(data.get("percent-" + bucket) ?? 100),
         ]),
       );
-    if (title === "expenseForm") body.operationKey = crypto.randomUUID();
+    if (title === "expenseForm") body.operationKey = expenseKey.current;
     try {
       const response = await fetch(endpoint, {
         method,
@@ -114,6 +115,7 @@ export function ReportingForm({
         setErrorCode(body.error ?? null);
         throw new Error("report_save_failed");
       }
+      if (title === "expenseForm") expenseKey.current = crypto.randomUUID();
       setState("saved");
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
     } catch {
