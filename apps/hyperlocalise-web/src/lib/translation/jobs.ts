@@ -10,6 +10,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import { captureAnalysis, captureCompletions, captureJobStatus } from "@/lib/reporting/capture";
 import { and, eq, isNull, or } from "drizzle-orm";
 
 import { stringTranslationJobInputSchema } from "@/api/routes/project/job.schema";
@@ -315,6 +316,24 @@ class TranslationJobExecutor {
         and(eq(schema.jobs.id, claimedJob.id), eq(schema.jobs.projectId, claimedJob.projectId)),
       );
 
+    for (const targetLocale of parsedInput.data.targetLocales) {
+      await captureAnalysis({
+        organizationId: project.organizationId,
+        projectId: claimedJob.projectId,
+        jobId: claimedJob.id,
+        sourceLocale: parsedInput.data.sourceLocale,
+        targetLocale,
+        sourceEntries: {
+          [parsedInput.data.translationKeyId ?? "source"]: parsedInput.data.sourceText,
+        },
+      });
+    }
+    await captureJobStatus({
+      jobId: claimedJob.id,
+      status: "running",
+      operationKey: `status:${claimedJob.workflowRunId}:running`,
+    });
+
     if (translateStringJobOverride) {
       const result = await translateStringJobOverride(
         contextResult.context.toStringTranslationInput(
@@ -335,12 +354,17 @@ class TranslationJobExecutor {
       };
     }
 
-    const result = await organizationGenerator.translateStringJob(
-      contextResult.context.toStringTranslationInput(
+    const result = await organizationGenerator.translateStringJob({
+      ...contextResult.context.toStringTranslationInput(
         organizationGenerator.project.name,
         organizationGenerator.project.translationContext,
       ),
-    );
+      reporting: {
+        organizationId: project.organizationId,
+        projectId: claimedJob.projectId,
+        jobId: claimedJob.id,
+      },
+    });
 
     return { ok: true, result };
   }
@@ -426,6 +450,27 @@ class TranslationJobCompletionService {
     }
 
     const operationKey = `job:${input.jobId}:translation_jobs`;
+    const [reportingJob] = await db
+      .select({ organizationId: schema.jobs.organizationId })
+      .from(schema.jobs)
+      .where(eq(schema.jobs.id, input.jobId));
+    if (reportingJob && parsedInput.success)
+      for (const translation of input.result.translations) {
+        await captureCompletions({
+          organizationId: reportingJob.organizationId,
+          jobId: input.jobId,
+          targetLocale: translation.locale,
+          sourceEntries: {
+            [parsedInput.data.translationKeyId ?? "source"]: parsedInput.data.sourceText,
+          },
+          provenance: "automated",
+        });
+      }
+    await captureJobStatus({
+      jobId: input.jobId,
+      status: "succeeded",
+      operationKey: `status:${input.workflowRunId}:succeeded`,
+    });
     const tokenUsage = input.result.tokenUsage;
     const [projectForUsage] = await db
       .select({ organizationId: schema.projects.organizationId })

@@ -12,6 +12,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import { ReportsWorkspace } from "@/components/reports/reports-workspace";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -397,7 +398,13 @@ export function NativeJobDetailContent({
                   showAgentActions={false}
                 />
               )
-            : undefined
+            : () => (
+                <ReportsWorkspace
+                  organizationSlug={organizationSlug}
+                  projectId={projectId}
+                  jobId={jobId}
+                />
+              )
         }
       />
 

@@ -46,3 +46,5 @@ export * from "./schema/linked-domains";
 export * from "./schema/experiments";
 export * from "./schema/activity-log";
 export * from "./schema/ota";
+
+export * from "./schema/reporting";

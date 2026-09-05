@@ -10,6 +10,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import { captureAnalysis, captureCompletions } from "@/lib/reporting/capture";
 import { and, eq } from "drizzle-orm";
 
 import type {
@@ -741,7 +742,10 @@ export class NativeContentEditorService extends ProjectServiceBase {
     }
 
     const [key] = await this.database
-      .select({ id: schema.projectTranslationKeys.id })
+      .select({
+        id: schema.projectTranslationKeys.id,
+        sourceText: schema.projectTranslationKeys.sourceText,
+      })
       .from(schema.projectTranslationKeys)
       .where(
         and(
@@ -756,6 +760,22 @@ export class NativeContentEditorService extends ProjectServiceBase {
       return null;
     }
 
+    if (input.sourceJobId) {
+      const [project] = await this.database
+        .select({ sourceLocale: schema.projects.sourceLocale })
+        .from(schema.projects)
+        .where(eq(schema.projects.id, input.projectId));
+      await captureAnalysis({
+        organizationId: input.organizationId,
+        projectId: input.projectId,
+        jobId: input.sourceJobId,
+        sourceLocale: project?.sourceLocale ?? "en",
+        targetLocale: input.targetLocale,
+        sourceEntries: { [key.id]: key.sourceText },
+        billable: (input.provenance ?? "manual") === "manual",
+        step: input.approve ? "review" : "translation",
+      });
+    }
     const status = input.approve ? "approved" : "draft";
     const provenance = input.provenance ?? "manual";
     const reviewedAt = input.approve ? new Date() : null;
@@ -810,6 +830,15 @@ export class NativeContentEditorService extends ProjectServiceBase {
       "saved native CAT translation",
     );
 
+    if (input.sourceJobId && input.text.trim())
+      await captureCompletions({
+        organizationId: input.organizationId,
+        jobId: input.sourceJobId,
+        targetLocale: input.targetLocale,
+        sourceEntries: { [key.id]: key.sourceText },
+        provenance: (input.provenance ?? "manual") === "manual" ? "human" : "automated",
+        step: input.approve ? "review" : "translation",
+      });
     return toCatTranslation(saved);
   }
 

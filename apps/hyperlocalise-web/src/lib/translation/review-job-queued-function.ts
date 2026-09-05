@@ -10,6 +10,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import { captureAnalysis, captureCompletions, captureJobStatus } from "@/lib/reporting/capture";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { db, schema } from "@/lib/database/client";
@@ -350,6 +351,21 @@ export async function executeNativeReviewJob(input: {
     )
     .where(and(...translationConditions, ...keyConditions));
 
+  await captureAnalysis({
+    organizationId: project.organizationId,
+    projectId: input.projectId,
+    jobId: input.jobId,
+    sourceLocale: project.sourceLocale ?? "en",
+    targetLocale,
+    sourceEntries: Object.fromEntries(rows.map((row) => [row.translationKeyId, row.sourceText])),
+    step: "review",
+  });
+  await captureJobStatus({
+    jobId: input.jobId,
+    status: "running",
+    operationKey: `review:${input.jobId}:running`,
+  });
+
   const findings: Array<{
     translationKeyId: string;
     key: string;
@@ -400,6 +416,20 @@ export async function executeNativeReviewJob(input: {
       .where(inArray(schema.projectTranslations.id, reviewedIds));
   }
 
+  if (blocking.length === 0)
+    await captureCompletions({
+      organizationId: project.organizationId,
+      jobId: input.jobId,
+      targetLocale,
+      step: "review",
+      provenance: "automated",
+      sourceEntries: Object.fromEntries(rows.map((row) => [row.translationKeyId, row.sourceText])),
+    });
+  await captureJobStatus({
+    jobId: input.jobId,
+    status: blocking.length ? "waiting_for_review" : "succeeded",
+    operationKey: `review:${input.jobId}:${blocking.length ? "waiting" : "succeeded"}`,
+  });
   const outcome = {
     criteria: input.criteria,
     targetLocale,

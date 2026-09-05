@@ -509,6 +509,12 @@ export async function completeFileTranslationJobStep(input: {
     );
   }
 
+  const { captureJobStatus } = await import("@/lib/reporting/capture");
+  await captureJobStatus({
+    jobId: input.jobId,
+    status: "succeeded",
+    operationKey: `file:${input.workflowRunId}:succeeded`,
+  });
   const { completeAndTrackBillableUsage, formatUsageControlError } =
     await import("@/lib/billing/usage-control");
   const { isErr } = await import("@/lib/primitives/result/results");
@@ -687,4 +693,35 @@ export async function localizeVideoVariantForJobStep(input: {
     locale: input.targetLocale,
     filename,
   };
+}
+
+export async function captureFileAnalysisStep(input: {
+  organizationId: string;
+  projectId: string;
+  jobId: string;
+  sourceLocale: string;
+  targetLocale: string;
+  sourceEntries: Record<string, string>;
+}) {
+  "use step";
+  const { captureAnalysis } = await import("@/lib/reporting/capture");
+  await captureAnalysis(input);
+}
+
+export async function captureFileCompletionsStep(input: {
+  organizationId: string;
+  jobId: string;
+  targetLocale: string;
+  sourceEntries: Record<string, string>;
+  targetEntries: Record<string, string>;
+}) {
+  "use step";
+  const { captureCompletions } = await import("@/lib/reporting/capture");
+  await captureCompletions({
+    ...input,
+    provenance: "automated",
+    sourceEntries: Object.fromEntries(
+      Object.entries(input.sourceEntries).filter(([key]) => input.targetEntries[key]?.trim()),
+    ),
+  });
 }
