@@ -146,9 +146,7 @@ export async function bestReportingMatchScore(input: {
       ),
     )
     .orderBy(
-      desc(
-        sql`ts_rank(${schema.memoryEntries.searchVector}, to_tsquery('simple', ${tsQuery}))`,
-      ),
+      desc(sql`ts_rank(${schema.memoryEntries.searchVector}, to_tsquery('simple', ${tsQuery}))`),
     )
     .limit(MEMORY_MATCH_CANDIDATE_LIMIT);
   return candidates.reduce(
