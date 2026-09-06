@@ -70,6 +70,16 @@ export const dashboardPageViewMessages = defineMessages({
     id: "21rpYl9weA",
     description: "Metric card subtitle for a 7-day lookback",
   },
+  sparklineBarTooltip: {
+    defaultMessage: "{date}: {count}",
+    id: "3aG6RMsKle",
+    description: "Tooltip for a daily count bar on an overview metric chart",
+  },
+  sparklineChartAriaLabel: {
+    defaultMessage: "{metric} by day: {values}",
+    id: "kF6mTL+t+j",
+    description: "Accessible summary of the daily count bars on an overview metric card",
+  },
   pausedCount: {
     defaultMessage: "{count} paused",
     id: "iN7gragIFi",

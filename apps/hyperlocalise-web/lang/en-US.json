@@ -18219,6 +18219,10 @@
     "defaultMessage": "Searching",
     "description": "Live explore status when the agent is searching without a subject"
   },
+  "n4Rk8Qm2vL": {
+    "defaultMessage": "{date}: {count}",
+    "description": "Tooltip for a daily count bar on an overview metric chart"
+  },
   "n4hpRZLl37": {
     "defaultMessage": "Add case",
     "description": "Button to add a switch case"
@@ -18926,6 +18930,10 @@
   "p7RJtpKZ+J": {
     "defaultMessage": "Call tools from a connected remote MCP server during this automation.",
     "description": "Description for the MCP Server automation tool when a connection exists"
+  },
+  "p7Wx3sT9hC": {
+    "defaultMessage": "{metric} by day: {values}",
+    "description": "Accessible summary of the daily count bars on an overview metric card"
   },
   "p8Xes8vaYS": {
     "defaultMessage": "Source & context",
