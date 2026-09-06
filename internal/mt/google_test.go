@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -138,12 +139,8 @@ func TestGoogleClientTranslateRateLimited403Quota(t *testing.T) {
 	}
 }
 
-// TestGoogleClientTranslateUnsupportedLanguageMapsToUpstreamError documents a
-// deliberate limitation rather than satisfying a literal unsupported-pair
-// mapping: Cloud Translation v2 returns the same generic domain "global",
-// reason "invalid" 400 for an unsupported language code as it does for other
-// malformed requests, so this client cannot reliably tell them apart and maps
-// both to ErrorCodeUpstream instead of guessing ErrorCodeUnsupportedLanguagePair.
+// Google v2 does not distinguish unsupported languages from other invalid
+// requests, so generic 400s map to ErrorCodeUpstream.
 func TestGoogleClientTranslateUnsupportedLanguageMapsToUpstreamError(t *testing.T) {
 	client := newGoogleTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -154,6 +151,41 @@ func TestGoogleClientTranslateUnsupportedLanguageMapsToUpstreamError(t *testing.
 	typed, ok := AsError(err)
 	require.True(t, ok)
 	require.Equal(t, ErrorCodeUpstream, typed.Code)
+}
+
+func TestGoogleClientTranslateTransportErrorDoesNotLeakAPIKey(t *testing.T) {
+	const apiKey = "super-secret-api-key-12345"
+
+	client, err := NewGoogleClient(Config{
+		BaseURL: defaultGoogleTranslateBaseURL,
+		APIKey:  apiKey,
+		HTTPClient: &http.Client{
+			Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+				return nil, fmt.Errorf("Post %q: connection refused", req.URL.String())
+			}),
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = client.Translate(t.Context(), Request{
+		SourceLocale: "en",
+		TargetLocale: "fr",
+		Sources:      []string{"hi"},
+	})
+	require.Error(t, err)
+
+	typed, ok := AsError(err)
+	require.True(t, ok)
+	require.Equal(t, ErrorCodeUpstreamUnavailable, typed.Code)
+	require.Equal(t, googleTranslateV2Path, typed.Path)
+	require.NotContains(t, typed.Message, apiKey)
+	require.NotContains(t, err.Error(), apiKey)
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
 
 func TestGoogleClientTranslateUpstreamUnavailable(t *testing.T) {

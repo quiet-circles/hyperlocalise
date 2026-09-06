@@ -118,7 +118,7 @@ func (c *GoogleClient) request(ctx context.Context, method, requestURL string, b
 		}
 		return &Error{
 			Code:    ErrorCodeUpstreamUnavailable,
-			Message: "could not reach Google Cloud Translation: " + err.Error(),
+			Message: "could not reach Google Cloud Translation",
 			Path:    googleTranslateV2Path,
 		}
 	}
