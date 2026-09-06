@@ -4,6 +4,7 @@ go_library(
     name = "mt",
     srcs = [
         "config.go",
+        "deepl.go",
         "doc.go",
         "engine.go",
         "errors.go",
@@ -20,6 +21,7 @@ go_test(
     name = "mt_test",
     srcs = [
         "config_test.go",
+        "deepl_test.go",
         "errors_test.go",
         "google_test.go",
         "testhelpers_test.go",
