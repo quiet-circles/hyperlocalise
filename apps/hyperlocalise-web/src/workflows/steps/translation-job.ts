@@ -10,6 +10,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import type { AiFeaturesError } from "@/lib/billing/ai-features";
 import type { StringTranslationJobResult } from "@/lib/translation/domain";
 import type { ClaimedTranslationJob } from "@/lib/translation/jobs";
 import type { TranslationJobEventData } from "@/lib/workflow/types";
@@ -23,10 +24,22 @@ export async function claimTranslationJobStep(input: {
   return claimTranslationJob(input);
 }
 
-export async function ensureAiFeaturesAllowedStep(input: { organizationId: string }) {
+/**
+ * Workflow DevKit serializes step returns with devalue. `Result` is a class
+ * instance (`ok(undefined)`), so return a plain object instead.
+ */
+export type AiFeaturesAllowedStepResult = { ok: true } | { ok: false; error: AiFeaturesError };
+
+export async function ensureAiFeaturesAllowedStep(input: {
+  organizationId: string;
+}): Promise<AiFeaturesAllowedStepResult> {
   "use step";
   const { ensureAiFeaturesAllowed } = await import("@/lib/billing/ai-features");
-  return ensureAiFeaturesAllowed(input);
+  const result = await ensureAiFeaturesAllowed(input);
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+  return { ok: true };
 }
 
 export async function executeClaimedTranslationJobStep(job: ClaimedTranslationJob) {
