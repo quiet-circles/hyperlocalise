@@ -10,6 +10,8 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import { randomUUID } from "node:crypto";
+import { captureAiUsage } from "@/lib/reporting/ai-cost";
 import { generateText, Output, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -403,6 +405,7 @@ export class StringTranslationEngine {
   ) {}
 
   async translate(input: StringTranslationGeneratorInput): Promise<StringTranslationJobResult> {
+    const invocationId = randomUUID();
     const { output, usage } = await generateText({
       model: this.model,
       output: Output.object({ schema: stringTranslationOutputSchema }),
@@ -430,6 +433,27 @@ export class StringTranslationEngine {
       ),
     });
 
+    if (input.reporting) {
+      const model = typeof this.model === "string" ? this.model : this.model.modelId;
+      const provider = typeof this.model === "string" ? "gateway" : this.model.provider;
+      try {
+        await captureAiUsage({
+          ...input.reporting,
+          invocationId,
+          targetLocale:
+            input.jobInput.targetLocales.length === 1 ? input.jobInput.targetLocales[0] : undefined,
+          model,
+          provider,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+        });
+      } catch (error) {
+        console.warn("[string-translation] usage capture failed", {
+          jobId: input.reporting.jobId,
+          error,
+        });
+      }
+    }
     return normalizeTranslations(input.jobInput, output, normalizeAiSdkTokenUsage(usage));
   }
 }

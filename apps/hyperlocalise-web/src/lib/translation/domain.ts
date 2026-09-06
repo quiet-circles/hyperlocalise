@@ -86,6 +86,7 @@ export type SandboxTranslationContext = {
 };
 
 export type StringTranslationGeneratorInput = {
+  reporting?: { organizationId: string; projectId: string; jobId: string };
   projectName: string;
   projectTranslationContext: string;
   jobInput: StringTranslationJobInput;

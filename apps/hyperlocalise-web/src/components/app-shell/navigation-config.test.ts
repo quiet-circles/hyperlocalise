@@ -220,6 +220,7 @@ describe("path builders", () => {
       "My Jobs",
       "Board",
       "Overview",
+      "Reports",
     ]);
   });
 
@@ -228,6 +229,7 @@ describe("path builders", () => {
 
     expect(items.map((item) => [item.label, item.href])).toEqual([
       ["Overview", "/org/acme/projects/proj_1"],
+      ["Reports", "/org/acme/projects/proj_1/reports"],
       ["Files", "/org/acme/projects/proj_1/files"],
       ["Content Editor", "/org/acme/projects/proj_1/strings"],
       ["Jobs", "/org/acme/projects/proj_1/jobs"],

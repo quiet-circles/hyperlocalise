@@ -27,6 +27,8 @@ import {
 import type { SandboxTranslationContext } from "@/lib/translation/domain";
 import type { TranslationJobEventData } from "@/lib/workflow/types";
 import {
+  captureFileAnalysisStep,
+  captureFileCompletionsStep,
   claimTranslationJobStep,
   completeFileTranslationJobStep,
   ensureAiFeaturesAllowedStep,
@@ -329,7 +331,13 @@ async function runTranslationStep(
   instructions: string | null,
   context: SandboxTranslationContext,
   prefilledByLocale: Record<string, Record<string, string>>,
-  options?: { force?: boolean; maxTranslations?: number; organizationId?: string },
+  options?: {
+    force?: boolean;
+    maxTranslations?: number;
+    organizationId?: string;
+    projectId?: string;
+    jobId?: string;
+  },
 ) {
   "use step";
 
@@ -349,6 +357,9 @@ async function runTranslationStep(
     ? await loadSandboxByokCredential(options.organizationId)
     : null;
 
+  const { randomUUID } = await import("node:crypto");
+  const invocationId = randomUUID();
+  const reportPath = `/tmp/report-${invocationId}.json`;
   const config = buildMultiLocaleTempConfig(
     inputFile,
     outputPattern,
@@ -389,18 +400,46 @@ async function runTranslationStep(
       ? ` --max-translations ${maxTranslations}`
       : "";
   try {
-    return await runSandboxCommand(
+    const result = await runSandboxCommand(
       sandboxId,
       "bash",
       [
         "-lc",
-        `hl run --config '${shellSingleQuote(sandboxI18nConfigPath)}'${localeArg}${forceFlag}${maxTranslationsFlag} --progress off${prefilledFlags}`,
+        `hl run --config '${shellSingleQuote(sandboxI18nConfigPath)}'${localeArg}${forceFlag}${maxTranslationsFlag} --progress off --output '${reportPath}'${prefilledFlags}`,
       ],
       {
         env: getSandboxTranslationEnv(byok),
         timeoutMs: sandboxTranslationCommandTimeoutMs,
       },
     );
+    if (options?.organizationId && options.projectId && options.jobId) {
+      try {
+        const { readTranslatedFile } = await import("@/lib/translation/sandbox");
+        const { captureSandboxUsage } = await import("@/lib/reporting/sandbox-usage");
+        const { resolveSandboxLlmProfile } = await import("@/lib/translation/sandbox-llm");
+        const { env } = await import("@/lib/env");
+        let report: string | null = null;
+        try {
+          report = (await readTranslatedFile(sandboxId, reportPath)).toString("utf8");
+        } catch {
+          /* Missing usage is recorded as unpriced. */
+        }
+        await captureSandboxUsage({
+          organizationId: options.organizationId,
+          projectId: options.projectId,
+          jobId: options.jobId,
+          invocationId,
+          ...resolveSandboxLlmProfile(env, byok),
+          report,
+        });
+      } catch (error) {
+        console.warn("[file-translation-workflow] usage capture failed", {
+          jobId: options.jobId,
+          error,
+        });
+      }
+    }
+    return result;
   } catch (error) {
     // Surface a stable marker so the workflow can recreate the sandbox when
     // session recovery inside runSandboxCommand is not enough.
@@ -840,6 +879,14 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
     for (const targetLocale of parsedInput.targetLocales) {
       let tmPrefilled: Record<string, string> = {};
       if (sourceEntries) {
+        await captureFileAnalysisStep({
+          organizationId,
+          projectId: claim.job.projectId,
+          jobId: claim.job.id,
+          sourceLocale: parsedInput.sourceLocale,
+          targetLocale,
+          sourceEntries,
+        });
         tmPrefilled = await reuseFileTranslationMemoryEntriesStep({
           projectId: claim.job.projectId,
           sourceLocale: parsedInput.sourceLocale,
@@ -956,7 +1003,7 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
     const runFailures: Array<{ locale: string; kind: string; exitCode: number }> = [];
 
     const persistReadableLocales = async (locales: string[], attempt: 1 | 2) => {
-      if (!sourceEntries || !repositorySourcePath) {
+      if (!sourceEntries) {
         return;
       }
       for (const targetLocale of locales) {
@@ -965,6 +1012,14 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
           const targetEntries = await extractEntriesStep(sandboxId, outputFilename, {
             sourcePath: inputFilename,
           });
+          await captureFileCompletionsStep({
+            organizationId,
+            jobId: claim.job.id,
+            targetLocale,
+            sourceEntries,
+            targetEntries,
+          });
+          if (!repositorySourcePath) continue;
           await persistFileTranslationMemoryEntriesStep({
             projectId: claim.job.projectId,
             jobId: claim.job.id,
@@ -1041,7 +1096,13 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
               .filter((locale) => prefilledByLocale[locale])
               .map((locale) => [locale, prefilledByLocale[locale]]),
           ),
-          { force: runForce, maxTranslations, organizationId },
+          {
+            force: runForce,
+            maxTranslations,
+            organizationId,
+            projectId: claim.job.projectId,
+            jobId: claim.job.id,
+          },
         );
 
       let translation: Awaited<ReturnType<typeof runTranslationStep>>;
@@ -1457,36 +1518,45 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
         });
       }
 
-      if (sourceEntries && repositorySourcePath) {
+      if (sourceEntries) {
         try {
           const targetEntries = await extractEntriesStep(sandboxId, outputFilename, {
             sourcePath: inputFilename,
           });
-          await persistFileTranslationMemoryEntriesStep({
-            projectId: claim.job.projectId,
+          await captureFileCompletionsStep({
+            organizationId,
             jobId: claim.job.id,
-            sourceLocale: parsedInput.sourceLocale,
             targetLocale,
-            sourcePath: repositorySourcePath,
-            sourceFileHash: sourceFile.sha256,
             sourceEntries,
             targetEntries,
           });
-          if (
-            !isDocumentTranslationFileFormat(
-              parsedInput.fileFormat as SupportedTranslationFileFormat,
-            )
-          ) {
-            await persistFileProjectTranslationsStep({
-              organizationId,
+          if (repositorySourcePath) {
+            await persistFileTranslationMemoryEntriesStep({
               projectId: claim.job.projectId,
               jobId: claim.job.id,
-              sourcePath: repositorySourcePath,
               sourceLocale: parsedInput.sourceLocale,
               targetLocale,
+              sourcePath: repositorySourcePath,
+              sourceFileHash: sourceFile.sha256,
               sourceEntries,
               targetEntries,
             });
+            if (
+              !isDocumentTranslationFileFormat(
+                parsedInput.fileFormat as SupportedTranslationFileFormat,
+              )
+            ) {
+              await persistFileProjectTranslationsStep({
+                organizationId,
+                projectId: claim.job.projectId,
+                jobId: claim.job.id,
+                sourcePath: repositorySourcePath,
+                sourceLocale: parsedInput.sourceLocale,
+                targetLocale,
+                sourceEntries,
+                targetEntries,
+              });
+            }
           }
         } catch (error) {
           console.warn("[file-translation-workflow] target TM persistence failed", {
@@ -1500,7 +1570,8 @@ export async function fileTranslationJobWorkflow(event: TranslationJobEventData)
             }),
           });
         }
-      } else if (sourceEntries && !repositorySourcePath) {
+      }
+      if (sourceEntries && !repositorySourcePath) {
         console.warn("[file-translation-workflow] skipped native translation persistence", {
           jobId: claim.job.id,
           projectId: claim.job.projectId,

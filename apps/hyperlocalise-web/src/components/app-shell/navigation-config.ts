@@ -152,6 +152,15 @@ export function buildGlobalNavigationGroups(
           href: org("dashboard"),
           icon: DashboardSquare01Icon,
         },
+        {
+          label: intl.formatMessage({
+            defaultMessage: "Reports",
+            id: "0wXT++q3xO",
+            description: "Workspace translation reports",
+          }),
+          href: org("reports"),
+          icon: DashboardSquare01Icon,
+        },
       ],
     },
     {
@@ -346,6 +355,15 @@ export function buildProjectNavigationItems(
       }),
       href: buildProjectPath(organizationSlug, projectId),
       icon: CubeIcon,
+    },
+    {
+      label: intl.formatMessage({
+        defaultMessage: "Reports",
+        id: "MDRyeVzjZ2",
+        description: "Project translation reports",
+      }),
+      href: project("reports"),
+      icon: DashboardSquare01Icon,
     },
     {
       label: intl.formatMessage({
