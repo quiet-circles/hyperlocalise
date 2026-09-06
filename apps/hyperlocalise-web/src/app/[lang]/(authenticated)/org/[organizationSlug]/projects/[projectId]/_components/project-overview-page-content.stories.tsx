@@ -58,7 +58,7 @@ export const Default: Story = {
           content.includes("de-DE") && content.includes("es-ES") && content.includes("Mina"),
       ),
     ).toBeInTheDocument();
-    await expect(canvas.getByText("Translation guidance")).toBeInTheDocument();
+    await expect(canvas.getByText("Style guide")).toBeInTheDocument();
     await expect(canvas.getByText("Sync")).toBeInTheDocument();
     await expect(canvas.queryByText("Locale health")).toBeNull();
   },
@@ -83,8 +83,8 @@ export const MissingGuidance: Story = {
     jobs: [],
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Add translation guidance")).toBeInTheDocument();
-    await expect(canvas.getByText("Add guidance")).toBeInTheDocument();
+    await expect(canvas.getByText("Add a style guide")).toBeInTheDocument();
+    await expect(canvas.getByText("Add style guide")).toBeInTheDocument();
   },
 };
 
@@ -99,7 +99,7 @@ export const TmsProject: Story = {
       "/org/acme/projects/ext%3Acrowdin%3A42/strings",
     );
     await expect(canvas.queryByText("Sync")).toBeNull();
-    await expect(canvas.queryByText("Translation guidance")).toBeNull();
+    await expect(canvas.queryByText("Style guide")).toBeNull();
     await expect(canvas.getByText("Locales")).toBeInTheDocument();
   },
 };

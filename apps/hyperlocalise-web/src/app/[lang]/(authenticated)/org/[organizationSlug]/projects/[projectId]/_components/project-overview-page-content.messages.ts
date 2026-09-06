@@ -76,9 +76,9 @@ export const projectOverviewPageContentMessages = defineMessages({
     description: "CTA for a failed or active job on project overview",
   },
   addGuidanceCta: {
-    defaultMessage: "Add guidance",
+    defaultMessage: "Add style guide",
     id: "U+ZJP/RMin",
-    description: "CTA when translation guidance is missing on project overview",
+    description: "CTA when the project style guide is missing on project overview",
   },
   triageReviewTitle: {
     defaultMessage: "Waiting for review",
@@ -91,14 +91,14 @@ export const projectOverviewPageContentMessages = defineMessages({
     description: "Status label for failed job triage items",
   },
   triageGuidanceTitle: {
-    defaultMessage: "Add translation guidance",
+    defaultMessage: "Add a style guide",
     id: "DGx/LlMkDv",
-    description: "Title when native translation guidance is missing",
+    description: "Title when the native project style guide is missing",
   },
   triageGuidanceDescription: {
     defaultMessage: "Shared tone and terminology so agents stay consistent.",
     id: "+y5oYiRfPw",
-    description: "Description when native translation guidance is missing",
+    description: "Description when the native project style guide is missing",
   },
   triageJobRunning: {
     defaultMessage: "In progress",
@@ -126,14 +126,14 @@ export const projectOverviewPageContentMessages = defineMessages({
     description: "Shown when the project has no target locales configured",
   },
   guidanceTitle: {
-    defaultMessage: "Translation guidance",
+    defaultMessage: "Style guide",
     id: "6KrEdJWOHm",
-    description: "Section heading for translation guidance preview on project overview",
+    description: "Section heading for the style guide preview on project overview",
   },
   guidanceEdit: {
     defaultMessage: "Edit",
     id: "Hvpl2DhEOB",
-    description: "Link to edit translation guidance in project settings",
+    description: "Link to edit the style guide in project settings",
   },
   shipTitle: {
     defaultMessage: "Sync",

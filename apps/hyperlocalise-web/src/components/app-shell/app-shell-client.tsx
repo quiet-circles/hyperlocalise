@@ -31,7 +31,11 @@ import { AppShellBreadcrumb } from "./app-shell-breadcrumb";
 import { AppShellNavigation } from "./app-shell-navigation";
 import { TmsUserConnectButton } from "./tms-user-connect-button";
 import { TmsUserOAuthErrorToast } from "./tms-user-oauth-error-toast";
-import { isOrganizationSettingsPath, type NavigationGroup } from "./navigation-config";
+import {
+  isOrganizationSettingsPath,
+  parseProjectRoute,
+  type NavigationGroup,
+} from "./navigation-config";
 import { AppShellHeaderActions } from "./store/app-shell-header-actions";
 import { AppShellStoreProvider } from "./store/app-shell-store-context";
 import { SidebarStoreBridge } from "./store/sidebar-store-bridge";
@@ -85,6 +89,7 @@ export function AppShellClient({
   const intl = useIntl();
   const pathname = usePathname();
   const organizationSlug = activeOrganization.slug ?? "";
+  const projectRoute = parseProjectRoute(pathname);
   const isContentEditorWorkspaceRoute =
     pathname.includes("/strings") || pathname.includes("/files/content-editor");
   const isOrgSettingsRoute = isOrganizationSettingsPath(pathname);
@@ -202,9 +207,11 @@ export function AppShellClient({
 
         <AppShellFooter
           organizationSlug={organizationSlug}
+          projectId={projectRoute?.projectId ?? null}
           showPlan={showBillingLink && autumnConfigured}
           showGlossaryGuidance={isContentEditorWorkspaceRoute}
           showIssueGuidance={isContentEditorWorkspaceRoute}
+          showStyleGuide={isContentEditorWorkspaceRoute}
           currentUser={
             organizationSlug
               ? {

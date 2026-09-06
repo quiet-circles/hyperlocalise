@@ -38,6 +38,16 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/org/acme/dashboard",
 }));
 
+vi.mock("@/components/content-editor/style-guide/content-editor-style-guide-sheet", () => ({
+  ContentEditorStyleGuideSheet: ({
+    open,
+    projectId,
+  }: {
+    open: boolean;
+    projectId: string;
+  }) => (open ? <div role="dialog" aria-label="Style guide">{projectId}</div> : null),
+}));
+
 afterEach(() => {
   autumnMocks.useCustomer.mockReset();
   autumnMocks.useListPlans.mockReset();
@@ -47,16 +57,20 @@ afterEach(() => {
 function renderFooter(
   props: {
     organizationSlug?: string;
+    projectId?: string | null;
     showPlan?: boolean;
     withChat?: boolean;
     showIssueGuidance?: boolean;
+    showStyleGuide?: boolean;
   } = {},
 ) {
   const {
     organizationSlug = "acme",
+    projectId = null,
     showPlan = true,
     withChat = false,
     showIssueGuidance = false,
+    showStyleGuide = false,
   } = props;
 
   return render(
@@ -65,8 +79,10 @@ function renderFooter(
         <AppShellStoreProvider defaultNavigationGroups={[]}>
           <AppShellFooter
             organizationSlug={organizationSlug}
+            projectId={projectId}
             showPlan={showPlan}
             showIssueGuidance={showIssueGuidance}
+            showStyleGuide={showStyleGuide}
             currentUser={
               withChat
                 ? {
@@ -181,5 +197,20 @@ describe("AppShellFooter", () => {
     } finally {
       window.removeEventListener(CAT_ISSUE_GUIDANCE_OPEN_EVENT, openListener);
     }
+  });
+
+  it("opens the style guide sheet from the footer on content editor routes", async () => {
+    const user = userEvent.setup();
+    renderFooter({
+      showPlan: false,
+      showStyleGuide: true,
+      projectId: "project_1",
+    });
+
+    expect(screen.queryByRole("dialog", { name: "Style guide" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Open style guide" }));
+
+    expect(screen.getByRole("dialog", { name: "Style guide" })).toHaveTextContent("project_1");
   });
 });

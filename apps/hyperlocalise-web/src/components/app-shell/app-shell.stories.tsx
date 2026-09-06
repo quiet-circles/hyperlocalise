@@ -94,11 +94,13 @@ export const ContentEditorFooter: Story = {
   render: () => (
     <AppShellStoryFrame autumnConfigured showBillingLink>
       <p className="text-sm text-muted-foreground">
-        Content editor routes enable glossary and issue guidance controls in the footer.
+        Content editor routes enable style guide, glossary, and issue guidance controls in the
+        footer.
       </p>
     </AppShellStoryFrame>
   ),
   play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Open style guide" })).toBeInTheDocument();
     await expect(
       canvas.getByRole("button", { name: "Open glossary guidance" }),
     ).toBeInTheDocument();
