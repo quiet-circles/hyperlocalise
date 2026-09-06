@@ -82,6 +82,30 @@ vi.mock("./project-issue-columns-settings", () => ({
   ProjectIssueColumnsSettings: () => null,
 }));
 
+vi.mock("@/components/markdown-editor/markdown-editor", () => ({
+  MarkdownEditor: ({
+    id,
+    value,
+    onChange,
+    ariaLabel,
+    disabled,
+  }: {
+    id?: string;
+    value: string;
+    onChange: (next: string) => void;
+    ariaLabel?: string;
+    disabled?: boolean;
+  }) => (
+    <textarea
+      id={id}
+      aria-label={ariaLabel}
+      value={value}
+      disabled={disabled}
+      onChange={(event) => onChange(event.currentTarget.value)}
+    />
+  ),
+}));
+
 import { ProjectSettingsPageContent } from "./project-settings-page-content";
 
 function createProject(overrides: Partial<ProjectListRow> = {}): ProjectListRow {
@@ -250,5 +274,24 @@ describe("ProjectSettingsPageContent", () => {
 
     expect(screen.queryByRole("button", { name: "Save settings" })).not.toBeInTheDocument();
     expect(screen.getByText("Loading project settings...")).toBeInTheDocument();
+  });
+
+  it("saves markdown style guide content as translation context", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    const styleGuide = await screen.findByLabelText("Style guide");
+    expect(styleGuide).toHaveAttribute("id", "translation-context");
+    await user.clear(styleGuide);
+    await user.type(styleGuide, "Keep product names in English.");
+
+    await user.click(screen.getByRole("button", { name: "Save settings" }));
+
+    await waitFor(() => expect(patchMock).toHaveBeenCalled());
+    expect(patchMock.mock.calls[0]?.[0]).toMatchObject({
+      json: expect.objectContaining({
+        translationContext: "Keep product names in English.",
+      }),
+    });
   });
 });

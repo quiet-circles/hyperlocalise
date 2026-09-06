@@ -97,20 +97,27 @@ export const projectSettingsPageContentMessages = defineMessages({
     id: "gCJJUH5CEa",
     description: "Help text under the project description field",
   },
-  translationGuidanceTitle: {
-    defaultMessage: "Translation guidance",
-    id: "iL9/D33IcM",
-    description: "Heading for the translation guidance settings section",
+  styleGuideTitle: {
+    defaultMessage: "Style guide",
+    id: "PBd06JWdET",
+    description: "Heading for the project style guide settings section",
   },
-  translationGuidanceDescription: {
-    defaultMessage: "Shared instructions for tone, terminology, formatting, and product context.",
-    id: "DR8B4GRFYT",
-    description: "Description for the translation guidance settings section",
+  styleGuideDescription: {
+    defaultMessage:
+      "Tone, terminology, and formatting rules for translators and agents. Write this as markdown.",
+    id: "E316KXeVHB",
+    description: "Description for the project style guide settings section",
   },
-  guidanceLabel: {
-    defaultMessage: "Guidance",
-    id: "/uFRS+73Kw",
-    description: "Label for the translation guidance field",
+  styleGuideLabel: {
+    defaultMessage: "Style guide",
+    id: "MsLC2ttSM5",
+    description: "Accessible label for the project style guide editor",
+  },
+  styleGuidePlaceholder: {
+    defaultMessage:
+      "Keep product names in English. Use concise UI copy. Prefer an informal tone for marketing pages.",
+    id: "V9FwiTxbs+",
+    description: "Placeholder shown in the empty project style guide editor",
   },
   localesTitle: {
     defaultMessage: "Locales",

@@ -19,6 +19,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 import { buildProjectPath } from "@/components/app-shell/navigation-config";
+import { MarkdownPreview } from "@/components/markdown-editor/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
@@ -427,14 +428,12 @@ export function ProjectOverviewPageContentView({
               <FormattedMessage {...messages.guidanceEdit} />
             </Button>
           </div>
-          <TypographyP
-            className="whitespace-pre-wrap leading-6"
-            lineClamp={3}
-            size="small"
-            tone="subtle"
-          >
-            {project?.translationContextValue}
-          </TypographyP>
+          <MarkdownPreview
+            value={project?.translationContextValue ?? ""}
+            chrome="minimal"
+            className="line-clamp-6"
+            contentClassName="text-sm leading-6 text-subtle-foreground"
+          />
         </section>
       ) : null}
     </ProjectPageShell>

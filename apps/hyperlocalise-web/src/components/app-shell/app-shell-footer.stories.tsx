@@ -12,6 +12,7 @@
  */
 import { useEffect, type CSSProperties, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { AppShellStoreProvider } from "@/components/app-shell/store/app-shell-store-context";
@@ -41,19 +42,21 @@ const currentUser = {
 
 function FooterStoryFrame({ children }: { children: ReactNode }) {
   return (
-    <AppShellStoreProvider defaultNavigationGroups={[]}>
-      <div
-        className="min-h-screen bg-muted/20 text-foreground"
-        style={{ "--app-shell-plan-footer-height": "3rem" } as CSSProperties}
-      >
-        <div className="mx-auto max-w-5xl px-6 py-10">
-          <p className="text-sm text-muted-foreground">
-            App shell content placeholder so the fixed footer is shown in context.
-          </p>
+    <QueryClientProvider client={new QueryClient()}>
+      <AppShellStoreProvider defaultNavigationGroups={[]}>
+        <div
+          className="min-h-screen bg-muted/20 text-foreground"
+          style={{ "--app-shell-plan-footer-height": "3rem" } as CSSProperties}
+        >
+          <div className="mx-auto max-w-5xl px-6 py-10">
+            <p className="text-sm text-muted-foreground">
+              App shell content placeholder so the fixed footer is shown in context.
+            </p>
+          </div>
+          {children}
         </div>
-        {children}
-      </div>
-    </AppShellStoreProvider>
+      </AppShellStoreProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -197,6 +200,16 @@ export const GlossaryDefault: Story = {
     await expect(
       canvas.getByRole("button", { name: "Open glossary guidance" }),
     ).toBeInTheDocument();
+  },
+};
+
+export const StyleGuide: Story = {
+  args: {
+    showStyleGuide: true,
+    projectId: "project_website",
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Open style guide" })).toBeInTheDocument();
   },
 };
 

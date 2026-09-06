@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormattedMessage, useIntl } from "react-intl";
 import { toast } from "sonner";
 
+import { MarkdownEditor } from "@/components/markdown-editor/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -360,7 +361,7 @@ export function ProjectSettingsPageContent({
         section="Settings"
         description={
           metadataEditable
-            ? "Edit project metadata, translation guidance, locales, and source connection details."
+            ? "Edit project metadata, style guide, locales, and source connection details."
             : "View provider-managed project metadata, locales, and source connection details. You can still edit the issue identifier."
         }
       />
@@ -449,32 +450,25 @@ export function ProjectSettingsPageContent({
           <section className="grid gap-4 rounded-lg border border-border bg-muted p-4">
             <div>
               <ProjectSectionTitle>
-                <FormattedMessage
-                  {...projectSettingsPageContentMessages.translationGuidanceTitle}
-                />
+                <FormattedMessage {...projectSettingsPageContentMessages.styleGuideTitle} />
               </ProjectSectionTitle>
               <TypographyP className="mt-1" size="small" tone="subtle">
-                <FormattedMessage
-                  {...projectSettingsPageContentMessages.translationGuidanceDescription}
-                />
+                <FormattedMessage {...projectSettingsPageContentMessages.styleGuideDescription} />
               </TypographyP>
             </div>
-            <Field className="gap-1.5">
-              <FieldLabel htmlFor="translation-context">
-                <FormattedMessage {...projectSettingsPageContentMessages.guidanceLabel} />
-              </FieldLabel>
-              <Textarea
+            <Field className="gap-1.5" data-invalid={Boolean(errors.translationContext)}>
+              <MarkdownEditor
                 id="translation-context"
                 value={values.translationContext}
                 disabled={isSaving}
-                onChange={(event) =>
-                  setValues((current) =>
-                    current ? { ...current, translationContext: event.target.value } : current,
-                  )
+                onChange={(translationContext) =>
+                  setValues((current) => (current ? { ...current, translationContext } : current))
                 }
-                aria-invalid={Boolean(errors.translationContext)}
-                className="min-h-36"
-                placeholder="Example: Keep product names in English. Use concise UI copy. Prefer informal tone for marketing pages."
+                ariaLabel={intl.formatMessage(projectSettingsPageContentMessages.styleGuideLabel)}
+                placeholder={intl.formatMessage(
+                  projectSettingsPageContentMessages.styleGuidePlaceholder,
+                )}
+                className="[&_.tiptap]:min-h-36"
               />
               <FieldError
                 errors={

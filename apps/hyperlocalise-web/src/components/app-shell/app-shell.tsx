@@ -99,6 +99,7 @@ async function AppShellWithData({
       showApiKeysLink={hasCapability(auth.membership.role, "api_keys:read")}
       showBillingLink={hasCapability(auth.membership.role, "billing:read")}
       showMembersLink={hasCapability(auth.membership.role, "workspace:read")}
+      canWriteProjects={hasCapability(auth.membership.role, "projects:write")}
       user={{
         name: displayName,
         email: auth.sessionUser.email,

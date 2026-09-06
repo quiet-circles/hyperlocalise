@@ -12,13 +12,15 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import {
   BookOpenTextIcon,
   CheckmarkCircle02Icon,
   Copy01Icon,
   CustomerSupportIcon,
   MinusSignCircleIcon,
+  TextFontIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -52,21 +54,48 @@ import { SUPPORT_EMAIL } from "@/lib/support-contact";
 
 import { appShellFooterMessages } from "./app-shell-footer.messages";
 
+const ContentEditorStyleGuideSheet = dynamic(
+  () =>
+    import("@/components/content-editor/style-guide/content-editor-style-guide-sheet").then(
+      (module) => ({
+        default: module.ContentEditorStyleGuideSheet,
+      }),
+    ),
+  { ssr: false },
+);
+
 export function AppShellFooter({
   organizationSlug,
+  projectId = null,
   showPlan,
   showGlossaryGuidance = false,
   showIssueGuidance = false,
+  showStyleGuide = false,
+  canWriteProjects = false,
   currentUser,
 }: {
   organizationSlug: string;
+  projectId?: string | null;
   showPlan: boolean;
   showGlossaryGuidance?: boolean;
   showIssueGuidance?: boolean;
+  showStyleGuide?: boolean;
+  canWriteProjects?: boolean;
   currentUser?: InboxCurrentUser;
 }) {
   const intl = useIntl();
   const showChatDock = Boolean(organizationSlug && currentUser);
+  const [styleGuideOpen, setStyleGuideOpen] = useState(false);
+  const [styleGuideMounted, setStyleGuideMounted] = useState(false);
+  const canShowStyleGuide = showStyleGuide && Boolean(projectId);
+
+  useEffect(() => {
+    if (!canShowStyleGuide) {
+      setStyleGuideOpen(false);
+      setStyleGuideMounted(false);
+    }
+  }, [canShowStyleGuide]);
+
   const glossaryGuidanceStatus = useSyncExternalStore(
     subscribeCatGlossaryGuidance,
     getCatGlossaryGuidanceStatus,
@@ -100,6 +129,20 @@ export function AppShellFooter({
             ) : null}
             <Column width="content">
               <Row spacing="1u" alignY="center">
+                {canShowStyleGuide && projectId ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setStyleGuideMounted(true);
+                      setStyleGuideOpen(true);
+                    }}
+                    aria-label={intl.formatMessage(appShellFooterMessages.styleGuideAriaLabel)}
+                  >
+                    <HugeiconsIcon icon={TextFontIcon} strokeWidth={2} data-icon="inline-start" />
+                    <FormattedMessage {...appShellFooterMessages.styleGuideLabel} />
+                  </Button>
+                ) : null}
                 {showGlossaryGuidance ? (
                   <Button
                     type="button"
@@ -190,6 +233,15 @@ export function AppShellFooter({
           </Columns>
         </Box>
       </div>
+      {canShowStyleGuide && projectId && styleGuideMounted ? (
+        <ContentEditorStyleGuideSheet
+          organizationSlug={organizationSlug}
+          projectId={projectId}
+          open={styleGuideOpen}
+          onOpenChange={setStyleGuideOpen}
+          canWriteProjects={canWriteProjects}
+        />
+      ) : null}
     </footer>
   );
 }
