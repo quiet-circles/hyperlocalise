@@ -12,6 +12,7 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowDown01Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -39,7 +40,10 @@ import {
 
 import { appShellNavigationMessages } from "./app-shell-navigation.messages";
 import { OrgNavLink } from "./org-nav-link";
-import { annotateNavigationItemsWithWorkspaceFlags } from "@/lib/flags/workspace-flag-navigation";
+import {
+  annotateNavigationItemsWithWorkspaceFlags,
+  groupPreviewNavigationGroups,
+} from "@/lib/flags/workspace-flag-navigation";
 import { formatInboxUnreadBadgeLabel, inboxUnreadBadgeClassName } from "./inbox-unread-badge";
 
 import {
@@ -117,9 +121,15 @@ function GlobalNavigation({
   groups: readonly NavigationGroup[];
   pathname: string;
 }) {
+  const intl = useIntl();
+  const grouped = groupPreviewNavigationGroups(
+    groups,
+    intl.formatMessage(appShellNavigationMessages.trySection),
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      {groups.map((group, groupIndex) => {
+      {grouped.map((group, groupIndex) => {
         const content = (
           <NavigationGroupItems
             group={group}
@@ -137,19 +147,9 @@ function GlobalNavigation({
         }
 
         return (
-          <Collapsible key={group.label} defaultOpen className={cn(groupIndex > 0 && "mt-2")}>
-            <SidebarGroup className="p-0">
-              <CollapsibleTrigger className="group/collapsible-trigger flex h-7 w-full items-center gap-2 rounded-md px-3 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase outline-hidden transition-[margin,opacity,color] duration-200 hover:text-sidebar-foreground focus-visible:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0">
-                <span className="min-w-0 flex-1 truncate">{group.label}</span>
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  strokeWidth={1.8}
-                  className="size-3.5 shrink-0 transition-transform group-data-panel-open/collapsible-trigger:rotate-180"
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent hiddenUntilFound>{content}</CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
+          <LabeledNavigationSection key={group.label} label={group.label} offset={groupIndex > 0}>
+            {content}
+          </LabeledNavigationSection>
         );
       })}
     </div>
@@ -190,6 +190,10 @@ function ProjectNavigation({
     items ?? buildProjectNavigationItems(organizationSlug, projectId, intl),
     store.workspaceFeatureFlags,
   );
+  const tryLabel = intl.formatMessage(appShellNavigationMessages.trySection);
+  const grouped = groupPreviewNavigationGroups([{ items: resolvedItems }], tryLabel);
+  const tryGroup = grouped.find((group) => group.label === tryLabel);
+  const projectItems = grouped.find((group) => group.label !== tryLabel)?.items ?? [];
   const resolvedProjectName =
     projectName ??
     projectQuery.data?.name ??
@@ -232,13 +236,50 @@ function ProjectNavigation({
           )}
         </div>
         <NavigationGroupItems
-          group={{ items: resolvedItems }}
+          group={{ items: projectItems }}
           pathname={pathname}
           organizationSlug={organizationSlug}
           projectId={projectId}
         />
       </SidebarGroup>
+
+      {tryGroup ? (
+        <LabeledNavigationSection label={tryLabel} offset>
+          <NavigationGroupItems
+            group={tryGroup}
+            pathname={pathname}
+            organizationSlug={organizationSlug}
+            projectId={projectId}
+          />
+        </LabeledNavigationSection>
+      ) : null}
     </div>
+  );
+}
+
+function LabeledNavigationSection({
+  label,
+  offset = false,
+  children,
+}: {
+  label: string;
+  offset?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Collapsible defaultOpen className={cn(offset && "mt-2")}>
+      <SidebarGroup className="p-0">
+        <CollapsibleTrigger className="group/collapsible-trigger flex h-7 w-full items-center gap-2 rounded-md px-3 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase outline-hidden transition-[margin,opacity,color] duration-200 hover:text-sidebar-foreground focus-visible:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0">
+          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={1.8}
+            className="size-3.5 shrink-0 transition-transform group-data-panel-open/collapsible-trigger:rotate-180"
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent hiddenUntilFound>{children}</CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 

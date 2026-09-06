@@ -173,3 +173,29 @@ export const Hyperlab: Story = {
     await expect(canvas.getByRole("link", { name: "Contact us" })).toBeInTheDocument();
   },
 };
+
+export const Reports: Story = {
+  args: {
+    feature: "reports",
+    scope: "workspace",
+  },
+  parameters: {
+    nextjs: {
+      navigation: {
+        pathname: "/org/acme/reports",
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "Reports" })).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Know what translation is costing before the invoice arrives"),
+    ).toBeInTheDocument();
+    await expect(canvas.getByText("Q3 localisation volume")).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Track words, time, and cost by project and locale"),
+    ).toBeInTheDocument();
+    await expect(canvas.getByRole("link", { name: "Request a demo" })).toBeInTheDocument();
+    await expect(canvas.getByRole("link", { name: "Contact us" })).toBeInTheDocument();
+  },
+};

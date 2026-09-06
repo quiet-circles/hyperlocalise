@@ -18,6 +18,7 @@ import {
   WORKSPACE_GLOSSARY_SEARCH_FLAG,
   WORKSPACE_HYPERLAB_FLAG,
   WORKSPACE_KNOWLEDGE_FLAG,
+  WORKSPACE_REPORTS_FLAG,
   WORKSPACE_VISUAL_MOCK_FLAG,
   WORKSPACE_VISUAL_WORKFLOWS_FLAG,
   type WorkspaceFeatureFlagState,
@@ -32,6 +33,7 @@ function workspaceFlagEnabledByKey(flags: WorkspaceFeatureFlagState): Record<str
     [WORKSPACE_DOMAINS_FLAG]: flags.domains,
     [WORKSPACE_GLOSSARY_SEARCH_FLAG]: flags.glossarySearch,
     [WORKSPACE_HYPERLAB_FLAG]: flags.hyperlab,
+    [WORKSPACE_REPORTS_FLAG]: flags.reports,
   };
 }
 
@@ -69,6 +71,33 @@ export function annotateNavigationByWorkspaceFlags(
     ...group,
     items: group.items.map((item) => annotateNavigationItemWithWorkspaceFlags(item, enabledByKey)),
   }));
+}
+
+export function groupPreviewNavigationGroups(
+  groups: readonly NavigationGroup[],
+  tryLabel: string,
+): readonly NavigationGroup[] {
+  const previewItems: NavigationItem[] = [];
+  const remainingGroups = groups
+    .map((group) => {
+      const items = group.items.filter((item) => {
+        if (item.preview) {
+          previewItems.push(item);
+          return false;
+        }
+
+        return true;
+      });
+
+      return { ...group, items };
+    })
+    .filter((group) => group.items.length > 0);
+
+  if (previewItems.length === 0) {
+    return remainingGroups;
+  }
+
+  return [...remainingGroups, { label: tryLabel, items: previewItems }];
 }
 
 /** @deprecated Use annotateNavigationItemsWithWorkspaceFlags — kept for tests during migration. */

@@ -15,6 +15,7 @@
 import { defineMessages, type MessageDescriptor } from "react-intl";
 import {
   Bookmark01Icon,
+  ChartHistogramIcon,
   FlashIcon,
   FlaskConicalIcon,
   Globe02Icon,
@@ -22,7 +23,7 @@ import {
 
 import type { NavigationIcon } from "@/components/app-shell/navigation-config";
 
-export type FeatureTeaserId = "automations" | "guideline" | "domains" | "hyperlab";
+export type FeatureTeaserId = "automations" | "guideline" | "domains" | "hyperlab" | "reports";
 
 export type FeatureTeaserScope = "workspace" | "project";
 
@@ -73,6 +74,11 @@ export const featureTeaserMessages = defineMessages({
     defaultMessage: "Demo request: Hyperlab",
     id: "omHOw+4o9P",
     description: "Email subject for Hyperlab feature teaser contact link",
+  },
+  contactSubjectReports: {
+    defaultMessage: "Demo request: Reports",
+    id: "QRlf1XEwRc",
+    description: "Email subject for Reports feature teaser contact link",
   },
 
   automationsPageLabel: {
@@ -288,6 +294,58 @@ export const featureTeaserMessages = defineMessages({
     id: "cGCurVuGU/",
     description: "Feature teaser benefit for Hyperlab",
   },
+
+  reportsPageLabel: {
+    defaultMessage: "Workspace",
+    id: "tznfLKixWB",
+    description: "Feature teaser page label for workspace reports",
+  },
+  reportsPageLabelProject: {
+    defaultMessage: "Project",
+    id: "aDWMRaDSsk",
+    description: "Feature teaser page label for project reports",
+  },
+  reportsTitle: {
+    defaultMessage: "Reports",
+    id: "b/0QCcEDip",
+    description: "Feature teaser page title for reports",
+  },
+  reportsDescription: {
+    defaultMessage: "See word counts, time, and cost across projects so you can forecast spend.",
+    id: "Y2qBs5EsBK",
+    description: "Feature teaser page description for workspace reports",
+  },
+  reportsDescriptionProject: {
+    defaultMessage: "See word counts, time, and cost for this project before work overruns.",
+    id: "k1Ku5BR4yb",
+    description: "Feature teaser page description for project reports",
+  },
+  reportsEarlyAccessTitle: {
+    defaultMessage: "Know what translation is costing before the invoice arrives",
+    id: "3iwjDXakJS",
+    description: "Feature teaser early access title for reports",
+  },
+  reportsEarlyAccessDescription: {
+    defaultMessage:
+      "Reports rolls word counts, time, and vendor rates into one workspace view. Available in early access. Book a demo to see it on your volume.",
+    id: "0/uc5H+XGR",
+    description: "Feature teaser early access description for reports",
+  },
+  reportsBenefit0: {
+    defaultMessage: "Track words, time, and cost by project and locale",
+    id: "uG/a2iMgAc",
+    description: "Feature teaser benefit for reports",
+  },
+  reportsBenefit1: {
+    defaultMessage: "Set rates and budgets before work overruns",
+    id: "T+CONpD3t0",
+    description: "Feature teaser benefit for reports",
+  },
+  reportsBenefit2: {
+    defaultMessage: "Export the numbers finance and vendors already ask for",
+    id: "B3BorgouDo",
+    description: "Feature teaser benefit for reports",
+  },
 });
 
 export const featureTeaserRegistry: Record<FeatureTeaserId, FeatureTeaserConfig> = {
@@ -351,6 +409,21 @@ export const featureTeaserRegistry: Record<FeatureTeaserId, FeatureTeaserConfig>
       featureTeaserMessages.hyperlabBenefit2,
     ],
   },
+  reports: {
+    icon: ChartHistogramIcon,
+    pageLabel: featureTeaserMessages.reportsPageLabel,
+    pageLabelProject: featureTeaserMessages.reportsPageLabelProject,
+    pageTitle: featureTeaserMessages.reportsTitle,
+    pageDescription: featureTeaserMessages.reportsDescription,
+    pageDescriptionProject: featureTeaserMessages.reportsDescriptionProject,
+    earlyAccessTitle: featureTeaserMessages.reportsEarlyAccessTitle,
+    earlyAccessDescription: featureTeaserMessages.reportsEarlyAccessDescription,
+    benefits: [
+      featureTeaserMessages.reportsBenefit0,
+      featureTeaserMessages.reportsBenefit1,
+      featureTeaserMessages.reportsBenefit2,
+    ],
+  },
 };
 
 export const featureTeaserContactSubjects: Record<FeatureTeaserId, MessageDescriptor> = {
@@ -358,4 +431,5 @@ export const featureTeaserContactSubjects: Record<FeatureTeaserId, MessageDescri
   guideline: featureTeaserMessages.contactSubjectGuideline,
   domains: featureTeaserMessages.contactSubjectDomains,
   hyperlab: featureTeaserMessages.contactSubjectHyperlab,
+  reports: featureTeaserMessages.contactSubjectReports,
 };

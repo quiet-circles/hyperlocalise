@@ -86,11 +86,13 @@ export function NativeJobDetailContent({
   organizationSlug,
   projectId,
   canEditJobFields = false,
+  reportsEnabled = false,
 }: {
   jobId: string;
   organizationSlug: string;
   projectId: string;
   canEditJobFields?: boolean;
+  reportsEnabled?: boolean;
 }) {
   const [markFailedDialogOpen, setMarkFailedDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -398,13 +400,15 @@ export function NativeJobDetailContent({
                   showAgentActions={false}
                 />
               )
-            : () => (
-                <ReportsWorkspace
-                  organizationSlug={organizationSlug}
-                  projectId={projectId}
-                  jobId={jobId}
-                />
-              )
+            : reportsEnabled
+              ? () => (
+                  <ReportsWorkspace
+                    organizationSlug={organizationSlug}
+                    projectId={projectId}
+                    jobId={jobId}
+                  />
+                )
+              : undefined
         }
       />
 

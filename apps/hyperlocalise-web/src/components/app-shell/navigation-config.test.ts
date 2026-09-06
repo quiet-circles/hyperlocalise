@@ -20,6 +20,7 @@ import {
   WORKSPACE_DOMAINS_FLAG,
   WORKSPACE_HYPERLAB_FLAG,
   WORKSPACE_KNOWLEDGE_FLAG,
+  WORKSPACE_REPORTS_FLAG,
 } from "@/lib/flags/workos-flag-entities";
 import { RELEASE_CAT_ALL_FILES_FLAG } from "@/lib/flags/release-flag-keys";
 import { encodeProviderProjectId } from "@/lib/providers/jobs/tms-provider-resource-id";
@@ -208,6 +209,8 @@ describe("path builders", () => {
     expect(byLabel.get("Domains")?.featureFlagKey).toBe(WORKSPACE_DOMAINS_FLAG);
     expect(byLabel.get("Hyperlab")?.href).toBe("/org/acme/hyperlab");
     expect(byLabel.get("Hyperlab")?.featureFlagKey).toBe(WORKSPACE_HYPERLAB_FLAG);
+    expect(byLabel.get("Reports")?.href).toBe("/org/acme/reports");
+    expect(byLabel.get("Reports")?.featureFlagKey).toBe(WORKSPACE_REPORTS_FLAG);
 
     expect(groups.map((group) => group.label)).toEqual([undefined, "Agents", "Workspace"]);
     expect(groups[1]?.items.map((item) => item.label)).toEqual([
@@ -244,6 +247,9 @@ describe("path builders", () => {
     );
     expect(items.find((item) => item.label === "Guideline")?.featureFlagKey).toBe(
       WORKSPACE_KNOWLEDGE_FLAG,
+    );
+    expect(items.find((item) => item.label === "Reports")?.featureFlagKey).toBe(
+      WORKSPACE_REPORTS_FLAG,
     );
   });
 });

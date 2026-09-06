@@ -12,22 +12,31 @@
  */
 import "dotenv/config";
 
-import { afterEach, beforeAll, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-const { resolveApiAuthContextFromSessionMock } = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({
   resolveApiAuthContextFromSessionMock: vi.fn(
     (options) =>
       globalThis.__resolveTestApiAuthContextFromSession?.(options) ??
       globalThis.__testApiAuthContext ??
       null,
   ),
+  workspaceReportsFlagRunMock: vi.fn(async () => true),
 }));
 
 vi.mock("@/api/auth/workos-session", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/auth/workos-session")>();
   return {
     ...actual,
-    resolveApiAuthContextFromSession: resolveApiAuthContextFromSessionMock,
+    resolveApiAuthContextFromSession: mocks.resolveApiAuthContextFromSessionMock,
+  };
+});
+
+vi.mock("@/lib/flags/workspace-flags", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/flags/workspace-flags")>();
+  return {
+    ...actual,
+    workspaceReportsFlag: { run: mocks.workspaceReportsFlagRunMock },
   };
 });
 
@@ -42,8 +51,12 @@ beforeAll(async () => {
   await db.$client.query("select 1");
 });
 
+beforeEach(() => {
+  mocks.workspaceReportsFlagRunMock.mockResolvedValue(true);
+});
+
 afterEach(async () => {
-  resolveApiAuthContextFromSessionMock.mockClear();
+  vi.clearAllMocks();
   await fixture.cleanup();
 });
 
@@ -102,6 +115,19 @@ describe("reports routes", () => {
     expect(created.status).toBe(201);
     await expect(created.json()).resolves.toMatchObject({
       rate: { name: "Default", step: "translation" },
+    });
+  });
+
+  it("denies report access when the feature flag is disabled", async () => {
+    mocks.workspaceReportsFlagRunMock.mockResolvedValue(false);
+    const identity = fixture.createWorkosIdentityWithRole("admin");
+    const headers = await fixture.authHeadersFor(identity);
+    const slug = identity.organization.slug ?? "missing-slug";
+
+    const response = await app.request(reportsUrl(slug), { headers });
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "feature_unavailable",
     });
   });
 });

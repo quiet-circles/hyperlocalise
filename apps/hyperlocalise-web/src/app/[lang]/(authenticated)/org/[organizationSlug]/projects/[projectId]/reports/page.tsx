@@ -10,8 +10,13 @@
  * of this software will be governed by the GNU General Public License
  * Version 2.0 or later.
  */
-import { OrgPageSuspense } from "../../../_components/org-page-suspense";
+import { FeatureTeaserPage } from "@/components/feature-teaser/feature-teaser-page";
+import { getWorkspaceFeatureFlagEnabled, workspaceReportsFlag } from "@/lib/flags/workspace-flags";
+import { requireAppAuthContext } from "@/lib/workos/app-auth";
 import { ReportsWorkspace } from "@/components/reports/reports-workspace";
+
+import { OrgPageSuspense } from "../../../_components/org-page-suspense";
+
 export default function ReportsPage({
   params,
 }: {
@@ -23,11 +28,19 @@ export default function ReportsPage({
     </OrgPageSuspense>
   );
 }
+
 async function ReportsLoader({
   params,
 }: {
   params: Promise<{ organizationSlug: string; projectId: string }>;
 }) {
   const { organizationSlug, projectId } = await params;
+  const auth = await requireAppAuthContext({ organizationSlug });
+  const reportsEnabled = await getWorkspaceFeatureFlagEnabled(workspaceReportsFlag, auth);
+
+  if (!reportsEnabled) {
+    return <FeatureTeaserPage feature="reports" scope="project" />;
+  }
+
   return <ReportsWorkspace organizationSlug={organizationSlug} projectId={projectId} />;
 }

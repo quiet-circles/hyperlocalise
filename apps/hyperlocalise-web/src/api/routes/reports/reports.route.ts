@@ -15,8 +15,10 @@ import { and, eq, inArray, desc, sql } from "drizzle-orm";
 import { workosAuthMiddleware, type AuthVariables } from "@/api/auth/workos";
 import { hasCapability } from "@/api/auth/policy";
 import { getAccessibleProjectIds, buildAccessibleJobsWhere } from "@/api/auth/team-access";
+import { createWorkspaceFeatureFlagMiddleware } from "@/api/middleware/workspace-feature-flag";
 import { badRequestResponse, forbiddenResponse, notFoundResponse } from "@/api/response.schema";
 import { db, schema } from "@/lib/database/client";
+import { workspaceReportsFlag } from "@/lib/flags/workspace-flags";
 import { queryReport, reportCsv } from "@/lib/reporting/query";
 import { hourlyCost } from "@/lib/reporting/money";
 import { resolveReportingRate, reportingStart } from "@/lib/reporting/capture";
@@ -34,6 +36,13 @@ import {
 export function createReportsRoutes() {
   return new Hono<{ Variables: AuthVariables }>()
     .use("*", workosAuthMiddleware)
+    .use(
+      "*",
+      createWorkspaceFeatureFlagMiddleware(
+        workspaceReportsFlag,
+        "Reports is not enabled for this workspace",
+      ),
+    )
     .get("/", async (c) => {
       const parsed = reportQuerySchema.safeParse(c.req.query());
       if (!parsed.success) return badRequestResponse(c, "invalid_report_query");
