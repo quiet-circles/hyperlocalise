@@ -14,6 +14,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   countOverviewAutomationStatuses,
+  dailySeriesDays,
   fillDailySeries,
   formatOverviewLocaleRoute,
   mergeOverviewProjectSources,
@@ -56,6 +57,15 @@ describe("overview snapshot helpers", () => {
         now,
       ),
     ).toEqual([0, 0, 0, 0, 4, 0, 2]);
+    expect(dailySeriesDays(now).map(utcDayKey)).toEqual([
+      "2026-08-29",
+      "2026-08-30",
+      "2026-08-31",
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+    ]);
   });
 
   it("resolves external title, then metadata, then review or sync fallbacks", () => {

@@ -115,21 +115,24 @@ export function utcDayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function dailySeriesDays(now = new Date(), days = OVERVIEW_LOOKBACK_DAYS): Date[] {
+  const startUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const dates: Date[] = [];
+
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    dates.push(new Date(startUtc - offset * 86_400_000));
+  }
+
+  return dates;
+}
+
 export function fillDailySeries(
   rows: readonly { day: string; count: number }[],
   now = new Date(),
   days = OVERVIEW_LOOKBACK_DAYS,
 ): number[] {
   const counts = new Map(rows.map((row) => [row.day, row.count]));
-  const series: number[] = [];
-  const startUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-
-  for (let offset = days - 1; offset >= 0; offset -= 1) {
-    const day = new Date(startUtc - offset * 86_400_000);
-    series.push(counts.get(utcDayKey(day)) ?? 0);
-  }
-
-  return series;
+  return dailySeriesDays(now, days).map((day) => counts.get(utcDayKey(day)) ?? 0);
 }
 
 export function resolveOverviewJobTitle(job: OverviewJobTitleInput): OverviewResolvedTitle {

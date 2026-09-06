@@ -21,16 +21,18 @@ import { FormattedMessage, useIntl, type IntlShape } from "react-intl";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TypographyP } from "@/components/ui/typography";
 import { cn } from "@/lib/primitives/cn";
-import type {
-  OverviewActivityItem,
-  OverviewAutomationItem,
-  OverviewBoardItem,
-  OverviewJobKind,
-  OverviewProjectItem,
-  OverviewResolvedTitle,
-  WorkspaceOverviewSnapshot,
+import {
+  dailySeriesDays,
+  type OverviewActivityItem,
+  type OverviewAutomationItem,
+  type OverviewBoardItem,
+  type OverviewJobKind,
+  type OverviewProjectItem,
+  type OverviewResolvedTitle,
+  type WorkspaceOverviewSnapshot,
 } from "@/lib/workspace/overview-snapshot-model";
 
 import { OverviewConnectAgentCard } from "../../_components/overview/overview-connect-agent-card";
@@ -190,23 +192,55 @@ function formatOverviewProjectSubtitle(project: OverviewProjectItem, intl: IntlS
   return [project.domain, sourceLabel].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
-function Sparkline({ series }: { series: readonly number[] }) {
+function Sparkline({ label, series }: { label: string; series: readonly number[] }) {
+  const intl = useIntl();
   const peak = Math.max(...series, 1);
+  const days = dailySeriesDays(undefined, series.length);
+  const chartLabel = intl.formatMessage(dashboardPageViewMessages.sparklineChartAriaLabel, {
+    metric: label,
+    values: series.map((value) => intl.formatNumber(value)).join(", "),
+  });
 
   return (
-    <div className="flex h-10 w-full shrink-0 items-end gap-[5px]" aria-hidden>
-      {series.map((value, index) => (
-        <div
-          key={index}
-          className={cn(
-            "grow rounded-[2px]",
-            SPARKLINE_BAR_CLASSES[index % SPARKLINE_BAR_CLASSES.length],
-          )}
-          style={{
-            height: `${SPARKLINE_MIN_HEIGHT_PX + (value / peak) * (SPARKLINE_MAX_HEIGHT_PX - SPARKLINE_MIN_HEIGHT_PX)}px`,
-          }}
-        />
-      ))}
+    <div
+      className="flex h-10 w-full shrink-0 items-end gap-[5px]"
+      role="group"
+      aria-label={chartLabel}
+    >
+      {series.map((value, index) => {
+        const day = days[index];
+        const tooltip = intl.formatMessage(dashboardPageViewMessages.sparklineBarTooltip, {
+          date: day
+            ? intl.formatDate(day, { day: "numeric", month: "short", timeZone: "UTC" })
+            : "",
+          count: intl.formatNumber(value),
+        });
+
+        return (
+          <Tooltip key={day?.toISOString() ?? index}>
+            <TooltipTrigger
+              delay={0}
+              render={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={tooltip}
+                  className={cn(
+                    "min-w-0 grow rounded-[2px] border-0 p-0",
+                    SPARKLINE_BAR_CLASSES[index % SPARKLINE_BAR_CLASSES.length],
+                  )}
+                  style={{
+                    height: `${SPARKLINE_MIN_HEIGHT_PX + (value / peak) * (SPARKLINE_MAX_HEIGHT_PX - SPARKLINE_MIN_HEIGHT_PX)}px`,
+                  }}
+                />
+              }
+            />
+            <TooltipContent>
+              <span className="tabular-nums">{tooltip}</span>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 }
@@ -313,7 +347,7 @@ function OverviewMetricCard({
         </p>
         <p className="text-[13px] leading-5 text-muted-foreground">{detail}</p>
       </div>
-      {series ? <Sparkline series={series} /> : null}
+      {series ? <Sparkline label={label} series={series} /> : null}
     </div>
   );
 }
