@@ -39,7 +39,7 @@
     "chalk": "6.0.0",
     "cli-table3": "0.6.5",
     "css-loader": "7.1.5",
-    "cssnano": "9.0.1",
+    "cssnano": "9.0.2",
     "dotenv": "17.4.2",
     "esbuild-register": "3.6.0",
     "jsdom": "^30.0.0",
@@ -55,7 +55,7 @@
     "typescript": "6.0.3",
     "url-loader": "4.1.1",
     "vite-plus": "0.3.0",
-    "webpack": "5.110.2",
+    "webpack": "5.110.3",
     "webpack-cli": "7.2.3",
     "webpack-dev-server": "6.0.0",
     "yargs": "18.1.0"
