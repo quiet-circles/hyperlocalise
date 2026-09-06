@@ -28,9 +28,7 @@ export async function claimTranslationJobStep(input: {
  * Workflow DevKit serializes step returns with devalue. `Result` is a class
  * instance (`ok(undefined)`), so return a plain object instead.
  */
-export type AiFeaturesAllowedStepResult =
-  | { ok: true }
-  | { ok: false; error: AiFeaturesError };
+export type AiFeaturesAllowedStepResult = { ok: true } | { ok: false; error: AiFeaturesError };
 
 export async function ensureAiFeaturesAllowedStep(input: {
   organizationId: string;

@@ -26,10 +26,7 @@ vi.mock("@/lib/billing/ai-features", async (importOriginal) => {
   };
 });
 
-import {
-  AI_FEATURES_REQUIRED_CODE,
-  AI_FEATURES_REQUIRED_MESSAGE,
-} from "@/lib/billing/ai-features";
+import { AI_FEATURES_REQUIRED_CODE, AI_FEATURES_REQUIRED_MESSAGE } from "@/lib/billing/ai-features";
 import { ensureAiFeaturesAllowedStep } from "@/workflows/steps/translation-job";
 
 function expectPlainObject(value: unknown) {
