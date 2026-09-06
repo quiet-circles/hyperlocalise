@@ -95,16 +95,21 @@ const preview: Preview = {
   },
   initialGlobals: {
     locale: "en",
-    theme: "dark",
+    theme: "light",
     brandTheme: "product",
   },
   decorators: [
     (Story, { globals }) => (
       <QueryProvider>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
           <StorybookDecorator
             locale={globals.locale ?? "en"}
-            theme={(globals.theme as StorybookTheme | undefined) ?? "dark"}
+            theme={(globals.theme as StorybookTheme | undefined) ?? "light"}
           >
             <TooltipProvider>
               <div

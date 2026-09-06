@@ -42,6 +42,17 @@ describe("root layout cacheComponents boundary", () => {
     expect(source).toMatch(/<Suspense fallback={<RootLayoutProvidersFallback/);
   });
 
+  it("defaults the color theme to light", () => {
+    const source = readFileSync(
+      path.join(import.meta.dirname, "root-layout-providers.tsx"),
+      "utf8",
+    );
+
+    expect(source).toMatch(/defaultTheme="light"/);
+    expect(source).not.toMatch(/defaultTheme="dark"/);
+    expect(source).not.toMatch(/\bforcedTheme\b/);
+  });
+
   it("keeps the root Suspense fallback free of route children", () => {
     const source = readFileSync(
       path.join(import.meta.dirname, "root-layout-providers.tsx"),

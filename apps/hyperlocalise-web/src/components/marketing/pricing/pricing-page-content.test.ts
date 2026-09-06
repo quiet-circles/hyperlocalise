@@ -43,7 +43,10 @@ describe("pricing page content", () => {
       "AI features",
     ]);
     expect(plans.filter((plan) => plan.cta.kind === "coming_soon")).toHaveLength(3);
-    expect(plans.find((plan) => plan.id === "enterprise")?.cta.kind).toBe("demo");
+    expect(plans.find((plan) => plan.id === "enterprise")?.cta).toEqual({
+      kind: "demo",
+      label: "Contact Sales",
+    });
   });
 
   it("builds a matrix covering every plan column", () => {

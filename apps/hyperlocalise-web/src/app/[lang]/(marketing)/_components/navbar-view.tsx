@@ -252,6 +252,8 @@ function Logo({ locale, onHero = false }: { locale: AppLocale; onHero?: boolean 
   );
 }
 
+const HERO_NAV_SCROLL_THRESHOLD_PX = 16;
+
 function useHomeHeroNavTone() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter(Boolean);
@@ -267,7 +269,7 @@ function useHomeHeroNavTone() {
     }
 
     const update = () => {
-      setOnHero(window.scrollY < Math.max(120, window.innerHeight * 0.55));
+      setOnHero(window.scrollY < HERO_NAV_SCROLL_THRESHOLD_PX);
     };
 
     update();

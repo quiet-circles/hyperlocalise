@@ -32,6 +32,8 @@ type CarouselProps = {
   plugins?: CarouselPlugin;
   orientation?: "horizontal" | "vertical";
   setApi?: (api: CarouselApi) => void;
+  /** Map vertical wheel movement to slides. Horizontal trackpad swipes always scroll. */
+  scrollOnWheel?: boolean;
 };
 
 type CarouselContextProps = {
@@ -55,11 +57,14 @@ function useCarousel() {
   return context;
 }
 
+const WHEEL_COOLDOWN_MS = 320;
+
 function Carousel({
   orientation = "horizontal",
   opts,
   setApi,
   plugins,
+  scrollOnWheel = false,
   className,
   children,
   ...props
@@ -118,6 +123,50 @@ function Carousel({
     };
   }, [api, onSelect]);
 
+  React.useEffect(() => {
+    if (!api) return;
+
+    const viewport = api.rootNode();
+    let lockedUntil = 0;
+
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey) {
+        return;
+      }
+
+      const horizontalIntent = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+      if (!horizontalIntent && !scrollOnWheel) {
+        return;
+      }
+
+      const delta = horizontalIntent ? event.deltaX : event.deltaY;
+      if (delta === 0) {
+        return;
+      }
+
+      const goingNext = delta > 0;
+      if (goingNext ? !api.canScrollNext() : !api.canScrollPrev()) {
+        return;
+      }
+
+      event.preventDefault();
+      const now = Date.now();
+      if (now < lockedUntil) {
+        return;
+      }
+
+      lockedUntil = now + WHEEL_COOLDOWN_MS;
+      if (goingNext) {
+        api.scrollNext();
+      } else {
+        api.scrollPrev();
+      }
+    };
+
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", onWheel);
+  }, [api, scrollOnWheel]);
+
   const intl = useIntl();
 
   return (
@@ -151,7 +200,11 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
   const { carouselRef, orientation } = useCarousel();
 
   return (
-    <div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
+    <div
+      ref={carouselRef}
+      className="overflow-hidden overscroll-x-contain"
+      data-slot="carousel-content"
+    >
       <div
         className={cn("flex", orientation === "horizontal" ? "-ms-4" : "-mt-4 flex-col", className)}
         {...props}

@@ -256,7 +256,8 @@ html {
   --font-heading: var(--font-sans);
 }
 
-:root {
+:root,
+.light {
   color-scheme: light;
 
   --app-shell-header-height: 3.5rem;

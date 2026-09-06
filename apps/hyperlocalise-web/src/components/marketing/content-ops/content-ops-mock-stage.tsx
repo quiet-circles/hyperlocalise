@@ -203,14 +203,19 @@ export function ContentOpsMockStage({
         </button>
       </div>
 
-      <MeshStage meshSrc={MESH_BY_TAB[activeTab]} priority={priority} layout="breakout">
+      <MeshStage
+        meshSrc={MESH_BY_TAB[activeTab]}
+        priority={priority}
+        layout="breakout"
+        entranceAnimation="none"
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: [0.19, 1, 0.22, 1] }}
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
             className="w-full"
           >
             <ContentOpsMockAppShell activeTab={activeTab}>
