@@ -7,6 +7,7 @@ go_library(
         "doc.go",
         "engine.go",
         "errors.go",
+        "google.go",
         "types.go",
         "validate.go",
     ],
@@ -20,6 +21,7 @@ go_test(
     srcs = [
         "config_test.go",
         "errors_test.go",
+        "google_test.go",
         "testhelpers_test.go",
         "validate_test.go",
     ],
