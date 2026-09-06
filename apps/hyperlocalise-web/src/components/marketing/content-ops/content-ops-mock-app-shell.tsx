@@ -82,26 +82,26 @@ const BREADCRUMB_KEY_BY_TAB: Record<ContentOpsMockTabId, keyof typeof contentOps
 
 function MockNavButton({ item, active }: { item: MockNavItem; active: boolean }) {
   const intl = useIntl();
+  const label = intl.formatMessage(contentOpsMockStageMessages[item.labelKey]);
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
+        "flex size-8 items-center justify-center overflow-hidden rounded-lg p-2 text-sm transition-colors",
         active
           ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
           : "text-sidebar-foreground/75",
       )}
       aria-current={active ? "page" : undefined}
+      title={label}
     >
       <HugeiconsIcon icon={item.icon} strokeWidth={1.8} className="size-4 shrink-0" />
-      <span className="truncate">
-        {intl.formatMessage(contentOpsMockStageMessages[item.labelKey])}
-      </span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
 
-const FLUSH_CONTENT_TABS = new Set<ContentOpsMockTabId>(["editor"]);
+const FLUSH_CONTENT_TABS = new Set<ContentOpsMockTabId>(["triage", "seo-blog", "brand", "editor"]);
 
 const MOCK_EDITOR_GLOSSARY_PREFERRED = 1;
 const MOCK_EDITOR_GLOSSARY_NOT_RECOMMENDED = 1;
@@ -217,9 +217,13 @@ export function ContentOpsMockAppShell({
 
   return (
     <div className={CONTENT_OPS_MOCK_SHELL_CLASSNAME} aria-hidden>
-      <div className="flex min-h-[min(42rem,78svh)] min-h-136">
-        <aside className="hidden w-[15rem] shrink-0 flex-col border-r border-sidebar-border bg-sidebar sm:flex">
-          <div className="flex items-center gap-2.5 border-b border-sidebar-border px-3 py-3">
+      <div className="flex h-full min-h-0">
+        <aside
+          className="hidden w-12 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar sm:flex"
+          data-state="collapsed"
+          data-collapsible="icon"
+        >
+          <div className="flex items-center justify-center border-b border-sidebar-border px-0 py-3">
             <Image
               src="/images/logo.png"
               width={28}
@@ -228,29 +232,18 @@ export function ContentOpsMockAppShell({
               alt={intl.formatMessage(appShellClientMessages.logoAlt)}
               className="size-7 shrink-0 rounded-lg"
             />
-            <span className="truncate text-sm font-medium text-sidebar-foreground">
-              <FormattedMessage {...appShellClientMessages.brandName} />
-            </span>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-0.5 px-2 py-3">
+          <nav className="flex flex-1 flex-col items-center gap-1 px-2 py-3">
             {NAV_ITEMS.map((item) => (
               <MockNavButton key={item.id} item={item} active={item.id === activeNavId} />
             ))}
           </nav>
 
-          <div className="border-t border-sidebar-border px-3 py-3">
-            <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
-                AC
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-sidebar-foreground">
-                  <FormattedMessage {...contentOpsMockStageMessages.mockWorkspaceName} />
-                </p>
-                <p className="truncate text-[10px] text-sidebar-foreground/60">acme</p>
-              </div>
-            </div>
+          <div className="flex justify-center border-t border-sidebar-border px-0 py-3">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+              AC
+            </span>
           </div>
         </aside>
 

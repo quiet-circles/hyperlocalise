@@ -263,8 +263,8 @@ export function getPricingPlans(locale: string): PricingPlan[] {
       ],
       cta: {
         label: intl.formatMessage({
-          defaultMessage: "Get a demo",
-          id: "ViFhELlwfG",
+          defaultMessage: "Contact Sales",
+          id: "MRoAAfbdki",
           description: "Enterprise plan CTA label on the pricing page",
         }),
         kind: "demo",

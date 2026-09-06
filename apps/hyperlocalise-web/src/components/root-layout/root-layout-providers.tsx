@@ -73,7 +73,7 @@ function RootLayoutProvidersInner({
         <AuthKitProvider initialAuth={initialAuth}>
           <I18nProvider locale={locale}>
             <QueryProvider>
-              <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
                 <TooltipProvider>
                   {children}
                   <Toaster richColors closeButton />

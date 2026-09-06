@@ -14,216 +14,38 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Background,
-  Handle,
-  Position,
+  MarkerType,
   useEdgesState,
   useNodesState,
-  type Edge,
-  type Node,
-  type NodeProps,
   type OnEdgesChange,
   type OnNodesChange,
 } from "@xyflow/react";
-import { MoreVerticalIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import { visualWorkflowEditorMessages as editorMessages } from "@/app/[lang]/(authenticated)/org/[organizationSlug]/automations/_components/visual-workflow-editor/visual-workflow-editor.messages";
+import { VisualWorkflowCanvasActionsProvider } from "@/app/[lang]/(authenticated)/org/[organizationSlug]/automations/_components/visual-workflow-editor/visual-workflow-canvas-actions";
+import { VISUAL_WORKFLOW_NODE_TYPES } from "@/app/[lang]/(authenticated)/org/[organizationSlug]/automations/_components/visual-workflow-editor/visual-workflow-canvas";
 import { Canvas } from "@/components/ai-elements/canvas";
+import { Controls } from "@/components/ai-elements/controls";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/primitives/cn";
+import type { VisualWorkflowRfNode } from "@/lib/visual-workflows/schema/types";
 
+import {
+  buildContentOpsFlowGraph,
+  contentOpsFlowNodeOrder,
+  styleContentOpsFlowEdges,
+  type ContentOpsFlowTemplateId,
+} from "./content-ops-flow-graph";
 import { CONTENT_OPS_MOCK_INNER_CLASSNAME } from "./content-ops-mock-stage.constants";
 import { contentOpsMockStageMessages } from "./content-ops-mock-stage.messages";
 
-type FlowTemplateId = "brief" | "campaign";
-
-type FlowNodeKind = "trigger" | "action";
-
-type FlowNodeData = {
-  label: string;
-  kind: FlowNodeKind;
-  kindLabel: string;
-  active?: boolean;
-};
-
-type FlowLayoutNode = {
-  label: string;
-  kind: FlowNodeKind;
-  position: { x: number; y: number };
-};
-
-const NODE_GAP_Y = 108;
-
-const KIND_HEADER_CLASS: Record<FlowNodeKind, string> = {
-  trigger: "border-rose-500/25 bg-rose-500/12 text-rose-900 dark:text-rose-100",
-  action: "border-sky-500/25 bg-sky-500/12 text-sky-950 dark:text-sky-100",
-};
-
-function WorkflowNode({ data }: NodeProps<Node<FlowNodeData>>) {
-  return (
-    <div
-      className={cn(
-        "w-[12.25rem] overflow-hidden rounded-xl border border-border/80 bg-background shadow-md shadow-black/8 transition-shadow",
-        data.active && "ring-2 ring-primary/35 shadow-lg shadow-primary/10",
-      )}
-    >
-      <Handle
-        className="!size-2 !border-border !bg-background"
-        position={Position.Top}
-        type="target"
-      />
-
-      <div
-        className={cn(
-          "flex items-center justify-between gap-2 border-b px-3 py-1.5 text-[10px] font-semibold tracking-[0.06em] uppercase",
-          KIND_HEADER_CLASS[data.kind],
-        )}
-      >
-        <span>{data.kindLabel}</span>
-        <HugeiconsIcon icon={MoreVerticalIcon} strokeWidth={2} className="size-3 opacity-60" />
-      </div>
-
-      <div className="px-3 py-2.5 text-[0.8rem] font-medium leading-snug text-foreground">
-        {data.label}
-      </div>
-
-      <Handle
-        className="!size-2 !border-border !bg-background"
-        position={Position.Bottom}
-        type="source"
-      />
-    </div>
-  );
-}
-
-const nodeTypes = { workflow: WorkflowNode };
-
-function buildLayout(templateId: FlowTemplateId, labels: string[]): FlowLayoutNode[] {
-  const baseY = 0;
-  const centerX = 0;
-
-  if (templateId === "brief") {
-    return labels.map((label, index) => {
-      if (index <= 4) {
-        return {
-          label,
-          kind: index === 0 ? "trigger" : "action",
-          position: { x: centerX, y: baseY + index * NODE_GAP_Y },
-        };
-      }
-
-      if (index === 5) {
-        return {
-          label,
-          kind: "action",
-          position: { x: centerX - 112, y: baseY + 5 * NODE_GAP_Y },
-        };
-      }
-
-      return {
-        label,
-        kind: "action",
-        position: { x: centerX + 112, y: baseY + 5 * NODE_GAP_Y },
-      };
-    });
-  }
-
-  if (templateId === "campaign") {
-    return labels.map((label, index) => {
-      if (index <= 2) {
-        return {
-          label,
-          kind: index === 0 ? "trigger" : "action",
-          position: { x: centerX, y: baseY + index * NODE_GAP_Y },
-        };
-      }
-      if (index === 3) {
-        return {
-          label,
-          kind: "action",
-          position: { x: centerX - 112, y: baseY + 3 * NODE_GAP_Y },
-        };
-      }
-      return {
-        label,
-        kind: "action",
-        position: { x: centerX + 112, y: baseY + 3 * NODE_GAP_Y },
-      };
-    });
-  }
-
-  return labels.map((label, index) => ({
-    label,
-    kind: index === 0 ? "trigger" : "action",
-    position: { x: centerX, y: baseY + index * NODE_GAP_Y },
-  }));
-}
-
-function buildEdges(templateId: FlowTemplateId, templateKey: string, nodeCount: number): Edge[] {
-  if (templateId === "brief") {
-    return [
-      { id: `${templateKey}-e-0`, source: `${templateKey}-0`, target: `${templateKey}-1` },
-      { id: `${templateKey}-e-1`, source: `${templateKey}-1`, target: `${templateKey}-2` },
-      { id: `${templateKey}-e-2`, source: `${templateKey}-2`, target: `${templateKey}-3` },
-      { id: `${templateKey}-e-3`, source: `${templateKey}-3`, target: `${templateKey}-4` },
-      { id: `${templateKey}-e-4`, source: `${templateKey}-4`, target: `${templateKey}-5` },
-      { id: `${templateKey}-e-5`, source: `${templateKey}-4`, target: `${templateKey}-6` },
-    ];
-  }
-
-  if (templateId === "campaign") {
-    return [
-      { id: `${templateKey}-e-0`, source: `${templateKey}-0`, target: `${templateKey}-1` },
-      { id: `${templateKey}-e-1`, source: `${templateKey}-1`, target: `${templateKey}-2` },
-      { id: `${templateKey}-e-2`, source: `${templateKey}-2`, target: `${templateKey}-3` },
-      { id: `${templateKey}-e-3`, source: `${templateKey}-2`, target: `${templateKey}-4` },
-    ];
-  }
-
-  return Array.from({ length: nodeCount - 1 }, (_, index) => ({
-    id: `${templateKey}-e-${index}`,
-    source: `${templateKey}-${index}`,
-    target: `${templateKey}-${index + 1}`,
-  }));
-}
-
-function buildFlowNodes(
-  templateId: FlowTemplateId,
-  labels: string[],
-  kindLabels: { trigger: string; action: string },
+function buildFlowState(
+  templateId: ContentOpsFlowTemplateId,
+  subtitles: Readonly<Record<string, string>>,
   activeIndex: number,
-): Node<FlowNodeData>[] {
-  const layout = buildLayout(templateId, labels);
-
-  return layout.map((item, index) => ({
-    id: `${templateId}-${index}`,
-    type: "workflow",
-    position: item.position,
-    data: {
-      label: item.label,
-      kind: item.kind,
-      kindLabel: item.kind === "trigger" ? kindLabels.trigger : kindLabels.action,
-      active: index === activeIndex,
-    },
-    draggable: true,
-  }));
-}
-
-function styleEdges(edges: Edge[], activeIndex: number): Edge[] {
-  return edges.map((edge) => {
-    const sourceIndex = Number(edge.source.split("-").at(-1));
-    const isActivePath = sourceIndex === activeIndex;
-    const isCompletePath = sourceIndex < activeIndex;
-
-    return {
-      ...edge,
-      animated: isActivePath,
-      style: {
-        strokeWidth: isCompletePath || isActivePath ? 2 : 1.5,
-        stroke: isCompletePath || isActivePath ? "var(--primary)" : "var(--border)",
-      },
-    };
-  });
+) {
+  return buildContentOpsFlowGraph(templateId, subtitles, activeIndex);
 }
 
 export function ContentOpsFlowPanel({
@@ -234,94 +56,73 @@ export function ContentOpsFlowPanel({
   onActiveNodeChange?: (nodeIndex: number) => void;
 }) {
   const intl = useIntl();
-  const [templateId, setTemplateId] = useState<FlowTemplateId>("brief");
+  const [templateId, setTemplateId] = useState<ContentOpsFlowTemplateId>("brief");
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const kindLabels = useMemo(
-    () => ({
-      trigger: intl.formatMessage(contentOpsMockStageMessages.flowNodeKindTrigger),
-      action: intl.formatMessage(contentOpsMockStageMessages.flowNodeKindAction),
-    }),
-    [intl],
-  );
+  const subtitles = useMemo((): Record<string, string> => {
+    if (templateId === "campaign") {
+      return {
+        brief: intl.formatMessage(contentOpsMockStageMessages.flowNodeBrief),
+        localise: intl.formatMessage(contentOpsMockStageMessages.flowNodeLocalise),
+        review: intl.formatMessage(contentOpsMockStageMessages.flowNodeReview),
+        staging: intl.formatMessage(contentOpsMockStageMessages.flowNodeStaging),
+        slack: intl.formatMessage(contentOpsMockStageMessages.flowNodeSlack),
+      };
+    }
 
-  const templateLabels = useMemo(
-    () => ({
-      brief: [
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeSchedule),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeKeywords),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeCreateContent),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeLocalise),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeReview),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeSlack),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeCms),
-      ],
-      campaign: [
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeBrief),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeLocalise),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeReview),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeStaging),
-        intl.formatMessage(contentOpsMockStageMessages.flowNodeSlack),
-      ],
-    }),
-    [intl],
-  );
+    return {
+      schedule: intl.formatMessage(contentOpsMockStageMessages.flowNodeSchedule),
+      keywords: intl.formatMessage(contentOpsMockStageMessages.flowNodeKeywords),
+      draft: intl.formatMessage(contentOpsMockStageMessages.flowNodeCreateContent),
+      localise: intl.formatMessage(contentOpsMockStageMessages.flowNodeLocalise),
+      review: intl.formatMessage(contentOpsMockStageMessages.flowNodeReview),
+      cms: intl.formatMessage(contentOpsMockStageMessages.flowNodeCms),
+      slack: intl.formatMessage(contentOpsMockStageMessages.flowNodeSlack),
+    };
+  }, [intl, templateId]);
 
-  const templateMeta = useMemo(
-    () => ({
-      brief: {
-        title: contentOpsMockStageMessages.flowTemplateBrief,
-        description: contentOpsMockStageMessages.flowBriefDescription,
-      },
-      campaign: {
-        title: contentOpsMockStageMessages.flowTemplateCampaign,
-        description: contentOpsMockStageMessages.flowCampaignDescription,
-      },
-    }),
-    [],
+  const order = contentOpsFlowNodeOrder(templateId);
+  const initialFlow = useMemo(
+    () => buildFlowState(templateId, subtitles, 0),
+    [subtitles, templateId],
   );
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialFlow.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlow.edges);
 
-  const labels = templateLabels[templateId];
-  const initialNodes = useMemo(
-    () => buildFlowNodes(templateId, labels, kindLabels, activeIndex),
-    [activeIndex, kindLabels, labels, templateId],
-  );
-  const initialEdges = useMemo(
-    () => styleEdges(buildEdges(templateId, templateId, labels.length), activeIndex),
-    [activeIndex, labels.length, templateId],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const resetFlow = useCallback(
-    (nextTemplateId: FlowTemplateId, nextActiveIndex: number) => {
-      const nextLabels = templateLabels[nextTemplateId];
-      setNodes(buildFlowNodes(nextTemplateId, nextLabels, kindLabels, nextActiveIndex));
-      setEdges(
-        styleEdges(buildEdges(nextTemplateId, nextTemplateId, nextLabels.length), nextActiveIndex),
-      );
-    },
-    [kindLabels, setEdges, setNodes, templateLabels],
-  );
+  const handleTemplateSelect = useCallback((nextTemplateId: ContentOpsFlowTemplateId) => {
+    setTemplateId(nextTemplateId);
+    setActiveIndex(0);
+  }, []);
 
   useEffect(() => {
-    setActiveIndex(0);
-    resetFlow(templateId, 0);
-  }, [templateId, resetFlow]);
+    const nextFlow = buildFlowState(templateId, subtitles, 0);
+    setNodes(nextFlow.nodes);
+    setEdges(nextFlow.edges);
+  }, [setEdges, setNodes, subtitles, templateId]);
 
   useEffect(() => {
     setNodes((current) =>
-      current.map((node, index) => ({
-        ...node,
-        data: {
-          ...node.data,
-          active: index === activeIndex,
-        },
-      })),
+      current.map((node) => {
+        const index = order.indexOf(node.id);
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            runStatus:
+              index < 0
+                ? "idle"
+                : index < activeIndex
+                  ? "succeeded"
+                  : index === activeIndex
+                    ? "running"
+                    : "idle",
+          },
+        };
+      }),
     );
-    setEdges((current) => styleEdges(current, activeIndex));
-  }, [activeIndex, setEdges, setNodes]);
+    setEdges((current) => styleContentOpsFlowEdges(current, order, activeIndex));
+  }, [activeIndex, order, setEdges, setNodes]);
 
   useEffect(() => {
     onActiveNodeChange?.(activeIndex);
@@ -333,29 +134,43 @@ export function ContentOpsFlowPanel({
     }
 
     const timer = setInterval(() => {
-      setActiveIndex((index) => (index + 1) % labels.length);
+      setActiveIndex((index) => (index + 1) % order.length);
     }, 1400);
 
     return () => clearInterval(timer);
-  }, [labels.length, pauseAutoplay]);
+  }, [order.length, pauseAutoplay]);
 
   const templates: {
-    id: FlowTemplateId;
+    id: ContentOpsFlowTemplateId;
     label: typeof contentOpsMockStageMessages.flowTemplateBrief;
   }[] = [
     { id: "brief", label: contentOpsMockStageMessages.flowTemplateBrief },
     { id: "campaign", label: contentOpsMockStageMessages.flowTemplateCampaign },
   ];
 
-  const meta = templateMeta[templateId];
+  const meta =
+    templateId === "brief"
+      ? {
+          title: contentOpsMockStageMessages.flowTemplateBrief,
+          description: contentOpsMockStageMessages.flowBriefDescription,
+        }
+      : {
+          title: contentOpsMockStageMessages.flowTemplateCampaign,
+          description: contentOpsMockStageMessages.flowCampaignDescription,
+        };
 
   return (
     <div className={CONTENT_OPS_MOCK_INNER_CLASSNAME}>
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/50 px-5 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4">
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">
-            <FormattedMessage {...meta.title} />
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">
+              <FormattedMessage {...meta.title} />
+            </p>
+            <Badge variant="outline" className="rounded-full">
+              <FormattedMessage {...editorMessages.previewBadge} />
+            </Badge>
+          </div>
           <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
             <FormattedMessage {...meta.description} />
           </p>
@@ -369,7 +184,7 @@ export function ContentOpsFlowPanel({
               <button
                 key={template.id}
                 type="button"
-                onClick={() => setTemplateId(template.id)}
+                onClick={() => handleTemplateSelect(template.id)}
                 className={cn(
                   "cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors",
                   templateId === template.id
@@ -384,33 +199,40 @@ export function ContentOpsFlowPanel({
         </div>
       </div>
 
-      <div className="relative min-h-0 min-h-[28rem] flex-1 w-full">
-        <Canvas
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange as OnNodesChange}
-          onEdgesChange={onEdgesChange as OnEdgesChange}
-          nodesConnectable={false}
-          nodesDraggable
-          elementsSelectable
-          zoomOnScroll={false}
-          panOnScroll
-          panOnDrag
-          selectionOnDrag={false}
-          preventScrolling={false}
-          proOptions={{ hideAttribution: true }}
-          fitView
-          fitViewOptions={{ padding: 0.35, minZoom: 0.75, maxZoom: 1.05 }}
-          minZoom={0.75}
-          maxZoom={1.25}
-          defaultEdgeOptions={{
-            type: "smoothstep",
-            style: { strokeWidth: 1.5, stroke: "var(--border)" },
-          }}
-        >
-          <Background gap={18} size={1} color="var(--border)" />
-        </Canvas>
+      <div className="relative min-h-0 min-h-[28rem] w-full flex-1">
+        <VisualWorkflowCanvasActionsProvider onAddFromNode={() => undefined}>
+          <Canvas
+            className="h-full w-full"
+            defaultEdgeOptions={{
+              type: "smoothstep",
+              markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+              style: { strokeWidth: 1.5, stroke: "var(--border)" },
+            }}
+            edges={edges}
+            elementsSelectable
+            fitView
+            fitViewOptions={{ padding: 0.2, minZoom: 0.55, maxZoom: 1.05 }}
+            maxZoom={1.25}
+            minZoom={0.5}
+            nodeTypes={VISUAL_WORKFLOW_NODE_TYPES}
+            nodes={nodes as VisualWorkflowRfNode[]}
+            nodesConnectable={false}
+            nodesDraggable
+            onEdgesChange={onEdgesChange as OnEdgesChange}
+            onInit={(reactFlow) => {
+              void reactFlow.fitView({ padding: 0.2 });
+            }}
+            onNodesChange={onNodesChange as OnNodesChange}
+            panOnDrag
+            panOnScroll
+            preventScrolling={false}
+            proOptions={{ hideAttribution: true }}
+            selectionOnDrag={false}
+            zoomOnScroll={false}
+          >
+            <Controls showInteractive={false} position="bottom-left" />
+          </Canvas>
+        </VisualWorkflowCanvasActionsProvider>
       </div>
     </div>
   );

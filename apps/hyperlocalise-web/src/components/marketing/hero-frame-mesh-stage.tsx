@@ -42,6 +42,31 @@ const ClientOnlyHeroFrame = dynamic(
 export const SEAFOAM_MESH_GRADIENT_SRC = "/images/mesh/mesh-gradient-1784864145512.jpg";
 export const LAVENDER_MESH_GRADIENT_SRC = "/images/mesh/mesh-gradient-1784864042890.jpg";
 export const SAGE_MESH_GRADIENT_SRC = "/images/mesh/mesh-gradient-1784864073608.jpg";
+export const DUSK_MESH_GRADIENT_SRC = "/images/mesh/mesh-gradient-1784863799475.jpg";
+
+/** Full-bleed section mesh. Uses the source JPG (no optimizer) so soft gradients stay smooth. */
+export function SectionMeshBackground({
+  src,
+  priority = false,
+  className,
+}: {
+  src: string;
+  priority?: boolean;
+  className?: string;
+}) {
+  return (
+    <Image
+      src={src}
+      alt=""
+      aria-hidden
+      fill
+      priority={priority}
+      unoptimized
+      sizes="100vw"
+      className={cn("-z-20 object-cover object-center", className)}
+    />
+  );
+}
 
 type MeshStageProps = {
   children: ReactNode;
@@ -52,6 +77,8 @@ type MeshStageProps = {
   layout?: "breakout" | "contained";
   /** Mesh image source. Defaults to the seafoam gradient used by the CAT stage. */
   meshSrc?: string;
+  /** Scroll-into-view entrance. Use `none` when children animate themselves (e.g. tab crossfades). */
+  entranceAnimation?: "default" | "fade" | "none";
 };
 
 export function MeshStage({
@@ -61,8 +88,26 @@ export function MeshStage({
   priority = false,
   layout = "contained",
   meshSrc = SEAFOAM_MESH_GRADIENT_SRC,
+  entranceAnimation = "default",
 }: MeshStageProps) {
   const shouldReduceMotion = useReducedMotion();
+
+  const content =
+    entranceAnimation === "none" || shouldReduceMotion ? (
+      children
+    ) : (
+      <motion.div
+        initial={entranceAnimation === "fade" ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+        whileInView={{ opacity: 1, ...(entranceAnimation === "fade" ? {} : { y: 0, scale: 1 }) }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{
+          duration: entranceAnimation === "fade" ? 0.35 : 0.72,
+          ease: [0.19, 1, 0.22, 1],
+        }}
+      >
+        {children}
+      </motion.div>
+    );
 
   return (
     <div
@@ -81,21 +126,9 @@ export function MeshStage({
           fill
           priority={priority}
           sizes="(min-width: 1280px) 92rem, 100vw"
-          className="object-cover object-center"
+          className="pointer-events-none object-cover object-center"
         />
-        <div className={cn("relative p-3 sm:p-5 lg:p-8 xl:p-10", contentClassName)}>
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{
-              duration: shouldReduceMotion ? 0 : 0.72,
-              ease: [0.19, 1, 0.22, 1],
-            }}
-          >
-            {children}
-          </motion.div>
-        </div>
+        <div className={cn("relative p-3 sm:p-5 lg:p-8 xl:p-10", contentClassName)}>{content}</div>
       </div>
     </div>
   );

@@ -394,6 +394,16 @@ export const contentOpsMockStageMessages = defineMessages({
     id: "wHFmp4/+wj",
     description: "Inbox issue detail source label in content ops mock",
   },
+  inboxIssueCommentAuthor: {
+    defaultMessage: "Mina Chen",
+    id: "urSbyPXHeu",
+    description: "Inbox issue comment author in content ops mock",
+  },
+  inboxIssueComment: {
+    defaultMessage: "The FR payment button still overflows the 32-character limit on mobile.",
+    id: "5hFx7hW2gZ",
+    description: "Inbox issue comment body in content ops mock",
+  },
   inboxAssistantTitle: {
     defaultMessage: "Hyperlocalise Agent",
     id: "EeV19O9AuX",
@@ -600,6 +610,11 @@ export const contentOpsMockStageMessages = defineMessages({
     defaultMessage: "Check copy against style guides and market rules before publish.",
     id: "O/4w7DJ8Jn",
     description: "Empty state subtitle in brand chat mock",
+  },
+  brandSuggestionCta: {
+    defaultMessage: "Review this German CTA",
+    id: "6fJrfRBNdK",
+    description: "Suggestion chip that starts the brand chat mock",
   },
   brandContextPill: {
     defaultMessage: "Brand voice guide",

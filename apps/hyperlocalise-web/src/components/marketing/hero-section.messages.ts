@@ -56,4 +56,9 @@ export const heroSectionMessages = defineMessages({
     id: "kFLYRBqx6+",
     description: "Alt text for the Tourmatic logo in the hero trusted-by strip",
   },
+  weexAlt: {
+    defaultMessage: "WEEX",
+    id: "aukb2GB1UB",
+    description: "Alt text for the WEEX logo in the hero trusted-by strip",
+  },
 });

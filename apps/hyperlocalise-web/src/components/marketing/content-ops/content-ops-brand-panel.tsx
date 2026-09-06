@@ -18,6 +18,7 @@ import {
   Cancel01Icon,
   Chat01Icon,
   File01Icon,
+  FileSearchIcon,
   RefreshIcon,
   SentIcon,
 } from "@hugeicons/core-free-icons";
@@ -41,13 +42,16 @@ const MENTION_GLYPH = "@";
 export type BrandPlaybackPhase = "idle" | "playing" | "done";
 
 export function ContentOpsBrandPanel({
+  autoStart = true,
   onPhaseChange,
 }: {
+  autoStart?: boolean;
   onPhaseChange?: (phase: BrandPlaybackPhase) => void;
 }) {
   const intl = useIntl();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const hasAutoStartedRef = useRef(false);
+  const playingRef = useRef(false);
   const [phase, setPhase] = useState<BrandPlaybackPhase>("idle");
   const [showTool, setShowTool] = useState(false);
   const [toolResolved, setToolResolved] = useState(false);
@@ -84,6 +88,7 @@ export function ContentOpsBrandPanel({
 
   const resetPlayback = () => {
     clearTimers();
+    playingRef.current = false;
     setPhase("idle");
     setShowTool(false);
     setToolResolved(false);
@@ -97,6 +102,11 @@ export function ContentOpsBrandPanel({
   };
 
   const startPlayback = useCallback(() => {
+    if (playingRef.current) {
+      return;
+    }
+
+    playingRef.current = true;
     clearTimers();
     setPhase("playing");
     setShowTool(false);
@@ -113,19 +123,30 @@ export function ContentOpsBrandPanel({
     schedule(() => {
       setShowAnswer(true);
       setPhase("done");
+      playingRef.current = false;
       notifyPhaseChange("done");
     }, elapsed);
   }, [shouldReduceMotion]);
 
   useEffect(() => {
-    if (shouldReduceMotion || hasAutoStartedRef.current) {
+    if (!autoStart) {
       return;
     }
 
-    hasAutoStartedRef.current = true;
-    const timer = setTimeout(() => startPlayback(), 400);
+    const timer = setTimeout(
+      () => {
+        if (hasAutoStartedRef.current) {
+          return;
+        }
+
+        hasAutoStartedRef.current = true;
+        startPlayback();
+      },
+      shouldReduceMotion ? 0 : 400,
+    );
+
     return () => clearTimeout(timer);
-  }, [shouldReduceMotion, startPlayback]);
+  }, [autoStart, shouldReduceMotion, startPlayback]);
 
   useEffect(() => () => clearTimers(), []);
 
@@ -136,21 +157,21 @@ export function ContentOpsBrandPanel({
     transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
   }, [showTool, toolResolved, showAnswer]);
 
-  const showChatAnswer = showAnswer;
+  const isBusy = phase === "playing";
 
   return (
-    <div className={cn(CONTENT_OPS_MOCK_INNER_CLASSNAME, "grid lg:grid-cols-2")}>
-      <div className="flex flex-col border-b border-border/50 lg:border-b-0 lg:border-r">
+    <div className={cn(CONTENT_OPS_MOCK_INNER_CLASSNAME, "lg:grid lg:grid-cols-2")}>
+      <div className="flex min-h-0 max-h-56 flex-col overflow-y-auto border-b border-border/50 lg:max-h-none lg:border-b-0 lg:border-r">
         <div className="border-b border-border/50 px-5 py-4">
           <div className="text-base font-semibold text-foreground">
             <FormattedMessage {...contentOpsMockStageMessages.brandStyleTitle} />
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-pretty text-xs text-muted-foreground">
             <FormattedMessage {...contentOpsMockStageMessages.brandStyleSubtitle} />
           </p>
         </div>
 
-        <div className="space-y-4 overflow-y-auto p-4">
+        <div className="space-y-4 p-4">
           <div className="flex flex-wrap gap-2">
             {[
               contentOpsMockStageMessages.brandRuleTone,
@@ -171,7 +192,9 @@ export function ContentOpsBrandPanel({
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {section.title}
                 </h4>
-                <p className="text-sm leading-relaxed text-foreground">{section.body}</p>
+                <p className="text-pretty text-sm leading-relaxed text-foreground">
+                  {section.body}
+                </p>
               </div>
             ))}
           </div>
@@ -204,7 +227,7 @@ export function ContentOpsBrandPanel({
                 <div className="h-2 w-2/3 rounded bg-muted" />
                 <div className="h-2 w-full rounded bg-muted" />
                 <div className="h-2 w-5/6 rounded bg-muted" />
-                <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+                <p className="pt-1 text-pretty text-xs leading-relaxed text-muted-foreground">
                   <FormattedMessage {...contentOpsMockStageMessages.brandUploadedGuideExcerpt} />
                 </p>
                 <div className="h-2 w-4/5 rounded bg-muted" />
@@ -214,7 +237,7 @@ export function ContentOpsBrandPanel({
         </div>
       </div>
 
-      <div className="flex min-h-[24rem] flex-col p-3 lg:min-h-0 lg:p-4">
+      <div className="flex min-h-96 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:min-h-0 lg:p-4">
         <div
           className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl shadow-black/15"
           role="region"
@@ -256,15 +279,24 @@ export function ContentOpsBrandPanel({
                   <h3 className="text-balance text-sm font-semibold text-foreground">
                     <FormattedMessage {...contentOpsMockStageMessages.brandChatEmptyTitle} />
                   </h3>
-                  <p className="text-pretty text-sm text-muted-foreground">{prompt}</p>
-                  <p className="text-pretty text-xs text-muted-foreground">
+                  <p className="text-pretty text-sm text-muted-foreground">
                     <FormattedMessage {...contentOpsMockStageMessages.brandChatEmptySubtitle} />
                   </p>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-full bg-background text-xs font-medium"
+                  onClick={startPlayback}
+                >
+                  <HugeiconsIcon icon={FileSearchIcon} strokeWidth={1.8} className="size-3.5" />
+                  <FormattedMessage {...contentOpsMockStageMessages.brandSuggestionCta} />
+                </Button>
               </div>
             ) : (
               <div className="flex flex-col gap-4 px-4 py-5">
-                <div className="ms-auto max-w-[90%] rounded-2xl bg-muted px-3.5 py-2.5 text-sm leading-6 text-foreground">
+                <div className="ms-auto max-w-[90%] rounded-2xl bg-muted px-3.5 py-2.5 text-pretty text-sm leading-6 text-foreground">
                   {prompt}
                 </div>
 
@@ -296,7 +328,7 @@ export function ContentOpsBrandPanel({
                     ) : null}
                   </AnimatePresence>
 
-                  {showChatAnswer ? (
+                  {showAnswer ? (
                     <motion.div
                       initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -307,7 +339,7 @@ export function ContentOpsBrandPanel({
                         <p className="font-medium text-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandVerdictLabel} />
                         </p>
-                        <p className="text-muted-foreground">
+                        <p className="text-pretty text-muted-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandVerdictBody} />
                         </p>
                       </div>
@@ -315,7 +347,7 @@ export function ContentOpsBrandPanel({
                         <p className="font-medium text-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandGuidelineLabel} />
                         </p>
-                        <p className="text-muted-foreground">
+                        <p className="text-pretty text-muted-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandGuidelineBody} />
                         </p>
                       </div>
@@ -323,7 +355,7 @@ export function ContentOpsBrandPanel({
                         <p className="font-medium text-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandSuggestLabel} />
                         </p>
-                        <p className="text-muted-foreground">
+                        <p className="text-pretty text-muted-foreground">
                           <FormattedMessage {...contentOpsMockStageMessages.brandSuggestBody} />
                         </p>
                       </div>
@@ -334,7 +366,17 @@ export function ContentOpsBrandPanel({
             )}
           </div>
 
-          <div className="shrink-0 border-t border-border bg-background p-3">
+          <form
+            className="shrink-0 border-t border-border bg-background p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (phase === "done") {
+                resetPlayback();
+              }
+
+              startPlayback();
+            }}
+          >
             <div className="overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm">
               <div className="flex flex-wrap gap-1.5 px-3 pt-3">
                 <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[0.7rem] text-muted-foreground">
@@ -346,7 +388,7 @@ export function ContentOpsBrandPanel({
                 </span>
               </div>
               <div className="flex items-end gap-2 px-3 py-3">
-                <p className="min-w-0 flex-1 text-sm leading-5 text-foreground">
+                <p className="min-w-0 flex-1 text-pretty text-sm leading-5 text-foreground">
                   {phase === "idle" ? (
                     prompt
                   ) : (
@@ -357,11 +399,10 @@ export function ContentOpsBrandPanel({
                 </p>
                 {phase === "done" ? (
                   <Button
-                    type="button"
+                    type="submit"
                     size="sm"
                     variant="secondary"
                     className="h-8 rounded-full px-3"
-                    onClick={resetPlayback}
                   >
                     <HugeiconsIcon
                       data-icon="inline-start"
@@ -373,12 +414,11 @@ export function ContentOpsBrandPanel({
                   </Button>
                 ) : (
                   <Button
-                    type="button"
+                    type="submit"
                     size="sm"
                     className="h-8 rounded-full px-3"
-                    disabled={phase === "playing"}
+                    disabled={isBusy}
                     aria-label={intl.formatMessage(contentOpsMockStageMessages.brandSend)}
-                    onClick={startPlayback}
                   >
                     <HugeiconsIcon
                       data-icon="inline-start"
@@ -391,7 +431,7 @@ export function ContentOpsBrandPanel({
                 )}
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
