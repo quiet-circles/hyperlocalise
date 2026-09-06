@@ -462,9 +462,7 @@ export function ProjectSettingsPageContent({
                   value={values.translationContext}
                   disabled={isSaving}
                   onChange={(translationContext) =>
-                    setValues((current) =>
-                      current ? { ...current, translationContext } : current,
-                    )
+                    setValues((current) => (current ? { ...current, translationContext } : current))
                   }
                   ariaLabel={intl.formatMessage(projectSettingsPageContentMessages.styleGuideLabel)}
                   placeholder={intl.formatMessage(

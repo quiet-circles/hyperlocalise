@@ -39,13 +39,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/content-editor/style-guide/content-editor-style-guide-sheet", () => ({
-  ContentEditorStyleGuideSheet: ({
-    open,
-    projectId,
-  }: {
-    open: boolean;
-    projectId: string;
-  }) => (open ? <div role="dialog" aria-label="Style guide">{projectId}</div> : null),
+  ContentEditorStyleGuideSheet: ({ open, projectId }: { open: boolean; projectId: string }) =>
+    open ? (
+      <div role="dialog" aria-label="Style guide">
+        {projectId}
+      </div>
+    ) : null,
 }));
 
 afterEach(() => {

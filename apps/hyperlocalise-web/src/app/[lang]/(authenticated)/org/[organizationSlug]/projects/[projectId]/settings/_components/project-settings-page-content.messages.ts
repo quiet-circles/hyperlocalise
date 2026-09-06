@@ -99,24 +99,24 @@ export const projectSettingsPageContentMessages = defineMessages({
   },
   styleGuideTitle: {
     defaultMessage: "Style guide",
-    id: "iL9/D33IcM",
+    id: "PBd06JWdET",
     description: "Heading for the project style guide settings section",
   },
   styleGuideDescription: {
     defaultMessage:
       "Tone, terminology, and formatting rules for translators and agents. Write this as markdown.",
-    id: "DR8B4GRFYT",
+    id: "E316KXeVHB",
     description: "Description for the project style guide settings section",
   },
   styleGuideLabel: {
     defaultMessage: "Style guide",
-    id: "/uFRS+73Kw",
+    id: "MsLC2ttSM5",
     description: "Accessible label for the project style guide editor",
   },
   styleGuidePlaceholder: {
     defaultMessage:
       "Keep product names in English. Use concise UI copy. Prefer an informal tone for marketing pages.",
-    id: "k2nQ8sL4pR",
+    id: "V9FwiTxbs+",
     description: "Placeholder shown in the empty project style guide editor",
   },
   localesTitle: {

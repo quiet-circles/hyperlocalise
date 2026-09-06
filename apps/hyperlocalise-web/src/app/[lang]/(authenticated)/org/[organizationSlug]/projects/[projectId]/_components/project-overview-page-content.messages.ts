@@ -77,7 +77,7 @@ export const projectOverviewPageContentMessages = defineMessages({
   },
   addGuidanceCta: {
     defaultMessage: "Add style guide",
-    id: "U+ZJP/RMin",
+    id: "Z92vemu70G",
     description: "CTA when the project style guide is missing on project overview",
   },
   triageReviewTitle: {
@@ -92,12 +92,12 @@ export const projectOverviewPageContentMessages = defineMessages({
   },
   triageGuidanceTitle: {
     defaultMessage: "Add a style guide",
-    id: "DGx/LlMkDv",
+    id: "2DwX6LeAoB",
     description: "Title when the native project style guide is missing",
   },
   triageGuidanceDescription: {
     defaultMessage: "Shared tone and terminology so agents stay consistent.",
-    id: "+y5oYiRfPw",
+    id: "X02KnwxTqG",
     description: "Description when the native project style guide is missing",
   },
   triageJobRunning: {
@@ -127,12 +127,12 @@ export const projectOverviewPageContentMessages = defineMessages({
   },
   guidanceTitle: {
     defaultMessage: "Style guide",
-    id: "6KrEdJWOHm",
+    id: "dPOyhsBM1G",
     description: "Section heading for the style guide preview on project overview",
   },
   guidanceEdit: {
     defaultMessage: "Edit",
-    id: "Hvpl2DhEOB",
+    id: "4/O19yxuqg",
     description: "Link to edit the style guide in project settings",
   },
   shipTitle: {

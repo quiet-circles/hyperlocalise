@@ -53,12 +53,12 @@ export const appShellFooterMessages = defineMessages({
   },
   styleGuideAriaLabel: {
     defaultMessage: "Open style guide",
-    id: "sG8nFtrA1b",
+    id: "3MzWPxEFTr",
     description: "Accessible label for the style guide button in the app shell footer",
   },
   styleGuideLabel: {
     defaultMessage: "Style guide",
-    id: "sG8nFtrA1c",
+    id: "FK5XT+2lld",
     description: "Label for the style guide button in the app shell footer",
   },
   supportLabel: {

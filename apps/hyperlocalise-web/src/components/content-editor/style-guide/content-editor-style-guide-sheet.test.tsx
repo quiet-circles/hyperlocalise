@@ -24,6 +24,22 @@ const { useProjectPageQueryMock } = vi.hoisted(() => ({
   useProjectPageQueryMock: vi.fn(),
 }));
 
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    onClick,
+  }: {
+    href: string;
+    children: ReactNode;
+    onClick?: () => void;
+  }) => (
+    <a href={href} onClick={onClick}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock(
   "@/app/[lang]/(authenticated)/org/[organizationSlug]/projects/[projectId]/_components/project-page-shell",
   () => ({
@@ -68,7 +84,10 @@ function createProject(overrides: Partial<ProjectListRow> = {}): ProjectListRow 
   };
 }
 
-function renderSheet(project: ProjectListRow | undefined, options?: { isLoading?: boolean; isError?: boolean }) {
+function renderSheet(
+  project: ProjectListRow | undefined,
+  options?: { isLoading?: boolean; isError?: boolean },
+) {
   useProjectPageQueryMock.mockReturnValue({
     isLoading: options?.isLoading ?? false,
     isFetching: options?.isLoading ?? false,

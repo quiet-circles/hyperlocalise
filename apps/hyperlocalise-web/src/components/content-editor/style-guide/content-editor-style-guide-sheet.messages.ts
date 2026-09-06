@@ -17,32 +17,32 @@ import { defineMessages } from "react-intl";
 export const contentEditorStyleGuideSheetMessages = defineMessages({
   title: {
     defaultMessage: "Style guide",
-    id: "sG8nQ2wL4k",
+    id: "yKFLGCc18p",
     description: "Title for the content editor style guide sheet",
   },
   description: {
     defaultMessage: "Project tone, terminology, and formatting for translators and agents.",
-    id: "sG8nQ2wL4m",
+    id: "MTwF8eOJic",
     description: "Description for the content editor style guide sheet",
   },
   loading: {
     defaultMessage: "Loading style guide...",
-    id: "sG8nQ2wL4n",
+    id: "pqhSI7L7NV",
     description: "Loading state for the content editor style guide sheet",
   },
   loadError: {
     defaultMessage: "Unable to load the style guide.",
-    id: "sG8nQ2wL4o",
+    id: "AJdf6PzoHW",
     description: "Error state when the content editor style guide fails to load",
   },
   empty: {
     defaultMessage: "No style guide yet. Add one in project settings.",
-    id: "sG8nQ2wL4p",
+    id: "UlnuVlbp4t",
     description: "Empty state when the project has no style guide",
   },
   editInSettings: {
     defaultMessage: "Edit in settings",
-    id: "sG8nQ2wL4q",
+    id: "HCwou8cplr",
     description: "Link from the style guide sheet to project settings",
   },
 });
