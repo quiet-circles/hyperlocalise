@@ -66,6 +66,7 @@ type AppShellClientProps = {
   showApiKeysLink?: boolean;
   showBillingLink?: boolean;
   showMembersLink?: boolean;
+  canWriteProjects?: boolean;
   user: {
     name: string;
     email: string;
@@ -84,6 +85,7 @@ export function AppShellClient({
   showApiKeysLink = false,
   showBillingLink = false,
   showMembersLink = false,
+  canWriteProjects = false,
   user,
 }: AppShellClientProps) {
   const intl = useIntl();
@@ -212,6 +214,7 @@ export function AppShellClient({
           showGlossaryGuidance={isContentEditorWorkspaceRoute}
           showIssueGuidance={isContentEditorWorkspaceRoute}
           showStyleGuide={isContentEditorWorkspaceRoute}
+          canWriteProjects={canWriteProjects}
           currentUser={
             organizationSlug
               ? {

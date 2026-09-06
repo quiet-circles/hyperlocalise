@@ -84,17 +84,20 @@ vi.mock("./project-issue-columns-settings", () => ({
 
 vi.mock("@/components/markdown-editor/markdown-editor", () => ({
   MarkdownEditor: ({
+    id,
     value,
     onChange,
     ariaLabel,
     disabled,
   }: {
+    id?: string;
     value: string;
     onChange: (next: string) => void;
     ariaLabel?: string;
     disabled?: boolean;
   }) => (
     <textarea
+      id={id}
       aria-label={ariaLabel}
       value={value}
       disabled={disabled}
@@ -278,6 +281,7 @@ describe("ProjectSettingsPageContent", () => {
     renderSettings();
 
     const styleGuide = await screen.findByLabelText("Style guide");
+    expect(styleGuide).toHaveAttribute("id", "translation-context");
     await user.clear(styleGuide);
     await user.type(styleGuide, "Keep product names in English.");
 

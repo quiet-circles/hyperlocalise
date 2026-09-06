@@ -457,20 +457,19 @@ export function ProjectSettingsPageContent({
               </TypographyP>
             </div>
             <Field className="gap-1.5" data-invalid={Boolean(errors.translationContext)}>
-              <div id="translation-context">
-                <MarkdownEditor
-                  value={values.translationContext}
-                  disabled={isSaving}
-                  onChange={(translationContext) =>
-                    setValues((current) => (current ? { ...current, translationContext } : current))
-                  }
-                  ariaLabel={intl.formatMessage(projectSettingsPageContentMessages.styleGuideLabel)}
-                  placeholder={intl.formatMessage(
-                    projectSettingsPageContentMessages.styleGuidePlaceholder,
-                  )}
-                  className="[&_.tiptap]:min-h-36"
-                />
-              </div>
+              <MarkdownEditor
+                id="translation-context"
+                value={values.translationContext}
+                disabled={isSaving}
+                onChange={(translationContext) =>
+                  setValues((current) => (current ? { ...current, translationContext } : current))
+                }
+                ariaLabel={intl.formatMessage(projectSettingsPageContentMessages.styleGuideLabel)}
+                placeholder={intl.formatMessage(
+                  projectSettingsPageContentMessages.styleGuidePlaceholder,
+                )}
+                className="[&_.tiptap]:min-h-36"
+              />
               <FieldError
                 errors={
                   errors.translationContext ? [{ message: errors.translationContext }] : undefined

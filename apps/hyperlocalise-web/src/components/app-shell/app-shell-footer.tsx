@@ -13,6 +13,7 @@
  * Version 2.0 or later.
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import {
   BookOpenTextIcon,
   CheckmarkCircle02Icon,
@@ -44,7 +45,6 @@ import {
   requestCatIssueGuidance,
   subscribeCatIssueGuidance,
 } from "@/components/content-editor/issues/content-editor-issue-guidance-event";
-import { ContentEditorStyleGuideSheet } from "@/components/content-editor/style-guide/content-editor-style-guide-sheet";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/layout/box";
 import { Column } from "@/components/ui/layout/column";
@@ -54,6 +54,16 @@ import { SUPPORT_EMAIL } from "@/lib/support-contact";
 
 import { appShellFooterMessages } from "./app-shell-footer.messages";
 
+const ContentEditorStyleGuideSheet = dynamic(
+  () =>
+    import("@/components/content-editor/style-guide/content-editor-style-guide-sheet").then(
+      (module) => ({
+        default: module.ContentEditorStyleGuideSheet,
+      }),
+    ),
+  { ssr: false },
+);
+
 export function AppShellFooter({
   organizationSlug,
   projectId = null,
@@ -61,6 +71,7 @@ export function AppShellFooter({
   showGlossaryGuidance = false,
   showIssueGuidance = false,
   showStyleGuide = false,
+  canWriteProjects = false,
   currentUser,
 }: {
   organizationSlug: string;
@@ -69,16 +80,19 @@ export function AppShellFooter({
   showGlossaryGuidance?: boolean;
   showIssueGuidance?: boolean;
   showStyleGuide?: boolean;
+  canWriteProjects?: boolean;
   currentUser?: InboxCurrentUser;
 }) {
   const intl = useIntl();
   const showChatDock = Boolean(organizationSlug && currentUser);
   const [styleGuideOpen, setStyleGuideOpen] = useState(false);
+  const [styleGuideMounted, setStyleGuideMounted] = useState(false);
   const canShowStyleGuide = showStyleGuide && Boolean(projectId);
 
   useEffect(() => {
     if (!canShowStyleGuide) {
       setStyleGuideOpen(false);
+      setStyleGuideMounted(false);
     }
   }, [canShowStyleGuide]);
 
@@ -119,7 +133,10 @@ export function AppShellFooter({
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setStyleGuideOpen(true)}
+                    onClick={() => {
+                      setStyleGuideMounted(true);
+                      setStyleGuideOpen(true);
+                    }}
                     aria-label={intl.formatMessage(appShellFooterMessages.styleGuideAriaLabel)}
                   >
                     <HugeiconsIcon icon={TextFontIcon} strokeWidth={2} data-icon="inline-start" />
@@ -216,12 +233,13 @@ export function AppShellFooter({
           </Columns>
         </Box>
       </div>
-      {canShowStyleGuide && projectId ? (
+      {canShowStyleGuide && projectId && styleGuideMounted ? (
         <ContentEditorStyleGuideSheet
           organizationSlug={organizationSlug}
           projectId={projectId}
           open={styleGuideOpen}
           onOpenChange={setStyleGuideOpen}
+          canWriteProjects={canWriteProjects}
         />
       ) : null}
     </footer>

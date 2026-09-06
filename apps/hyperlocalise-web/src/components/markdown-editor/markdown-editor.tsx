@@ -194,6 +194,7 @@ function useMarkdownEditorExtensions(
 }
 
 export function MarkdownEditor({
+  id,
   value,
   onChange,
   onBlur,
@@ -207,6 +208,7 @@ export function MarkdownEditor({
   onMentionNavigate,
   imageUpload = null,
 }: {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
@@ -364,6 +366,7 @@ export function MarkdownEditor({
       attributes: {
         class: editorContentClassName,
         "aria-label": resolvedAriaLabel,
+        ...(id ? { id } : {}),
       },
       handleClick: (_view, _pos, event) =>
         tryHandleMentionClick(event, onMentionNavigateRef.current),
@@ -460,6 +463,7 @@ export function MarkdownEditor({
         attributes: {
           class: editorContentClassName,
           "aria-label": resolvedAriaLabel,
+          ...(id ? { id } : {}),
         },
         handleClick: (_view, _pos, event) =>
           tryHandleMentionClick(event, onMentionNavigateRef.current),
@@ -502,7 +506,7 @@ export function MarkdownEditor({
         },
       },
     });
-  }, [editor, editorContentClassName, resolvedAriaLabel, scheduleBlurCommit]);
+  }, [editor, editorContentClassName, id, resolvedAriaLabel, scheduleBlurCommit]);
 
   // Editable TipTap leaves Link clicks to the browser when openOnClick is false.
   // Capture mention: navigation so drafts don't open raw mention URLs.

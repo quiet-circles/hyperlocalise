@@ -210,6 +210,8 @@ describe("AppShellFooter", () => {
 
     await user.click(screen.getByRole("button", { name: "Open style guide" }));
 
-    expect(screen.getByRole("dialog", { name: "Style guide" })).toHaveTextContent("project_1");
+    expect(await screen.findByRole("dialog", { name: "Style guide" })).toHaveTextContent(
+      "project_1",
+    );
   });
 });

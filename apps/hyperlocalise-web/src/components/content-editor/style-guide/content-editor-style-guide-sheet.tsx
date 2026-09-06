@@ -36,17 +36,19 @@ export function ContentEditorStyleGuideSheet({
   projectId,
   open,
   onOpenChange,
+  canWriteProjects = false,
 }: {
   organizationSlug: string;
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  canWriteProjects?: boolean;
 }) {
   const intl = useIntl();
   const projectQuery = useProjectPageQuery(organizationSlug, projectId, { enabled: open });
   const project = projectQuery.data;
   const content = project?.translationContextValue ?? "";
-  const canEdit = project?.source === "native";
+  const canEdit = canWriteProjects && project?.source === "native";
   const settingsHref = buildProjectPath(organizationSlug, projectId, "settings");
 
   return (

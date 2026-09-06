@@ -86,7 +86,7 @@ function createProject(overrides: Partial<ProjectListRow> = {}): ProjectListRow 
 
 function renderSheet(
   project: ProjectListRow | undefined,
-  options?: { isLoading?: boolean; isError?: boolean },
+  options?: { isLoading?: boolean; isError?: boolean; canWriteProjects?: boolean },
 ) {
   useProjectPageQueryMock.mockReturnValue({
     isLoading: options?.isLoading ?? false,
@@ -113,6 +113,7 @@ function renderSheet(
       projectId="project_1"
       open
       onOpenChange={vi.fn()}
+      canWriteProjects={options?.canWriteProjects ?? true}
     />,
     { wrapper: Wrapper },
   );
@@ -148,6 +149,13 @@ describe("ContentEditorStyleGuideSheet", () => {
 
   it("hides the settings link for provider-managed projects", () => {
     renderSheet(createProject({ source: "external_tms" }));
+
+    expect(screen.getByText("Keep product names in English.")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Edit in settings" })).toBeNull();
+  });
+
+  it("hides the settings link when the viewer cannot write projects", () => {
+    renderSheet(createProject(), { canWriteProjects: false });
 
     expect(screen.getByText("Keep product names in English.")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Edit in settings" })).toBeNull();
