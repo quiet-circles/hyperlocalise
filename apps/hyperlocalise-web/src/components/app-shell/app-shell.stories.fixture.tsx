@@ -75,6 +75,7 @@ export const ALL_WORKSPACE_FEATURE_FLAGS: WorkspaceFeatureFlagState = {
   domains: true,
   glossarySearch: true,
   hyperlab: true,
+  reports: true,
 };
 
 export function buildAppShellStoryNavigationGroups(locale: string = "en") {

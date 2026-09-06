@@ -20,6 +20,7 @@ import {
   WORKSPACE_DOMAINS_FLAG,
   WORKSPACE_HYPERLAB_FLAG,
   WORKSPACE_KNOWLEDGE_FLAG,
+  WORKSPACE_REPORTS_FLAG,
 } from "@/lib/flags/workos-flag-entities";
 import { supportsContentEditorAllFilesProvider } from "@/lib/projects/content-editor-all-files";
 import { parseProviderProjectId } from "@/lib/providers/jobs/tms-provider-resource-id";
@@ -27,6 +28,7 @@ import {
   BookOpenTextIcon,
   Bookmark01Icon,
   CenterFocusIcon,
+  ChartHistogramIcon,
   Copy01Icon,
   CubeIcon,
   DashboardSquare01Icon,
@@ -60,6 +62,7 @@ export type NavigationItem = {
     | typeof WORKSPACE_KNOWLEDGE_FLAG
     | typeof WORKSPACE_DOMAINS_FLAG
     | typeof WORKSPACE_HYPERLAB_FLAG
+    | typeof WORKSPACE_REPORTS_FLAG
     | typeof RELEASE_CAT_ALL_FILES_FLAG;
   /** When true, the feature flag is off and the nav item links to a teaser page. */
   preview?: boolean;
@@ -159,7 +162,8 @@ export function buildGlobalNavigationGroups(
             description: "Workspace translation reports",
           }),
           href: org("reports"),
-          icon: DashboardSquare01Icon,
+          icon: ChartHistogramIcon,
+          featureFlagKey: WORKSPACE_REPORTS_FLAG,
         },
       ],
     },
@@ -363,7 +367,8 @@ export function buildProjectNavigationItems(
         description: "Project translation reports",
       }),
       href: project("reports"),
-      icon: DashboardSquare01Icon,
+      icon: ChartHistogramIcon,
+      featureFlagKey: WORKSPACE_REPORTS_FLAG,
     },
     {
       label: intl.formatMessage({

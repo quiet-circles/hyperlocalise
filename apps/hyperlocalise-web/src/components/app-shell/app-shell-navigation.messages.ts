@@ -40,4 +40,9 @@ export const appShellNavigationMessages = defineMessages({
     id: "qiPX0q5vvf",
     description: "Sidebar badge for gated features that link to teaser pages",
   },
+  trySection: {
+    defaultMessage: "Try",
+    id: "cCjEeqCM8J",
+    description: "Sidebar group label for gated features that are not yet enabled",
+  },
 });

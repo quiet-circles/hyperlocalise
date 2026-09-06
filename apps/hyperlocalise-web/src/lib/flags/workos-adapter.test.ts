@@ -22,6 +22,7 @@ import {
 import {
   filterNavigationByWorkspaceFlags,
   annotateNavigationByWorkspaceFlags,
+  groupPreviewNavigationGroups,
 } from "@/lib/flags/workspace-flag-navigation";
 import { getIntlShape } from "@/lib/app-i18n/intl";
 
@@ -164,6 +165,7 @@ describe("annotateNavigationByWorkspaceFlags", () => {
       domains: false,
       glossarySearch: false,
       hyperlab: false,
+      reports: false,
     });
 
     const automationsItem = annotated
@@ -175,10 +177,14 @@ describe("annotateNavigationByWorkspaceFlags", () => {
     const domainsItem = annotated
       .flatMap((group) => group.items)
       .find((item) => item.label === "Domains");
+    const reportsItem = annotated
+      .flatMap((group) => group.items)
+      .find((item) => item.label === "Reports");
 
     expect(automationsItem?.preview).toBe(true);
     expect(guidelineItem?.preview).toBe(true);
     expect(domainsItem?.preview).toBe(true);
+    expect(reportsItem?.preview).toBe(true);
   });
 
   it("clears preview badges when workspace flags are enabled", () => {
@@ -191,6 +197,7 @@ describe("annotateNavigationByWorkspaceFlags", () => {
       domains: true,
       glossarySearch: true,
       hyperlab: true,
+      reports: true,
     });
 
     const flaggedItems = annotated
@@ -212,6 +219,7 @@ describe("filterNavigationByWorkspaceFlags", () => {
       domains: false,
       glossarySearch: false,
       hyperlab: false,
+      reports: false,
     });
 
     const itemLabels = filtered.flatMap((group) => group.items.map((item) => item.label));
@@ -222,6 +230,7 @@ describe("filterNavigationByWorkspaceFlags", () => {
     expect(itemLabels).toContain("New Request");
     expect(itemLabels).toContain("AI Engine");
     expect(itemLabels).not.toContain("Domains");
+    expect(itemLabels).not.toContain("Reports");
     expect(itemLabels).toContain("Projects");
   });
 
@@ -235,6 +244,7 @@ describe("filterNavigationByWorkspaceFlags", () => {
       domains: true,
       glossarySearch: true,
       hyperlab: true,
+      reports: true,
     });
 
     const itemLabels = filtered.flatMap((group) => group.items.map((item) => item.label));
@@ -243,6 +253,60 @@ describe("filterNavigationByWorkspaceFlags", () => {
     expect(itemLabels).toContain("Guideline");
     expect(itemLabels).toContain("Board");
     expect(itemLabels).toContain("Domains");
+    expect(itemLabels).toContain("Reports");
     expect(itemLabels).toContain("AI Engine");
+  });
+});
+
+describe("groupPreviewNavigationGroups", () => {
+  it("moves preview items into a Try section and leaves enabled items in place", () => {
+    const groups = annotateNavigationByWorkspaceFlags(buildGlobalNavigationGroups("acme", intl), {
+      automations: false,
+      knowledge: false,
+      visualMock: false,
+      visualWorkflows: false,
+      domains: false,
+      glossarySearch: false,
+      hyperlab: false,
+      reports: false,
+    });
+    const grouped = groupPreviewNavigationGroups(groups, "Try");
+
+    const tryGroup = grouped.find((group) => group.label === "Try");
+    const agentsGroup = grouped.find((group) => group.label === "Agents");
+    const workspaceGroup = grouped.find((group) => group.label === "Workspace");
+    const promotedLabels = grouped[0]?.items.map((item) => item.label) ?? [];
+
+    expect(tryGroup?.items.map((item) => item.label)).toEqual([
+      "Reports",
+      "Automations",
+      "Domains",
+      "Hyperlab",
+      "Guideline",
+    ]);
+    expect(agentsGroup?.items.map((item) => item.label)).toEqual(["New Request", "AI Engine"]);
+    expect(workspaceGroup?.items.map((item) => item.label)).not.toContain("Domains");
+    expect(workspaceGroup?.items.map((item) => item.label)).toContain("Projects");
+    expect(promotedLabels).toContain("Inbox");
+    expect(promotedLabels).not.toContain("Reports");
+  });
+
+  it("omits the Try section when no items are in preview", () => {
+    const groups = annotateNavigationByWorkspaceFlags(buildGlobalNavigationGroups("acme", intl), {
+      automations: true,
+      knowledge: true,
+      visualMock: true,
+      visualWorkflows: true,
+      domains: true,
+      glossarySearch: true,
+      hyperlab: true,
+      reports: true,
+    });
+    const grouped = groupPreviewNavigationGroups(groups, "Try");
+
+    expect(grouped.some((group) => group.label === "Try")).toBe(false);
+    expect(grouped.flatMap((group) => group.items.map((item) => item.label))).toContain(
+      "Automations",
+    );
   });
 });

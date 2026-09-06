@@ -34,12 +34,14 @@ export function JobDetailPageContent({
   projectId,
   canEditJobFields,
   canEditSharedCredentialProviderJobFields = false,
+  reportsEnabled = false,
 }: {
   jobId: string;
   organizationSlug: string;
   projectId: string;
   canEditJobFields: boolean;
   canEditSharedCredentialProviderJobFields?: boolean;
+  reportsEnabled?: boolean;
 }) {
   const activeTmsProviderQuery = useActiveTmsProvider(organizationSlug);
   const encodedProviderJobFromRoute = parseProviderJobId(jobId);
@@ -108,6 +110,7 @@ export function JobDetailPageContent({
       organizationSlug={organizationSlug}
       projectId={projectId}
       canEditJobFields={canEditJobFields}
+      reportsEnabled={reportsEnabled}
     />
   );
 }

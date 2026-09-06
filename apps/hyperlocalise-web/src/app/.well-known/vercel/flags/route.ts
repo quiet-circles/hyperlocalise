@@ -8,6 +8,7 @@ import {
   workspaceAutomationsFlag,
   workspaceDomainsFlag,
   workspaceKnowledgeFlag,
+  workspaceReportsFlag,
 } from "../../../../lib/flags/workspace-flags";
 
 export const GET = createFlagsDiscoveryEndpoint(async () =>
@@ -15,6 +16,7 @@ export const GET = createFlagsDiscoveryEndpoint(async () =>
     workspaceAutomationsFlag,
     workspaceDomainsFlag,
     workspaceKnowledgeFlag,
+    workspaceReportsFlag,
     releaseContentEditorAllFilesFlag,
     releaseSandboxVcrImageFlag,
   }),
