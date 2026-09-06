@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -88,7 +89,7 @@ func (c *GoogleClient) Translate(ctx context.Context, req Request) (Response, er
 
 	translations := make([]string, len(out.Data.Translations))
 	for i, t := range out.Data.Translations {
-		translations[i] = t.TranslatedText
+		translations[i] = html.UnescapeString(t.TranslatedText)
 	}
 	return Response{Translations: translations}, nil
 }

@@ -46,6 +46,21 @@ func TestGoogleClientTranslateSuccess(t *testing.T) {
 	require.Equal(t, "text", gotBody.Format)
 }
 
+func TestGoogleClientTranslateDecodesHTMLEscapedText(t *testing.T) {
+	client := newGoogleTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":{"translations":[{"translatedText":"C&#39;est l&#39;amour &amp; la vie"}]}}`))
+	})
+
+	resp, err := client.Translate(t.Context(), Request{
+		SourceLocale: "en",
+		TargetLocale: "fr",
+		Sources:      []string{"It's love & life"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"C'est l'amour & la vie"}, resp.Translations)
+}
+
 func TestGoogleClientTranslateMapsChineseScriptVariants(t *testing.T) {
 	var gotBody googleTranslateRequest
 	client := newGoogleTestClient(t, func(w http.ResponseWriter, r *http.Request) {
