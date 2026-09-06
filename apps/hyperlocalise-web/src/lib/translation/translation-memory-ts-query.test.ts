@@ -12,7 +12,10 @@
  */
 import { describe, expect, it } from "vite-plus/test";
 
-import { buildTranslationMemoryTsQuery } from "./translation-memory-ts-query";
+import {
+  buildReportingMemoryMatchTsQuery,
+  buildTranslationMemoryTsQuery,
+} from "./translation-memory-ts-query";
 
 describe("buildTranslationMemoryTsQuery", () => {
   it("strips operators and builds prefix AND terms", () => {
@@ -21,5 +24,18 @@ describe("buildTranslationMemoryTsQuery", () => {
 
   it("returns an empty string when no tokens remain", () => {
     expect(buildTranslationMemoryTsQuery("&&&")).toBe("");
+  });
+});
+
+describe("buildReportingMemoryMatchTsQuery", () => {
+  it("ORs terms so added words still retrieve shorter memory entries", () => {
+    expect(buildReportingMemoryMatchTsQuery("Hello brave world")).toBe(
+      "Hello:* | brave:* | world:*",
+    );
+  });
+
+  it("adds shorter prefixes for unspaced tokens", () => {
+    expect(buildReportingMemoryMatchTsQuery("日本語の翻訳")).toContain("日本語の翻:*");
+    expect(buildReportingMemoryMatchTsQuery("日本語の翻訳")).toContain("日本語の:*");
   });
 });

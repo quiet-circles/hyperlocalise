@@ -704,8 +704,15 @@ export async function captureFileAnalysisStep(input: {
   sourceEntries: Record<string, string>;
 }) {
   "use step";
-  const { captureAnalysis } = await import("@/lib/reporting/capture");
-  await captureAnalysis(input);
+  try {
+    const { captureAnalysis } = await import("@/lib/reporting/capture");
+    await captureAnalysis(input);
+  } catch (error) {
+    console.warn("[file-translation-workflow] analysis capture failed", {
+      jobId: input.jobId,
+      error,
+    });
+  }
 }
 
 export async function captureFileCompletionsStep(input: {

@@ -182,6 +182,46 @@ describe("reporting capture", () => {
         ),
       );
     expect(analyses).toEqual([{ jobId: null, billable: true }]);
+
+    await saveNativeProjectContentEditorTranslation({
+      organizationId: organization.id,
+      projectId: project.id,
+      sourcePath: SOURCE_PATH,
+      targetLocale: "fr-FR",
+      translationKeyId: translationKey.id,
+      text: "Bonjour encore",
+      actorUserId: user.id,
+    });
+    const afterRetry = await db
+      .select({
+        id: schema.reportingAnalyses.id,
+        isCurrent: schema.reportingAnalyses.isCurrent,
+      })
+      .from(schema.reportingAnalyses)
+      .where(
+        and(
+          eq(schema.reportingAnalyses.organizationId, organization.id),
+          eq(schema.reportingAnalyses.segmentId, translationKey.id),
+        ),
+      );
+    expect(afterRetry).toHaveLength(1);
+    expect(afterRetry[0]?.isCurrent).toBe(true);
+
+    const completions = await db
+      .select({ id: schema.reportingActivity.id })
+      .from(schema.reportingActivity)
+      .where(
+        and(
+          eq(schema.reportingActivity.organizationId, organization.id),
+          eq(schema.reportingActivity.kind, "completion"),
+        ),
+      );
+    expect(completions).toHaveLength(1);
+    const costs = await db
+      .select({ id: schema.reportingCosts.id })
+      .from(schema.reportingCosts)
+      .where(eq(schema.reportingCosts.organizationId, organization.id));
+    expect(costs).toHaveLength(1);
   });
 
   it("matches approved memory entries with indexed lookup instead of a full scan", async () => {
@@ -252,6 +292,26 @@ describe("reporting capture", () => {
       .where(eq(schema.reportingAnalyses.organizationId, organization.id));
     expect(rows.find((row) => row.segmentId === "greeting")?.matchScore).toBe(100);
     expect(rows.find((row) => row.segmentId === "other")?.matchScore).toBeGreaterThan(80);
+    expect(
+      await bestReportingMatchScore({
+        memoryIds: [memory.id],
+        sourceLocale: "en-US",
+        targetLocale: "fr-FR",
+        sourceText: "Hello brave world",
+      }),
+    ).toBeGreaterThan(50);
+  });
+
+  it("keeps analysis capture from failing the caller", async () => {
+    await expect(
+      captureAnalysis({
+        organizationId: randomUUID(),
+        projectId: `project_${randomUUID()}`,
+        sourceLocale: "en-US",
+        targetLocale: "fr-FR",
+        sourceEntries: { source: "Hello" },
+      }),
+    ).resolves.toBeUndefined();
   });
 
   it("keeps usage capture from failing the caller", async () => {

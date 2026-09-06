@@ -317,16 +317,20 @@ class TranslationJobExecutor {
       );
 
     for (const targetLocale of parsedInput.data.targetLocales) {
-      await captureAnalysis({
-        organizationId: project.organizationId,
-        projectId: claimedJob.projectId,
-        jobId: claimedJob.id,
-        sourceLocale: parsedInput.data.sourceLocale,
-        targetLocale,
-        sourceEntries: {
-          [parsedInput.data.translationKeyId ?? "source"]: parsedInput.data.sourceText,
-        },
-      });
+      try {
+        await captureAnalysis({
+          organizationId: project.organizationId,
+          projectId: claimedJob.projectId,
+          jobId: claimedJob.id,
+          sourceLocale: parsedInput.data.sourceLocale,
+          targetLocale,
+          sourceEntries: {
+            [parsedInput.data.translationKeyId ?? "source"]: parsedInput.data.sourceText,
+          },
+        });
+      } catch (error) {
+        console.warn("reporting_analysis_failed", { jobId: claimedJob.id, error });
+      }
     }
     await captureJobStatus({
       jobId: claimedJob.id,

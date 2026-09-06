@@ -15,7 +15,7 @@ import { and, eq, desc, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema, type DatabaseClient } from "@/lib/database/client";
 import { listAttachedProjectMemoryIds } from "@/lib/memory/ensure-default-native-project-memory";
 import { normalizeTranslationMemorySourceText } from "@/lib/translation/normalizeTranslationMemorySourceText";
-import { buildTranslationMemoryTsQuery } from "@/lib/translation/translation-memory-ts-query";
+import { buildReportingMemoryMatchTsQuery } from "@/lib/translation/translation-memory-ts-query";
 import { countSourceWords, matchBucket, WORD_COUNT_VERSION } from "./word-analysis";
 import { wordCost } from "./money";
 
@@ -131,7 +131,7 @@ export async function bestReportingMatchScore(input: {
     )
     .limit(1);
   if (exact) return 100;
-  const tsQuery = buildTranslationMemoryTsQuery(input.sourceText);
+  const tsQuery = buildReportingMemoryMatchTsQuery(input.sourceText);
   if (!tsQuery) return 0;
   const candidates = await db
     .select({ source: schema.memoryEntries.sourceText })
@@ -156,6 +156,23 @@ export async function bestReportingMatchScore(input: {
 }
 
 export async function captureAnalysis(input: {
+  organizationId: string;
+  projectId: string;
+  jobId?: string;
+  sourceLocale: string;
+  targetLocale: string;
+  sourceEntries: Record<string, string>;
+  step?: "translation" | "review";
+  billable?: boolean;
+}) {
+  try {
+    await writeReportingAnalysis(input);
+  } catch (error) {
+    console.warn("reporting_analysis_failed", { jobId: input.jobId, error });
+  }
+}
+
+async function writeReportingAnalysis(input: {
   organizationId: string;
   projectId: string;
   jobId?: string;
@@ -193,15 +210,20 @@ export async function captureAnalysis(input: {
   const scores = new Map<string, number | null>();
   if (memoryIds)
     for (const sourceText of uniqueTexts)
-      scores.set(
-        sourceText,
-        await bestReportingMatchScore({
-          memoryIds,
-          sourceLocale: input.sourceLocale,
-          targetLocale: input.targetLocale,
+      try {
+        scores.set(
           sourceText,
-        }),
-      );
+          await bestReportingMatchScore({
+            memoryIds,
+            sourceLocale: input.sourceLocale,
+            targetLocale: input.targetLocale,
+            sourceText,
+          }),
+        );
+      } catch (error) {
+        console.warn("reporting_match_analysis_unavailable", { jobId: input.jobId, error });
+        scores.set(sourceText, null);
+      }
   const seen = new Set<string>();
   await db.transaction(async (tx) => {
     if (input.jobId)
@@ -268,6 +290,24 @@ export async function captureCompletions(
     step?: "translation" | "review";
   },
   database: DatabaseClient = db,
+) {
+  try {
+    await writeReportingCompletions(input, database);
+  } catch (error) {
+    console.warn("reporting_completions_failed", { jobId: input.jobId, error });
+  }
+}
+
+async function writeReportingCompletions(
+  input: {
+    organizationId: string;
+    jobId?: string;
+    targetLocale: string;
+    sourceEntries: Record<string, string>;
+    provenance: "human" | "automated";
+    step?: "translation" | "review";
+  },
+  database: DatabaseClient,
 ) {
   const step = input.step ?? "translation";
   const analyses = await database

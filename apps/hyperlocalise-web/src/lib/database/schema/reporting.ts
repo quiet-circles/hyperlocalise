@@ -20,6 +20,7 @@ import {
   numeric,
   jsonb,
   index,
+  unique,
   uniqueIndex,
   boolean,
 } from "drizzle-orm/pg-core";
@@ -111,14 +112,9 @@ export const reportingAnalyses = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex("reporting_analysis_identity").on(
-      t.organizationId,
-      t.jobId,
-      t.segmentId,
-      t.sourceRevision,
-      t.targetLocale,
-      t.step,
-    ),
+    unique("reporting_analysis_identity")
+      .on(t.organizationId, t.jobId, t.segmentId, t.sourceRevision, t.targetLocale, t.step)
+      .nullsNotDistinct(),
     index("reporting_analysis_project").on(t.organizationId, t.projectId, t.createdAt),
   ],
 );
