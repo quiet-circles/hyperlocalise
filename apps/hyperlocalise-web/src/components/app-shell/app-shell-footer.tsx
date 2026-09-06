@@ -81,6 +81,7 @@ export function AppShellFooter({
       setStyleGuideOpen(false);
     }
   }, [canShowStyleGuide]);
+
   const glossaryGuidanceStatus = useSyncExternalStore(
     subscribeCatGlossaryGuidance,
     getCatGlossaryGuidanceStatus,
