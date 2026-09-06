@@ -620,7 +620,7 @@ func executePhraseLocalesList(cmd *cobra.Command, o phraseLocalesListOptions) er
 	if err != nil {
 		return fmt.Errorf("phrase locales list: %w", err)
 	}
-	return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+	return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 		for _, locale := range locales {
 			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%s name=%s code=%s default=%t\n", locale.ID, locale.Name, locale.Code, locale.Default); err != nil {
 				return err

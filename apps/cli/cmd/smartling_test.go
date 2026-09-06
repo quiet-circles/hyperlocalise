@@ -121,7 +121,8 @@ func TestSmartlingDownloadTranslationsFlags(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "--project-id") ||
 		!strings.Contains(out.String(), "--target-locale") ||
-		!strings.Contains(out.String(), "--file-uri") {
+		!strings.Contains(out.String(), "--file-uri") ||
+		!strings.Contains(out.String(), "--retrieval-type") {
 		t.Error("help output missing required flags")
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/hyperlocalise/hyperlocalise/internal/i18n/locales"
@@ -27,6 +28,9 @@ func newSmartlingCmd() *cobra.Command {
 		Use:   "smartling",
 		Short: "Smartling compatibility subcommands",
 	}
+	cmd.AddCommand(newSmartlingFilesCmd())
+	cmd.AddCommand(newSmartlingLocalesCmd())
+	cmd.AddCommand(newSmartlingProjectsCmd())
 	cmd.AddCommand(newSmartlingDownloadCmd())
 	cmd.AddCommand(newSmartlingGlossaryCmd())
 	cmd.AddCommand(newSmartlingTranslationMemoryCmd())
@@ -39,6 +43,7 @@ type smartlingDownloadTranslationsOptions struct {
 	targetLocales  []string
 	fileURI        string
 	output         string
+	retrievalType  string
 	userIdentifier string
 	userSecret     string
 	userSecretEnv  string
@@ -131,6 +136,7 @@ func newSmartlingDownloadTranslationsCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&o.targetLocales, "target-locale", "l", nil, "target locale ID(s) to download")
 	cmd.Flags().StringVar(&o.fileURI, "file-uri", "", "Smartling file URI")
 	cmd.Flags().StringVarP(&o.output, "output", "o", "", "output file path; omit or use - for stdout when downloading one locale; use %locale% for multiple locales")
+	cmd.Flags().StringVar(&o.retrievalType, "retrieval-type", "", "which translations to download: pending, published, or pseudo")
 	cmd.Flags().StringVar(&o.userIdentifier, "user-id", "", "Smartling user identifier")
 	cmd.Flags().StringVar(&o.userSecret, "user-secret", "", "Smartling user secret")
 	cmd.Flags().StringVar(&o.userSecretEnv, "user-secret-env", "", "Environment variable for Smartling user secret")
@@ -163,27 +169,11 @@ func executeSmartlingDownloadSources(cmd *cobra.Command, o smartlingDownloadSour
 		return err
 	}
 
-	cfg := smartling.Config{
-		ProjectID:      strings.TrimSpace(o.projectID),
-		UserIdentifier: strings.TrimSpace(o.userIdentifier),
-		UserSecret:     strings.TrimSpace(o.userSecret),
-		UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
+	cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling download sources")
+	if err != nil {
+		return err
 	}
-
-	if cfg.UserSecret == "" {
-		envVar := cfg.UserSecretEnv
-		if envVar == "" {
-			envVar = "SMARTLING_USER_SECRET"
-		}
-		cfg.UserSecret = os.Getenv(envVar)
-	}
-	if cfg.UserIdentifier == "" {
-		cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-	}
-
-	if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-		return fmt.Errorf("smartling download sources: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
-	}
+	cfg.ProjectID = strings.TrimSpace(o.projectID)
 
 	client, err := newSmartlingSourceDownloader(cfg)
 	if err != nil {
@@ -219,6 +209,10 @@ func executeSmartlingDownloadTranslations(cmd *cobra.Command, o smartlingDownloa
 	if strings.TrimSpace(o.fileURI) == "" {
 		return fmt.Errorf("smartling download translations: --file-uri is required")
 	}
+	retrievalType, err := smartling.NormalizeRetrievalType(o.retrievalType)
+	if err != nil {
+		return fmt.Errorf("smartling download translations: --retrieval-type must be pending, published, or pseudo")
+	}
 
 	outputPath := strings.TrimSpace(o.output)
 	outputs, err := smartlingTranslationOutputPaths(outputPath, locales)
@@ -230,7 +224,7 @@ func executeSmartlingDownloadTranslations(cmd *cobra.Command, o smartlingDownloa
 		if destination == "" {
 			destination = "-"
 		}
-		_, err := fmt.Fprintf(cmd.OutOrStdout(), "dry-run action=smartling-download-translations project_id=%s target_locales=%s file_uri=%s output=%s\n", strings.TrimSpace(o.projectID), strings.Join(locales, ","), strings.TrimSpace(o.fileURI), destination)
+		_, err := fmt.Fprintf(cmd.OutOrStdout(), "dry-run action=smartling-download-translations project_id=%s target_locales=%s file_uri=%s retrieval_type=%s output=%s\n", strings.TrimSpace(o.projectID), strings.Join(locales, ","), strings.TrimSpace(o.fileURI), retrievalType, destination)
 		return err
 	}
 	for _, output := range outputs {
@@ -239,27 +233,11 @@ func executeSmartlingDownloadTranslations(cmd *cobra.Command, o smartlingDownloa
 		}
 	}
 
-	cfg := smartling.Config{
-		ProjectID:      strings.TrimSpace(o.projectID),
-		UserIdentifier: strings.TrimSpace(o.userIdentifier),
-		UserSecret:     strings.TrimSpace(o.userSecret),
-		UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
+	cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling download translations")
+	if err != nil {
+		return err
 	}
-
-	if cfg.UserSecret == "" {
-		envVar := cfg.UserSecretEnv
-		if envVar == "" {
-			envVar = "SMARTLING_USER_SECRET"
-		}
-		cfg.UserSecret = os.Getenv(envVar)
-	}
-	if cfg.UserIdentifier == "" {
-		cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-	}
-
-	if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-		return fmt.Errorf("smartling download translations: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
-	}
+	cfg.ProjectID = strings.TrimSpace(o.projectID)
 
 	client, err := newSmartlingTranslationDownloader(cfg)
 	if err != nil {
@@ -269,9 +247,10 @@ func executeSmartlingDownloadTranslations(cmd *cobra.Command, o smartlingDownloa
 	writtenOutputs := make([]string, 0, len(outputs))
 	for idx, locale := range locales {
 		result, err := client.DownloadTranslationFile(backgroundContext(), smartling.TranslationDownloadInput{
-			ProjectID: strings.TrimSpace(o.projectID),
-			FileURI:   strings.TrimSpace(o.fileURI),
-			LocaleID:  locale,
+			ProjectID:     strings.TrimSpace(o.projectID),
+			FileURI:       strings.TrimSpace(o.fileURI),
+			LocaleID:      locale,
+			RetrievalType: retrievalType,
 		})
 		if err != nil {
 			removeSmartlingDownloadedTranslationOutputs(writtenOutputs)
@@ -300,6 +279,66 @@ func executeSmartlingDownloadTranslations(cmd *cobra.Command, o smartlingDownloa
 		}
 	}
 	return nil
+}
+
+func resolveSmartlingCLICredentials(userIdentifier, userSecret, userSecretEnv, action string) (smartling.Config, error) {
+	cfg := smartling.Config{
+		UserIdentifier: strings.TrimSpace(userIdentifier),
+		UserSecret:     strings.TrimSpace(userSecret),
+		UserSecretEnv:  strings.TrimSpace(userSecretEnv),
+	}
+	if cfg.UserSecret == "" {
+		envVar := cfg.UserSecretEnv
+		if envVar == "" {
+			envVar = "SMARTLING_USER_SECRET"
+		}
+		cfg.UserSecret = os.Getenv(envVar)
+	}
+	if cfg.UserIdentifier == "" {
+		cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
+	}
+	if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
+		return smartling.Config{}, fmt.Errorf("%s: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)", action)
+	}
+	return cfg, nil
+}
+
+func parseSmartlingUploadDirectives(raw []string) (map[string]string, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	out := make(map[string]string, len(raw))
+	for _, item := range raw {
+		key, value, ok := strings.Cut(item, "=")
+		if !ok || strings.TrimSpace(key) == "" {
+			return nil, fmt.Errorf("smartling upload sources: --directive must be key=value")
+		}
+		field := smartling.CanonicalDirectiveField(key)
+		if field == "" {
+			return nil, fmt.Errorf("smartling upload sources: --directive must be key=value")
+		}
+		if _, exists := out[field]; exists {
+			return nil, fmt.Errorf("smartling upload sources: duplicate --directive %s", field)
+		}
+		out[field] = value
+	}
+	return out, nil
+}
+
+func formatSmartlingDirectiveSummary(directives map[string]string) string {
+	if len(directives) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(directives))
+	for key := range directives {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, key+"="+directives[key])
+	}
+	return strings.Join(parts, " ")
 }
 
 func normalizeSmartlingLocales(values []string) []string {
@@ -489,29 +528,9 @@ func newSmartlingGlossaryDownloadCmd() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			cfg := smartling.Config{
-				UserIdentifier: strings.TrimSpace(o.userIdentifier),
-				UserSecret:     strings.TrimSpace(o.userSecret),
-				UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
-			}
-
-			// UserSecret will be resolved from Env in ParseConfig if not explicitly set
-			// but NewHTTPClient doesn't call ParseConfig.
-			// Let's use a temporary way to resolve credentials if needed.
-			if cfg.UserSecret == "" {
-				envVar := cfg.UserSecretEnv
-				if envVar == "" {
-					envVar = "SMARTLING_USER_SECRET"
-				}
-				cfg.UserSecret = os.Getenv(envVar)
-			}
-
-			if cfg.UserIdentifier == "" {
-				cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-			}
-
-			if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-				return fmt.Errorf("smartling glossary download: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
+			cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling glossary download")
+			if err != nil {
+				return err
 			}
 
 			client, err := smartling.NewHTTPClient(cfg)
@@ -613,24 +632,9 @@ func newSmartlingTranslationMemoryDownloadCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			cfg := smartling.Config{
-				UserIdentifier: strings.TrimSpace(o.userIdentifier),
-				UserSecret:     strings.TrimSpace(o.userSecret),
-				UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
-			}
-
-			if cfg.UserSecret == "" {
-				envVar := cfg.UserSecretEnv
-				if envVar == "" {
-					envVar = "SMARTLING_USER_SECRET"
-				}
-				cfg.UserSecret = os.Getenv(envVar)
-			}
-			if cfg.UserIdentifier == "" {
-				cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-			}
-			if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-				return fmt.Errorf("smartling tm download: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
+			cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling tm download")
+			if err != nil {
+				return err
 			}
 
 			client, err := smartling.NewHTTPClient(cfg)
@@ -707,6 +711,7 @@ type smartlingUploadSourcesOptions struct {
 	filePaths      []string
 	fileType       string
 	authorize      bool
+	directives     []string
 	userIdentifier string
 	userSecret     string
 	userSecretEnv  string
@@ -807,25 +812,11 @@ func executeSmartlingUploadTranslations(cmd *cobra.Command, o smartlingUploadTra
 		return err
 	}
 
-	cfg := smartling.Config{
-		ProjectID:      strings.TrimSpace(o.projectID),
-		UserIdentifier: strings.TrimSpace(o.userIdentifier),
-		UserSecret:     strings.TrimSpace(o.userSecret),
-		UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
+	cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling upload translations")
+	if err != nil {
+		return err
 	}
-	if cfg.UserSecret == "" {
-		envVar := cfg.UserSecretEnv
-		if envVar == "" {
-			envVar = "SMARTLING_USER_SECRET"
-		}
-		cfg.UserSecret = os.Getenv(envVar)
-	}
-	if cfg.UserIdentifier == "" {
-		cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-	}
-	if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-		return fmt.Errorf("smartling upload translations: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
-	}
+	cfg.ProjectID = strings.TrimSpace(o.projectID)
 
 	client, err := newSmartlingTranslationImporter(cfg)
 	if err != nil {
@@ -863,6 +854,7 @@ func newSmartlingUploadSourcesCmd() *cobra.Command {
 	cmd.Flags().StringArrayVarP(&o.filePaths, "file", "f", nil, "source file path(s) to upload")
 	cmd.Flags().StringVar(&o.fileType, "file-type", "", "Smartling file type (e.g. json, yaml, ios, android, gettext, html, markdown)")
 	cmd.Flags().BoolVar(&o.authorize, "authorize", true, "authorize strings for translation")
+	cmd.Flags().StringArrayVar(&o.directives, "directive", nil, "parser directive as key=value (repeatable); sent as smartling.<key> unless already prefixed")
 	cmd.Flags().StringVar(&o.userIdentifier, "user-id", "", "Smartling user identifier")
 	cmd.Flags().StringVar(&o.userSecret, "user-secret", "", "Smartling user secret")
 	cmd.Flags().StringVar(&o.userSecretEnv, "user-secret-env", "", "Environment variable for Smartling user secret")
@@ -881,31 +873,20 @@ func executeSmartlingUploadSources(cmd *cobra.Command, o smartlingUploadSourcesO
 		return fmt.Errorf("smartling upload sources: --file-uri cannot be used with multiple --file values")
 	}
 
+	directives, err := parseSmartlingUploadDirectives(o.directives)
+	if err != nil {
+		return err
+	}
+	directiveSummary := formatSmartlingDirectiveSummary(directives)
+
 	ctx := context.Background()
-	cfg := smartling.Config{
-		ProjectID:      strings.TrimSpace(o.projectID),
-		UserIdentifier: strings.TrimSpace(o.userIdentifier),
-		UserSecret:     strings.TrimSpace(o.userSecret),
-		UserSecretEnv:  strings.TrimSpace(o.userSecretEnv),
-	}
-
-	if cfg.UserSecret == "" {
-		envVar := cfg.UserSecretEnv
-		if envVar == "" {
-			envVar = "SMARTLING_USER_SECRET"
-		}
-		cfg.UserSecret = os.Getenv(envVar)
-	}
-	if cfg.UserIdentifier == "" {
-		cfg.UserIdentifier = os.Getenv("SMARTLING_USER_IDENTIFIER")
-	}
-
 	var client *smartling.HTTPClient
 	if !o.dryRun {
-		if cfg.UserIdentifier == "" || cfg.UserSecret == "" {
-			return fmt.Errorf("smartling upload sources: credentials are required (via flags or SMARTLING_USER_IDENTIFIER/SMARTLING_USER_SECRET)")
+		cfg, err := resolveSmartlingCLICredentials(o.userIdentifier, o.userSecret, o.userSecretEnv, "smartling upload sources")
+		if err != nil {
+			return err
 		}
-		var err error
+		cfg.ProjectID = strings.TrimSpace(o.projectID)
 		client, err = smartling.NewHTTPClient(cfg)
 		if err != nil {
 			return err
@@ -928,17 +909,22 @@ func executeSmartlingUploadSources(cmd *cobra.Command, o smartlingUploadSourcesO
 		}
 
 		if o.dryRun {
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dry-run action=smartling-upload-source file=%s uri=%s type=%s authorize=%t\n", path, fileUri, fileType, o.authorize)
+			if directiveSummary != "" {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dry-run action=smartling-upload-source file=%s uri=%s type=%s authorize=%t directives=%s\n", path, fileUri, fileType, o.authorize, directiveSummary)
+			} else {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dry-run action=smartling-upload-source file=%s uri=%s type=%s authorize=%t\n", path, fileUri, fileType, o.authorize)
+			}
 			processed++
 			continue
 		}
 
 		result, err := client.UploadSourceFile(ctx, smartling.SourceUploadInput{
-			ProjectID: cfg.ProjectID,
-			FileURI:   fileUri,
-			FilePath:  path,
-			FileType:  fileType,
-			Authorize: o.authorize,
+			ProjectID:  strings.TrimSpace(o.projectID),
+			FileURI:    fileUri,
+			FilePath:   path,
+			FileType:   fileType,
+			Authorize:  o.authorize,
+			Directives: directives,
 		})
 		if err != nil {
 			return fmt.Errorf("smartling upload source %q: %w", path, err)

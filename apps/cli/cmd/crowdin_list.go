@@ -35,7 +35,7 @@ func newCrowdinConfigSourcesCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "path=%s\n", row.Path); err != nil {
 						return err
@@ -76,7 +76,7 @@ func newCrowdinConfigTranslationsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "language=%s path=%s\n", row.LanguageID, row.Path); err != nil {
 						return err
@@ -119,7 +119,7 @@ func newCrowdinBranchListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%d name=%s\n", row.ID, row.Name); err != nil {
 						return err
@@ -195,7 +195,7 @@ func newCrowdinFileListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%d name=%s path=%s\n", row.ID, row.Name, row.Path); err != nil {
 						return err
@@ -242,7 +242,7 @@ func newCrowdinLanguageListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%s name=%s locale=%s\n", row.ID, row.Name, row.Locale); err != nil {
 						return err
@@ -276,7 +276,7 @@ func newCrowdinGlossaryListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%d name=%s\n", row.ID, row.Name); err != nil {
 						return err
@@ -309,7 +309,7 @@ func newCrowdinTranslationMemoryListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%d name=%s\n", row.ID, row.Name); err != nil {
 						return err
@@ -335,7 +335,7 @@ func addCrowdinListFlags(cmd *cobra.Command, o *crowdinListOptions, includeLangu
 	}
 }
 
-func writeCrowdinEncodedOutput(w io.Writer, output string, writeText func() error, value any) error {
+func writeEncodedOutput(w io.Writer, output string, writeText func() error, value any) error {
 	switch strings.ToLower(strings.TrimSpace(output)) {
 	case "", "text":
 		return writeText()

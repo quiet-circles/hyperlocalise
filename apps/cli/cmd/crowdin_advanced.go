@@ -90,7 +90,7 @@ func newCrowdinStringListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return writeCrowdinEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
+			return writeEncodedOutput(cmd.OutOrStdout(), o.output, func() error {
 				for _, row := range rows {
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "id=%d identifier=%s text=%s context=%s\n", row.ID, row.Identifier, row.Text, row.Context); err != nil {
 						return err

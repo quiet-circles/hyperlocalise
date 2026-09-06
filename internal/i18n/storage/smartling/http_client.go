@@ -38,6 +38,8 @@ type HTTPClient struct {
 	authBaseURL     string
 	stringsBaseURL  string
 	filesBaseURL    string
+	projectsBaseURL string
+	accountsBaseURL string
 	glossaryBaseURL string
 	tmBaseURL       string
 	http            *http.Client
@@ -59,6 +61,8 @@ func NewHTTPClient(cfg Config) (*HTTPClient, error) {
 		authBaseURL:     authAPIBaseURL,
 		stringsBaseURL:  stringsAPIBaseURL,
 		filesBaseURL:    filesAPIBaseURL,
+		projectsBaseURL: projectsAPIBaseURL,
+		accountsBaseURL: accountsAPIBaseURL,
 		glossaryBaseURL: glossaryAPIBaseURL,
 		tmBaseURL:       tmAPIBaseURL,
 		http:            &http.Client{Timeout: timeout},
@@ -69,11 +73,12 @@ func NewHTTPClient(cfg Config) (*HTTPClient, error) {
 
 // SourceUploadInput contains the parameters for uploading a source file to Smartling.
 type SourceUploadInput struct {
-	ProjectID string
-	FileURI   string
-	FilePath  string
-	FileType  string
-	Authorize bool
+	ProjectID  string
+	FileURI    string
+	FilePath   string
+	FileType   string
+	Authorize  bool
+	Directives map[string]string
 }
 
 // SourceUploadResult contains the results of a source file upload to Smartling.
@@ -120,6 +125,13 @@ func (c *HTTPClient) UploadSourceFile(ctx context.Context, in SourceUploadInput)
 		"fileUri":   in.FileURI,
 		"fileType":  in.FileType,
 		"authorize": fmt.Sprintf("%t", in.Authorize),
+	}
+	for key, value := range in.Directives {
+		field := CanonicalDirectiveField(key)
+		if field == "" {
+			continue
+		}
+		params[field] = value
 	}
 
 	var resp struct {
@@ -310,7 +322,7 @@ func (c *HTTPClient) ExportFile(ctx context.Context, in ExportFileInput) ([]stor
 		if trimmedLocale == "" {
 			continue
 		}
-		content, err := c.downloadFile(ctx, token, in.ProjectID, trimmedLocale, in.FileURI)
+		content, err := c.downloadFile(ctx, token, in.ProjectID, trimmedLocale, in.FileURI, "")
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -519,10 +531,13 @@ func (c *HTTPClient) do(req *http.Request, out any) error {
 	return nil
 }
 
-func (c *HTTPClient) downloadFile(ctx context.Context, token string, projectID string, locale string, fileURI string) ([]byte, error) {
+func (c *HTTPClient) downloadFile(ctx context.Context, token string, projectID string, locale string, fileURI string, retrievalType string) ([]byte, error) {
 	endpoint := fmt.Sprintf("%s/projects/%s/locales/%s/file", c.filesBaseURL, url.PathEscape(projectID), url.PathEscape(locale))
 	params := url.Values{}
 	params.Set("fileUri", fileURI)
+	if trimmed := strings.TrimSpace(retrievalType); trimmed != "" {
+		params.Set("retrievalType", trimmed)
+	}
 	endpoint = endpoint + "?" + params.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -636,9 +651,10 @@ func (c *HTTPClient) uploadFile(ctx context.Context, token string, projectID str
 
 // TranslationDownloadInput contains the parameters for downloading a translated file from Smartling.
 type TranslationDownloadInput struct {
-	ProjectID string
-	FileURI   string
-	LocaleID  string
+	ProjectID     string
+	FileURI       string
+	LocaleID      string
+	RetrievalType string
 }
 
 // TranslationDownloadResult contains the results of a translation file download from Smartling.
@@ -788,12 +804,17 @@ func (c *HTTPClient) DownloadTranslationFile(ctx context.Context, in Translation
 		return TranslationDownloadResult{}, fmt.Errorf("smartling download: locale id is required")
 	}
 
+	retrievalType, err := NormalizeRetrievalType(in.RetrievalType)
+	if err != nil {
+		return TranslationDownloadResult{}, err
+	}
+
 	token, err := c.accessToken(ctx)
 	if err != nil {
 		return TranslationDownloadResult{}, err
 	}
 
-	content, err := c.downloadFile(ctx, token, strings.TrimSpace(in.ProjectID), strings.TrimSpace(in.LocaleID), strings.TrimSpace(in.FileURI))
+	content, err := c.downloadFile(ctx, token, strings.TrimSpace(in.ProjectID), strings.TrimSpace(in.LocaleID), strings.TrimSpace(in.FileURI), retrievalType)
 	if err != nil {
 		return TranslationDownloadResult{}, err
 	}
