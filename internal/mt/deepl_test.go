@@ -314,13 +314,22 @@ func TestDeepLTargetLanguageCode(t *testing.T) {
 		{"zh", "ZH"},
 		{"en-US", "EN-US"},
 		{"en-GB", "EN-GB"},
+		{"en-AU", "EN"},
 		{"pt-BR", "PT-BR"},
 		{"pt-PT", "PT-PT"},
 		{"zh-Hans", "ZH-HANS"},
 		{"zh-Hant", "ZH-HANT"},
 		{"zh-Hant-HK", "ZH-HANT"},
+		{"fr-FR", "FR-FR"},
 		{"fr-CA", "FR-CA"},
+		{"fr-BE", "FR"},
+		{"de-DE", "DE-DE"},
+		{"de-CH", "DE-CH"},
+		{"de-AT", "DE"},
 		{"es-419", "ES-419"},
+		{"es-MX", "ES"},
+		{"ja-JP", "JA"},
+		{"vi-VN", "VI"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.locale, func(t *testing.T) {

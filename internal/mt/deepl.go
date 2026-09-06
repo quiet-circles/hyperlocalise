@@ -175,8 +175,18 @@ func deeplSourceLanguageCode(locale string) string {
 	return strings.ToUpper(base.String())
 }
 
-// deeplTargetLanguageCode preserves only explicitly specified target subtags.
-// x/text may infer region/script values unless confidence is Exact.
+// deeplTargetVariantCodes contains DeepL's documented region/script-qualified
+// target language codes.
+var deeplTargetVariantCodes = map[string]bool{
+	"EN-US": true, "EN-GB": true,
+	"PT-BR": true, "PT-PT": true,
+	"DE-DE": true, "DE-CH": true,
+	"FR-FR": true, "FR-CA": true,
+	"ES-419":  true,
+	"ZH-HANS": true, "ZH-HANT": true,
+}
+
+// x/text may infer region/script subtags unless confidence is Exact.
 func deeplTargetLanguageCode(locale string) string {
 	tag, err := language.Parse(locale)
 	if err != nil {
@@ -184,11 +194,16 @@ func deeplTargetLanguageCode(locale string) string {
 	}
 	base, _ := tag.Base()
 	code := strings.ToUpper(base.String())
+
 	if script, conf := tag.Script(); conf == language.Exact {
-		return code + "-" + strings.ToUpper(script.String())
+		if candidate := code + "-" + strings.ToUpper(script.String()); deeplTargetVariantCodes[candidate] {
+			return candidate
+		}
 	}
 	if region, conf := tag.Region(); conf == language.Exact {
-		return code + "-" + region.String()
+		if candidate := code + "-" + region.String(); deeplTargetVariantCodes[candidate] {
+			return candidate
+		}
 	}
 	return code
 }
