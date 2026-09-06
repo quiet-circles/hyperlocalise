@@ -2,7 +2,9 @@ package mt
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,6 +18,27 @@ type deeplRoundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f deeplRoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
+}
+
+// translationOut and translateResp build synthetic DeepL success bodies for
+// the chunking tests below.
+type translationOut struct {
+	Text string `json:"text"`
+}
+
+type translateResp struct {
+	Translations []translationOut `json:"translations"`
+}
+
+func deeplSuccessBody(t *testing.T, texts []string, suffix string) []byte {
+	t.Helper()
+	resp := translateResp{Translations: make([]translationOut, len(texts))}
+	for i, text := range texts {
+		resp.Translations[i] = translationOut{Text: text + suffix}
+	}
+	body, err := json.Marshal(resp)
+	require.NoError(t, err)
+	return body
 }
 
 func newDeepLTestClient(t *testing.T, handler http.HandlerFunc) *DeepLClient {
@@ -197,6 +220,129 @@ func TestDeepLClientTranslateTranslationCountMismatchMapsToUpstreamError(t *test
 	typed, ok := AsError(err)
 	require.True(t, ok)
 	require.Equal(t, ErrorCodeUpstream, typed.Code)
+}
+
+func TestDeepLClientTranslate51SourcesSplitsIntoTwoRequests(t *testing.T) {
+	sources := make([]string, 51)
+	for i := range sources {
+		sources[i] = fmt.Sprintf("s%d", i)
+	}
+
+	var calls int
+	var formsSeen [][]string
+	client := newDeepLTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		require.NoError(t, r.ParseForm())
+		texts := append([]string(nil), r.PostForm["text"]...)
+		formsSeen = append(formsSeen, texts)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(deeplSuccessBody(t, texts, "-out"))
+	})
+
+	resp, err := client.Translate(t.Context(), Request{SourceLocale: "en", TargetLocale: "fr", Sources: sources})
+	require.NoError(t, err)
+
+	require.Equal(t, 2, calls)
+	require.Equal(t, sources[:50], formsSeen[0])
+	require.Equal(t, sources[50:], formsSeen[1])
+
+	want := make([]string, 51)
+	for i, s := range sources {
+		want[i] = s + "-out"
+	}
+	require.Equal(t, want, resp.Translations)
+}
+
+func TestDeepLClientTranslate50SourcesSingleRequest(t *testing.T) {
+	sources := make([]string, 50)
+	for i := range sources {
+		sources[i] = fmt.Sprintf("s%d", i)
+	}
+
+	var calls int
+	client := newDeepLTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		require.NoError(t, r.ParseForm())
+		require.Len(t, r.PostForm["text"], 50)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(deeplSuccessBody(t, r.PostForm["text"], "-out"))
+	})
+
+	resp, err := client.Translate(t.Context(), Request{SourceLocale: "en", TargetLocale: "fr", Sources: sources})
+	require.NoError(t, err)
+	require.Equal(t, 1, calls)
+	require.Len(t, resp.Translations, 50)
+}
+
+func TestDeepLClientTranslateLaterChunkFailureReturnsNoPartialResponse(t *testing.T) {
+	sources := make([]string, 51)
+	for i := range sources {
+		sources[i] = fmt.Sprintf("s%d", i)
+	}
+
+	var calls int
+	client := newDeepLTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		require.NoError(t, r.ParseForm())
+		texts := r.PostForm["text"]
+
+		if calls == 1 {
+			require.Len(t, texts, 50)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(deeplSuccessBody(t, texts, "-out"))
+			return
+		}
+
+		require.Len(t, texts, 1)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message":"Internal error"}`))
+	})
+
+	resp, err := client.Translate(t.Context(), Request{SourceLocale: "en", TargetLocale: "fr", Sources: sources})
+	require.Equal(t, 2, calls)
+	require.Empty(t, resp.Translations)
+
+	typed, ok := AsError(err)
+	require.True(t, ok)
+	require.Equal(t, ErrorCodeUpstreamUnavailable, typed.Code)
+}
+
+func TestDeepLClientTranslateContextCanceledBetweenChunks(t *testing.T) {
+	sources := make([]string, 51)
+	for i := range sources {
+		sources[i] = fmt.Sprintf("s%d", i)
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	var calls int
+	client := newDeepLTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		require.Equal(t, 1, calls, "no request should be sent for a chunk after cancellation")
+		require.NoError(t, r.ParseForm())
+		texts := r.PostForm["text"]
+		require.Len(t, texts, 50)
+
+		body := deeplSuccessBody(t, texts, "-out")
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+
+		cancel()
+	})
+
+	_, err := client.Translate(ctx, Request{SourceLocale: "en", TargetLocale: "fr", Sources: sources})
+	require.Error(t, err)
+	require.True(t, errors.Is(err, context.Canceled))
+	_, ok := AsError(err)
+	require.False(t, ok)
+	require.Equal(t, 1, calls)
 }
 
 func TestDeepLClientTranslateContextCanceled(t *testing.T) {

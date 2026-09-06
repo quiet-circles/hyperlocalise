@@ -22,6 +22,8 @@ const deeplTranslatePath = "/v2/translate"
 
 const deeplStatusQuotaExceeded = 456
 
+const deeplMaxTextsPerRequest = 50 // DeepL API limit
+
 type DeepLClient struct {
 	apiKey     string
 	baseURL    string
@@ -62,22 +64,43 @@ func (c *DeepLClient) Translate(ctx context.Context, req Request) (Response, err
 		return Response{}, err
 	}
 
+	sourceLang := deeplSourceLanguageCode(req.SourceLocale)
+	targetLang := deeplTargetLanguageCode(req.TargetLocale)
+
+	translations := make([]string, 0, len(req.Sources))
+	for start := 0; start < len(req.Sources); start += deeplMaxTextsPerRequest {
+		end := start + deeplMaxTextsPerRequest
+		if end > len(req.Sources) {
+			end = len(req.Sources)
+		}
+
+		chunkTranslations, err := c.translateChunk(ctx, sourceLang, targetLang, req.Sources[start:end])
+		if err != nil {
+			return Response{}, err
+		}
+		translations = append(translations, chunkTranslations...)
+	}
+
+	return Response{Translations: translations}, nil
+}
+
+func (c *DeepLClient) translateChunk(ctx context.Context, sourceLang, targetLang string, sources []string) ([]string, error) {
 	form := url.Values{}
-	for _, s := range req.Sources {
+	for _, s := range sources {
 		form.Add("text", s)
 	}
-	form.Set("source_lang", deeplSourceLanguageCode(req.SourceLocale))
-	form.Set("target_lang", deeplTargetLanguageCode(req.TargetLocale))
+	form.Set("source_lang", sourceLang)
+	form.Set("target_lang", targetLang)
 
 	var out deeplTranslateResponse
 	if err := c.request(ctx, http.MethodPost, c.baseURL+deeplTranslatePath, form, &out); err != nil {
-		return Response{}, err
+		return nil, err
 	}
 
-	if len(out.Translations) != len(req.Sources) {
-		return Response{}, &Error{
+	if len(out.Translations) != len(sources) {
+		return nil, &Error{
 			Code:    ErrorCodeUpstream,
-			Message: fmt.Sprintf("DeepL returned %d translations for %d inputs", len(out.Translations), len(req.Sources)),
+			Message: fmt.Sprintf("DeepL returned %d translations for %d inputs", len(out.Translations), len(sources)),
 			Path:    deeplTranslatePath,
 		}
 	}
@@ -86,7 +109,7 @@ func (c *DeepLClient) Translate(ctx context.Context, req Request) (Response, err
 	for i, t := range out.Translations {
 		translations[i] = t.Text
 	}
-	return Response{Translations: translations}, nil
+	return translations, nil
 }
 
 func (c *DeepLClient) request(ctx context.Context, method, requestURL string, form url.Values, out any) error {
